@@ -312,6 +312,9 @@ const WoWCraftingTracker: React.FC = () => {
       console.error('Erreur lors de la génération du message Discord:', error);
     }
   };
+
+  // Fixed function: copyWowheadLinks
+  const copyWowheadLinks = async (items: CraftItem[], categoryName: string): Promise<void> => {
     const links = items.map(item => item.url).join('\n');
     try {
       await navigator.clipboard.writeText(links);
@@ -321,6 +324,9 @@ const WoWCraftingTracker: React.FC = () => {
       prompt('Copiez ces liens:', links);
     }
   };
+
+  // Fixed function: toggleAllCategories
+  const toggleAllCategories = (profession: string, categories: string[]): void => {
     const newState = !allExpanded;
     setAllExpanded(newState);
     
@@ -882,28 +888,30 @@ const WoWCraftingTracker: React.FC = () => {
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleShare}
-              disabled={isLoading}
-              className={`px-4 py-2 rounded flex items-center transition-all duration-300 mr-2 ${
-                shareSuccess 
-                  ? 'bg-green-600 hover:bg-green-700 text-white' 
-                  : isLoading
-                  ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-              title="Créer un lien de partage"
-            >
-              <Share className="w-4 h-4 mr-2" />
-              {isLoading ? 'Création...' : shareSuccess ? 'Lien copié !' : 'Partager'}
-            </button>
-            <button
-              onClick={shareToDiscord}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded flex items-center transition-colors"
-              title="Partager sur Discord"
-            >
-              💬 Discord
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleShare}
+                disabled={isLoading}
+                className={`px-4 py-2 rounded flex items-center transition-all duration-300 ${
+                  shareSuccess 
+                    ? 'bg-green-600 hover:bg-green-700 text-white' 
+                    : isLoading
+                    ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+                title="Créer un lien de partage"
+              >
+                <Share className="w-4 h-4 mr-2" />
+                {isLoading ? 'Création...' : shareSuccess ? 'Lien copié !' : 'Partager'}
+              </button>
+              <button
+                onClick={shareToDiscord}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded flex items-center transition-colors"
+                title="Partager sur Discord"
+              >
+                💬 Discord
+              </button>
+            </div>
           </div>
         </div>
 
