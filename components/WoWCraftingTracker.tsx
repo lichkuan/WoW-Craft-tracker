@@ -93,6 +93,187 @@ const WoWCraftingTracker: React.FC = () => {
     }
   }, []);
 
+  // Load shared character from API
+  const loadSharedCharacter = async (shareId: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/character/${shareId}`);
+      if (response.ok) {
+        const sharedCharacter = await response.json();
+        setCurrentCharacter(sharedCharacter);
+        setCurrentView('character');
+      } else {
+        console.error('Personnage partagé non trouvé');
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement du personnage partagé:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Save character to database for sharing
+  const saveCharacterForSharing = async (character: Character): Promise<string | null> => {
+    try {
+      const shareId = generateShareId();
+      const response = await fetch('/api/character', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          shareId,
+          character
+        })
+      });
+
+      if (response.ok) {
+        return shareId;
+      } else {
+        console.error('Erreur lors de la sauvegarde');
+        return null;
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      return null;
+    }
+  };
+
+  // Delete character from database
+  const deleteCharacterFromDatabase = async (character: Character): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/character/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          characterName: character.name,
+          characterServer: character.server
+        })
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la base:', error);
+      return false;
+    }
+  };
+
+  // Save to localStorage whenever characters change
+  useEffect(() => {
+    localStorage.setItem('wowCharacters', JSON.stringify(characters));
+  }, [characters]);
+
+  // Load public characters from API
+  const loadPublicCharacters = async () => {
+    try {
+      const response = await fetch('/api/characters/public');
+      if (response.ok) {
+        const publicChars: PublicCharacter[] = await response.json();
+        setPublicCharacters(publicChars);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des personnages publics:', error);
+    }
+  };
+
+  // Cleanup duplicates automatically
+  const cleanupDuplicates = async () => {
+    try {
+      await fetch('/api/cleanup', { method: 'POST' });
+      console.log('Nettoyage automatique effectué');
+    } catch (error) {
+      console.error('Erreur lors du nettoyage:', error);
+    }
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+          <p className="text-xl text-gray-300">Chargement du personnage partagé...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+      <nav className="bg-gray-800 border-b border-yellow-600 p-4">
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
+          <button
+            onClick={() => setCurrentView('home')}
+            className="text-2xl font-bold text-yellow-400 hover:text-yellow-300 transition-colors"
+          >
+            WoW Crafting Tracker
+          </button>
+          
+          {currentCharacter && currentView === 'character' && (
+            <div className="text-yellow-300">
+              {currentCharacter.name} - {currentCharacter.server}
+            </div>
+          )}
+        </div>
+      </nav>
+
+      <main className="container mx-auto px-4 py-8">
+        {currentView === 'home' && <HomeView />}
+        {currentView === 'create' && <CharacterCreation />}
+        {currentView === 'character' && <CharacterView />}
+        {currentView.startsWith('import-') && (
+          <ImportView profession={currentView.replace('import-', '')} />
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default WoWCraftingTracker;
+  const [currentView, setCurrentView] = useState<string>('home');
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [currentCharacter, setCurrentCharacter] = useState<Character | null>(null);
+  const [importText, setImportText] = useState<string>('');
+  const [wowExtension, setWowExtension] = useState<string>('mop-classic');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [expandedCategories, setExpandedCategories] = useState<{ [key: string]: boolean }>({});
+  const [allExpanded, setAllExpanded] = useState<boolean>(true);
+  const [shareSuccess, setShareSuccess] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [publicCharacters, setPublicCharacters] = useState<PublicCharacter[]>([]);
+
+  // Generate short ID for sharing
+  const generateShareId = (): string => {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+  };
+
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const savedCharacters = localStorage.getItem('wowCharacters');
+    if (savedCharacters) {
+      const parsedCharacters = JSON.parse(savedCharacters);
+      setCharacters(parsedCharacters);
+      if (parsedCharacters.length > 0) {
+        setCurrentCharacter(parsedCharacters[0]);
+      }
+    }
+
+    // Load public characters
+    loadPublicCharacters();
+
+    // Nettoyage automatique des doublons au chargement
+    cleanupDuplicates();
+
+    // Check for shared character in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareId = urlParams.get('share');
+    if (shareId) {
+      loadSharedCharacter(shareId);
+    }
+  }, []);
+
   // Load public characters from API
   const loadPublicCharacters = async () => {
     try {
@@ -1164,47 +1345,45 @@ const WoWCraftingTracker: React.FC = () => {
     </div>
   );
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-          <p className="text-xl text-gray-300">Chargement du personnage partagé...</p>
-        </div>
-      </div>
-    );
-  }
+const WoWCraftingTracker: React.FC = () => {
+  const [currentView, setCurrentView] = useState<string>('home');
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [currentCharacter, setCurrentCharacter] = useState<Character | null>(null);
+  const [importText, setImportText] = useState<string>('');
+  const [wowExtension, setWowExtension] = useState<string>('mop-classic');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [expandedCategories, setExpandedCategories] = useState<{ [key: string]: boolean }>({});
+  const [allExpanded, setAllExpanded] = useState<boolean>(true);
+  const [shareSuccess, setShareSuccess] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [publicCharacters, setPublicCharacters] = useState<PublicCharacter[]>([]);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
-      <nav className="bg-gray-800 border-b border-yellow-600 p-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <button
-            onClick={() => setCurrentView('home')}
-            className="text-2xl font-bold text-yellow-400 hover:text-yellow-300 transition-colors"
-          >
-            WoW Crafting Tracker
-          </button>
-          
-          {currentCharacter && currentView === 'character' && (
-            <div className="text-yellow-300">
-              {currentCharacter.name} - {currentCharacter.server}
-            </div>
-          )}
-        </div>
-      </nav>
+  // Generate short ID for sharing
+  const generateShareId = (): string => {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+  };
 
-      <main className="container mx-auto px-4 py-8">
-        {currentView === 'home' && <HomeView />}
-        {currentView === 'create' && <CharacterCreation />}
-        {currentView === 'character' && <CharacterView />}
-        {currentView.startsWith('import-') && (
-          <ImportView profession={currentView.replace('import-', '')} />
-        )}
-      </main>
-    </div>
-  );
-};
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const savedCharacters = localStorage.getItem('wowCharacters');
+    if (savedCharacters) {
+      const parsedCharacters = JSON.parse(savedCharacters);
+      setCharacters(parsedCharacters);
+      if (parsedCharacters.length > 0) {
+        setCurrentCharacter(parsedCharacters[0]);
+      }
+    }
 
-export default WoWCraftingTracker;
+    // Load public characters
+    loadPublicCharacters();
+
+    // Nettoyage automatique des doublons au chargement
+    cleanupDuplicates();
+
+    // Check for shared character in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareId = urlParams.get('share');
+    if (shareId) {
+      loadSharedCharacter(shareId);
+    }
+  }, []);
