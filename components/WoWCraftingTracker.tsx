@@ -43,18 +43,32 @@ const WoWCraftingTracker: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [expandedCategories, setExpandedCategories] = useState<{ [key: string]: boolean }>({});
   const [allExpanded, setAllExpanded] = useState<boolean>(true);
+  const [shareSuccess, setShareSuccess] = useState<boolean>(false);
 
-  // Load data from localStorage on mount
-  useEffect(() => {
-    const savedCharacters = localStorage.getItem('wowCharacters');
-    if (savedCharacters) {
-      const parsedCharacters = JSON.parse(savedCharacters);
-      setCharacters(parsedCharacters);
-      if (parsedCharacters.length > 0) {
-        setCurrentCharacter(parsedCharacters[0]);
-      }
+// Load data from localStorage on mount
+useEffect(() => {
+  const savedCharacters = localStorage.getItem('wowCharacters');
+  if (savedCharacters) {
+    const parsedCharacters = JSON.parse(savedCharacters);
+    setCharacters(parsedCharacters);
+    if (parsedCharacters.length > 0) {
+      setCurrentCharacter(parsedCharacters[0]);
     }
-  }, []);
+  }
+
+  // Check for shared character in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const sharedData = urlParams.get('data');
+  if (sharedData) {
+    try {
+      const decodedData = JSON.parse(atob(sharedData));
+      setCurrentCharacter(decodedData);
+      setCurrentView('character');
+    } catch (error) {
+      console.error('Erreur lors du décodage des données partagées:', error);
+    }
+  }
+}, []);
 
   // Save to localStorage whenever characters change
   useEffect(() => {
@@ -498,9 +512,25 @@ const WoWCraftingTracker: React.FC = () => {
     ].filter(Boolean);
 
     const getShareUrl = (): string => {
+      const dataToShare = JSON.stringify(currentCharacter);
+      const encodedData = btoa(dataToShare);
       const baseUrl = window.location.origin + window.location.pathname;
-      return `${baseUrl}?character=${encodeURIComponent(currentCharacter.id)}`;
-    };
+      return `${baseUrl}?data=${encodedData}`;
+};
+
+const handleShare = async (): Promise<void> => {
+      try {
+        const shareUrl = getShareUrl();
+        await navigator.clipboard.writeText(shareUrl);
+        setShareSuccess(true);
+        setTimeout(() => setShareSuccess(false), 3000); // Reset after 3 seconds
+      } catch (error) {
+        console.error('Erreur lors de la copie:', error);
+        // Fallback for older browsers
+        const shareUrl = getShareUrl();
+        prompt('Copiez ce lien pour partager:', shareUrl);
+  }
+};
 
     return (
       <div className="max-w-6xl mx-auto">
@@ -518,14 +548,18 @@ const WoWCraftingTracker: React.FC = () => {
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => navigator.clipboard.writeText(getShareUrl())}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center transition-colors"
-              title="Copier le lien de partage"
-            >
-              <Share className="w-4 h-4 mr-2" />
-              Partager
-            </button>
+              <button
+                onClick={handleShare}
+                className={`px-4 py-2 rounded flex items-center transition-all duration-300 ${
+                  shareSuccess 
+                    ? 'bg-green-600 hover:bg-green-700 text-white' 
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+                title="Copier le lien de partage"
+              >
+                <Share className="w-4 h-4 mr-2" />
+                {shareSuccess ? 'Lien copié !' : 'Partager'}
+              </button>
           </div>
         </div>
 
