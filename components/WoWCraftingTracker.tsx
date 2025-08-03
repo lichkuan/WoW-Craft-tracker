@@ -118,13 +118,13 @@ const WoWCraftingTracker: React.FC = () => {
           primaryProfession1: decodedData.p1,
           primaryProfession2: decodedData.p2,
           crafts: Object.keys(decodedData.cr || {}).reduce((acc: any, prof) => {
-            // Créer des recettes factices pour afficher le nombre
-            acc[prof] = Array(decodedData.cr[prof]).fill(null).map((_, index) => ({
-              id: `summary-${index}`,
-              name: `Recette ${index + 1}`,
+            // Créer une seule entrée qui explique le résumé
+            acc[prof] = [{
+              id: 'summary-info',
+              name: `${decodedData.cr[prof]} recettes disponibles (voir le personnage original pour les détails)`,
               url: '#',
               category: 'Résumé'
-            }));
+            }];
             return acc;
           }, {})
         };
@@ -579,6 +579,19 @@ const WoWCraftingTracker: React.FC = () => {
     ].filter(Boolean);
 
     const getShareUrl = (): string => {
+      // Essayer d'abord de partager seulement les recettes les plus importantes
+      const limitedCrafts: { [key: string]: CraftItem[] } = {};
+      let totalItems = 0;
+      
+      Object.keys(currentCharacter.crafts).forEach(prof => {
+        const crafts = currentCharacter.crafts[prof];
+        if (crafts && crafts.length > 0) {
+          // Limiter à 20 recettes par métier pour éviter les URLs trop longues
+          limitedCrafts[prof] = crafts.slice(0, 20);
+          totalItems += limitedCrafts[prof].length;
+        }
+      });
+
       // Créer une version compressée des données
       const dataToShare = {
         n: currentCharacter.name,
@@ -590,8 +603,8 @@ const WoWCraftingTracker: React.FC = () => {
         g: currentCharacter.guild,
         p1: currentCharacter.primaryProfession1,
         p2: currentCharacter.primaryProfession2,
-        cr: Object.keys(currentCharacter.crafts).reduce((acc: any, prof) => {
-          acc[prof] = currentCharacter.crafts[prof].map(craft => ({
+        cr: Object.keys(limitedCrafts).reduce((acc: any, prof) => {
+          acc[prof] = limitedCrafts[prof].map(craft => ({
             n: craft.name,
             u: craft.url,
             c: craft.category
@@ -603,8 +616,8 @@ const WoWCraftingTracker: React.FC = () => {
       const jsonString = JSON.stringify(dataToShare);
       
       // Vérifier la taille avant encodage
-      if (jsonString.length > 1500) {
-        // Si trop grand, créer une version encore plus compressée
+      if (jsonString.length > 1200 || totalItems > 50) {
+        // Si encore trop grand, créer une version résumé
         const compressedData = {
           n: currentCharacter.name,
           f: currentCharacter.faction,
@@ -615,7 +628,7 @@ const WoWCraftingTracker: React.FC = () => {
           g: currentCharacter.guild,
           p1: currentCharacter.primaryProfession1,
           p2: currentCharacter.primaryProfession2,
-          // Seulement le nombre de recettes par métier, pas les détails
+          // Seulement le nombre de recettes par métier
           cr: Object.keys(currentCharacter.crafts).reduce((acc: any, prof) => {
             acc[prof] = currentCharacter.crafts[prof].length;
             return acc;
@@ -635,7 +648,34 @@ const WoWCraftingTracker: React.FC = () => {
         }));
         
         const baseUrl = window.location.origin + window.location.pathname;
-        return `${baseUrl}?data=${encodedData}`;
+        const finalUrl = `${baseUrl}?data=${encodedData}`;
+        
+        // Si l'URL finale est encore trop longue, forcer le mode résumé
+        if (finalUrl.length > 2000) {
+          const compressedData = {
+            n: currentCharacter.name,
+            f: currentCharacter.faction,
+            r: currentCharacter.race,
+            c: currentCharacter.class,
+            l: currentCharacter.level,
+            s: currentCharacter.server,
+            g: currentCharacter.guild,
+            p1: currentCharacter.primaryProfession1,
+            p2: currentCharacter.primaryProfession2,
+            cr: Object.keys(currentCharacter.crafts).reduce((acc: any, prof) => {
+              acc[prof] = currentCharacter.crafts[prof].length;
+              return acc;
+            }, {})
+          };
+          
+          const summaryEncoded = btoa(encodeURIComponent(JSON.stringify(compressedData)).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+            return String.fromCharCode(parseInt(p1, 16));
+          }));
+          
+          return `${baseUrl}?summary=${summaryEncoded}`;
+        }
+        
+        return finalUrl;
       }
     };
 
@@ -657,6 +697,18 @@ const WoWCraftingTracker: React.FC = () => {
       <div className="max-w-6xl mx-auto">
         {/* Character Header */}
         <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-yellow-600">
+          {/* Notification pour le mode résumé */}
+          {currentCharacter.id === 'shared-summary' && (
+            <div className="bg-orange-900 border border-orange-600 rounded-lg p-4 mb-4">
+              <div className="flex items-center">
+                <div className="text-orange-300">
+                  <strong>📊 Mode Résumé</strong> - Ce lien contient trop de recettes pour être partagé en détail. 
+                  Seules les statistiques sont affichées. Pour voir les recettes complètes, consultez le personnage original.
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-4xl font-bold text-yellow-400 mb-2">{currentCharacter.name}</h1>
