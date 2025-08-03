@@ -121,14 +121,22 @@ const WoWCraftingTracker: React.FC = () => {
       const lowerLine = line.toLowerCase();
       const professionLower = profession.toLowerCase();
       
-      // Pattern 1: "Alchemy (450/600)"
-      const pattern1 = new RegExp(`${professionLower}.*\\((\\d+)\\/(\\d+)\\)`, 'i');
-      const match1 = line.match(pattern1);
-      if (match1) {
-        return parseInt(match1[1]);
+      // Pattern 1: "**Enchantement:** Skill 600, 235 total recipes"
+      if (lowerLine.includes('skill') && lowerLine.includes(professionLower)) {
+        const skillMatch = line.match(/skill\s+(\d+)/i);
+        if (skillMatch) {
+          return parseInt(skillMatch[1]);
+        }
       }
       
-      // Pattern 2: "skill level: 450" ou "niveau: 450"
+      // Pattern 2: "Alchemy (450/600)"
+      const pattern2 = new RegExp(`${professionLower}.*\\((\\d+)\\/(\\d+)\\)`, 'i');
+      const match2 = line.match(pattern2);
+      if (match2) {
+        return parseInt(match2[1]);
+      }
+      
+      // Pattern 3: "skill level: 450" ou "niveau: 450"
       if (lowerLine.includes(professionLower) && (lowerLine.includes('level') || lowerLine.includes('niveau'))) {
         const levelMatch = line.match(/(\d+)/);
         if (levelMatch) {
@@ -136,11 +144,18 @@ const WoWCraftingTracker: React.FC = () => {
         }
       }
       
-      // Pattern 3: "Alchemy - 450"
-      const pattern3 = new RegExp(`${professionLower}.*-(\\d+)`, 'i');
-      const match3 = line.match(pattern3);
-      if (match3) {
-        return parseInt(match3[1]);
+      // Pattern 4: "Alchemy - 450"
+      const pattern4 = new RegExp(`${professionLower}.*-(\\d+)`, 'i');
+      const match4 = line.match(pattern4);
+      if (match4) {
+        return parseInt(match4[1]);
+      }
+      
+      // Pattern 5: Ligne dédiée comme "Enchantement niveau: 450"
+      const pattern5 = new RegExp(`^${professionLower}\\s*niveau?:?\\s*(\\d+)`, 'i');
+      const match5 = line.match(pattern5);
+      if (match5) {
+        return parseInt(match5[1]);
       }
     }
     
@@ -712,6 +727,29 @@ const WoWCraftingTracker: React.FC = () => {
           placeholder="- [Nom de l'item](https://wowhead.com/cata/item=12345)
 - [Autre item](https://wowhead.com/cata/spell=67890)"
         />
+        
+        {/* Niveau de métier manuel */}
+        <div className="mt-4">
+          <label className="block text-yellow-300 font-semibold mb-2">
+            Niveau de {profession} (optionnel) :
+          </label>
+          <input
+            type="number"
+            min="0"
+            max="600"
+            placeholder="Ex: 450"
+            className="w-32 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+            onChange={(e) => {
+              const level = parseInt(e.target.value) || 0;
+              if (level > 0) {
+                setImportText(prev => `${profession} niveau: ${level}\n${prev}`);
+              }
+            }}
+          />
+          <p className="text-gray-400 text-sm mt-1">
+            Si le niveau n'est pas détecté automatiquement, vous pouvez le saisir ici
+          </p>
+        </div>
       </div>
       
       <div className="flex space-x-4">
