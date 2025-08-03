@@ -45,30 +45,34 @@ const WoWCraftingTracker: React.FC = () => {
   const [allExpanded, setAllExpanded] = useState<boolean>(true);
   const [shareSuccess, setShareSuccess] = useState<boolean>(false);
 
-// Load data from localStorage on mount
-useEffect(() => {
-  const savedCharacters = localStorage.getItem('wowCharacters');
-  if (savedCharacters) {
-    const parsedCharacters = JSON.parse(savedCharacters);
-    setCharacters(parsedCharacters);
-    if (parsedCharacters.length > 0) {
-      setCurrentCharacter(parsedCharacters[0]);
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const savedCharacters = localStorage.getItem('wowCharacters');
+    if (savedCharacters) {
+      const parsedCharacters = JSON.parse(savedCharacters);
+      setCharacters(parsedCharacters);
+      if (parsedCharacters.length > 0) {
+        setCurrentCharacter(parsedCharacters[0]);
+      }
     }
-  }
 
-  // Check for shared character in URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const sharedData = urlParams.get('data');
-  if (sharedData) {
-    try {
-      const decodedData = JSON.parse(atob(sharedData));
-      setCurrentCharacter(decodedData);
-      setCurrentView('character');
-    } catch (error) {
-      console.error('Erreur lors du décodage des données partagées:', error);
+    // Check for shared character in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedData = urlParams.get('data');
+    if (sharedData) {
+      try {
+        // Decode base64 to UTF-8 string safely
+        const decodedString = decodeURIComponent(Array.prototype.map.call(atob(sharedData), (c) => {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        const decodedData = JSON.parse(decodedString);
+        setCurrentCharacter(decodedData);
+        setCurrentView('character');
+      } catch (error) {
+        console.error('Erreur lors du décodage des données partagées:', error);
+      }
     }
-  }
-}, []);
+  }, []);
 
   // Save to localStorage whenever characters change
   useEffect(() => {
@@ -513,12 +517,15 @@ useEffect(() => {
 
     const getShareUrl = (): string => {
       const dataToShare = JSON.stringify(currentCharacter);
-      const encodedData = btoa(dataToShare);
+      // Encode UTF-8 string to base64 safely
+      const encodedData = btoa(encodeURIComponent(dataToShare).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+        return String.fromCharCode(parseInt(p1, 16));
+      }));
       const baseUrl = window.location.origin + window.location.pathname;
       return `${baseUrl}?data=${encodedData}`;
-};
+    };
 
-const handleShare = async (): Promise<void> => {
+    const handleShare = async (): Promise<void> => {
       try {
         const shareUrl = getShareUrl();
         await navigator.clipboard.writeText(shareUrl);
@@ -529,8 +536,8 @@ const handleShare = async (): Promise<void> => {
         // Fallback for older browsers
         const shareUrl = getShareUrl();
         prompt('Copiez ce lien pour partager:', shareUrl);
-  }
-};
+      }
+    };
 
     return (
       <div className="max-w-6xl mx-auto">
@@ -548,18 +555,18 @@ const handleShare = async (): Promise<void> => {
                 </p>
               </div>
             </div>
-              <button
-                onClick={handleShare}
-                className={`px-4 py-2 rounded flex items-center transition-all duration-300 ${
-                  shareSuccess 
-                    ? 'bg-green-600 hover:bg-green-700 text-white' 
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
-                title="Copier le lien de partage"
-              >
-                <Share className="w-4 h-4 mr-2" />
-                {shareSuccess ? 'Lien copié !' : 'Partager'}
-              </button>
+            <button
+              onClick={handleShare}
+              className={`px-4 py-2 rounded flex items-center transition-all duration-300 ${
+                shareSuccess 
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
+              title="Copier le lien de partage"
+            >
+              <Share className="w-4 h-4 mr-2" />
+              {shareSuccess ? 'Lien copié !' : 'Partager'}
+            </button>
           </div>
         </div>
 
@@ -632,42 +639,6 @@ const handleShare = async (): Promise<void> => {
                       // Vérification de sécurité pour éviter les erreurs
                       if (!crafts || !Array.isArray(crafts)) {
                         return (
-                          <div className="text-center text-gray-500">
-                            <p>Erreur dans le chargement des recettes</p>
-                          </div>
-                        );
-                      }
-
-                      const filteredCrafts = filterItemsBySearch(crafts, searchTerm);
-                      
-                      if (!filteredCrafts || filteredCrafts.length === 0) {
-                        if (searchTerm && searchTerm.trim()) {
-                          return (
-                            <div className="text-center text-gray-500">
-                              <p>Aucune recette trouvée pour "{searchTerm}"</p>
-                            </div>
-                          );
-                        }
-                        return (
-                          <div className="text-center text-gray-500">
-                            <p>Aucune recette disponible</p>
-                          </div>
-                        );
-                      }
-
-                      const categorizedCrafts = filteredCrafts.reduce((acc: { [key: string]: CraftItem[] }, craft) => {
-                        if (!craft || !craft.category) return acc;
-                        
-                        if (!acc[craft.category]) {
-                          acc[craft.category] = [];
-                        }
-                        acc[craft.category].push(craft);
-                        return acc;
-                      }, {});
-
-                      const categories = Object.keys(categorizedCrafts).sort();
-
-                      return (
                         <div>
                           {/* Boutons Expand/Collapse All */}
                           {categories.length > 1 && (
@@ -736,137 +707,39 @@ const handleShare = async (): Promise<void> => {
                           })}
                         </div>
                       );
-                    })()}
-                  </div>
-                ) : (
-                  <div className="p-6 text-center text-gray-500">
-                    <p>Aucune recette importée pour ce métier</p>
-                    <p className="text-sm mt-2">Cliquez sur "Importer" pour ajouter vos recettes</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
+                          <div className="text-center text-gray-500">
+                            <p>Erreur dans le chargement des recettes</p>
+                          </div>
+                        );
+                      }
 
-  const HomeView: React.FC = () => (
-    <div className="max-w-4xl mx-auto text-center">
-      <div className="bg-gray-800 rounded-lg p-12 border border-yellow-600 mb-8">
-        <h1 className="text-5xl font-bold text-yellow-400 mb-4">WoW Crafting Tracker</h1>
-        <p className="text-xl text-gray-300 mb-8">
-          Partagez vos métiers et recettes World of Warcraft avec vos amis
-        </p>
-        
-        {/* Instructions pour l'addon */}
-        <div className="bg-blue-900 border border-blue-600 rounded-lg p-6 mb-8 text-left">
-          <h2 className="text-2xl font-bold text-blue-300 mb-4">📋 Comment exporter vos recettes</h2>
-          
-          <div className="space-y-4 text-gray-200">
-            <div>
-              <h3 className="text-lg font-semibold text-blue-200 mb-2">1. Installez l'addon requis :</h3>
-              <a 
-                href="https://www.curseforge.com/wow/addons/simple-trade-skill-exporter" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded transition-colors"
-              >
-                Télécharger Simple Trade Skill Exporter
-              </a>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-semibold text-blue-200 mb-2">2. Dans le jeu :</h3>
-              <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Ouvrez votre fenêtre de métier (Enchantement, Forge, etc.)</li>
-                <li>Tapez la commande : <code className="bg-gray-700 px-2 py-1 rounded text-yellow-300">/tsexport markdown</code></li>
-                <li>Utilisez <strong>Ctrl+C</strong> pour copier la liste</li>
-                <li>Collez la liste dans la zone d'import de ce site</li>
-              </ul>
-            </div>
-            
-            <div className="bg-gray-700 rounded p-3">
-              <p className="text-sm text-gray-300">
-                <strong>Note :</strong> Cet addon exporte automatiquement vos recettes avec les liens WowHead corrects.
-                L'export en format markdown est parfait pour ce site !
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        {characters.length === 0 ? (
-          <button
-            onClick={() => setCurrentView('create')}
-            className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-4 px-8 rounded-lg text-xl transition-colors"
-          >
-            Créer mon premier personnage
-          </button>
-        ) : (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-yellow-400">Mes personnages</h2>
-            <div className="grid gap-4">
-              {characters.map(character => (
-                <div 
-                  key={character.id}
-                  className="bg-gray-700 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors"
-                  onClick={() => {
-                    setCurrentCharacter(character);
-                    setCurrentView('character');
-                  }}
-                >
-                  <h3 className="text-xl font-bold text-yellow-300">{character.name}</h3>
-                  <p className="text-gray-300">
-                    Niveau {character.level} {character.race} {character.class}
-                  </p>
-                  {character.server && (
-                    <p className="text-gray-400 text-sm">{character.server}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={() => setCurrentView('create')}
-              className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-2 px-6 rounded transition-colors"
-            >
-              Ajouter un personnage
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+                      const filteredCrafts = filterItemsBySearch(crafts, searchTerm);
+                      
+                      if (!filteredCrafts || filteredCrafts.length === 0) {
+                        if (searchTerm && searchTerm.trim()) {
+                          return (
+                            <div className="text-center text-gray-500">
+                              <p>Aucune recette trouvée pour "{searchTerm}"</p>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="text-center text-gray-500">
+                            <p>Aucune recette disponible</p>
+                          </div>
+                        );
+                      }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
-      <nav className="bg-gray-800 border-b border-yellow-600 p-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <button
-            onClick={() => setCurrentView('home')}
-            className="text-2xl font-bold text-yellow-400 hover:text-yellow-300 transition-colors"
-          >
-            WoW Crafting Tracker
-          </button>
-          
-          {currentCharacter && currentView === 'character' && (
-            <div className="text-yellow-300">
-              {currentCharacter.name} - {currentCharacter.server}
-            </div>
-          )}
-        </div>
-      </nav>
+                      const categorizedCrafts = filteredCrafts.reduce((acc: { [key: string]: CraftItem[] }, craft) => {
+                        if (!craft || !craft.category) return acc;
+                        
+                        if (!acc[craft.category]) {
+                          acc[craft.category] = [];
+                        }
+                        acc[craft.category].push(craft);
+                        return acc;
+                      }, {});
 
-      <main className="container mx-auto px-4 py-8">
-        {currentView === 'home' && <HomeView />}
-        {currentView === 'create' && <CharacterCreation />}
-        {currentView === 'character' && <CharacterView />}
-        {currentView.startsWith('import-') && (
-          <ImportView profession={currentView.replace('import-', '')} />
-        )}
-      </main>
-    </div>
-  );
-};
+                      const categories = Object.keys(categorizedCrafts).sort();
 
-export default WoWCraftingTracker;
+                      return (
