@@ -59,12 +59,10 @@ const WoWCraftingTracker = () => {
           let url = urlMatch[1];
           console.log('URL avant conversion:', url); // Debug
           
-          // Conversion d'URL selon l'extension choisie
-          if (extension === 'mop-classic') {
-            if (url.includes('wowhead.com/cata/')) {
-              url = url.replace('wowhead.com/cata/', 'wowhead.com/mop-classic/fr/');
-              console.log('URL après conversion:', url); // Debug
-            }
+          // Conversion SYSTÉMATIQUE pour MoP Classic
+          if (extension === 'mop-classic' && url.includes('/cata/')) {
+            url = url.replace('/cata/', '/mop-classic/fr/');
+            console.log('URL après conversion:', url); // Debug
           }
           
           items.push({
