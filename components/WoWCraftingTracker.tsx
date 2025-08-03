@@ -116,15 +116,24 @@ const WoWCraftingTracker: React.FC = () => {
   const extractProfessionLevel = (text: string, profession: string): number => {
     const lines = text.split('\n');
     
+    console.log('=== DEBUG EXTRACTION NIVEAU ===');
+    console.log('Profession recherchée:', profession);
+    console.log('Premières lignes du texte:', lines.slice(0, 5));
+    
     // Chercher des patterns comme "Alchemy (450/600)" ou "skill level: 450"
     for (const line of lines) {
       const lowerLine = line.toLowerCase();
       const professionLower = profession.toLowerCase();
       
+      console.log('Ligne analysée:', line);
+      console.log('Ligne en minuscules:', lowerLine);
+      
       // Pattern 1: "**Enchantement:** Skill 600, 235 total recipes"
       if (lowerLine.includes('skill') && lowerLine.includes(professionLower)) {
+        console.log('Pattern 1 trouvé! Ligne:', line);
         const skillMatch = line.match(/skill\s+(\d+)/i);
         if (skillMatch) {
+          console.log('Niveau extrait:', skillMatch[1]);
           return parseInt(skillMatch[1]);
         }
       }
@@ -133,6 +142,7 @@ const WoWCraftingTracker: React.FC = () => {
       const pattern2 = new RegExp(`${professionLower}.*\\((\\d+)\\/(\\d+)\\)`, 'i');
       const match2 = line.match(pattern2);
       if (match2) {
+        console.log('Pattern 2 trouvé! Niveau:', match2[1]);
         return parseInt(match2[1]);
       }
       
@@ -140,6 +150,7 @@ const WoWCraftingTracker: React.FC = () => {
       if (lowerLine.includes(professionLower) && (lowerLine.includes('level') || lowerLine.includes('niveau'))) {
         const levelMatch = line.match(/(\d+)/);
         if (levelMatch) {
+          console.log('Pattern 3 trouvé! Niveau:', levelMatch[1]);
           return parseInt(levelMatch[1]);
         }
       }
@@ -148,6 +159,7 @@ const WoWCraftingTracker: React.FC = () => {
       const pattern4 = new RegExp(`${professionLower}.*-(\\d+)`, 'i');
       const match4 = line.match(pattern4);
       if (match4) {
+        console.log('Pattern 4 trouvé! Niveau:', match4[1]);
         return parseInt(match4[1]);
       }
       
@@ -155,10 +167,12 @@ const WoWCraftingTracker: React.FC = () => {
       const pattern5 = new RegExp(`^${professionLower}\\s*niveau?:?\\s*(\\d+)`, 'i');
       const match5 = line.match(pattern5);
       if (match5) {
+        console.log('Pattern 5 trouvé! Niveau:', match5[1]);
         return parseInt(match5[1]);
       }
     }
     
+    console.log('Aucun niveau trouvé pour', profession);
     return 0; // Niveau inconnu
   };
 
