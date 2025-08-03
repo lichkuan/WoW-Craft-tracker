@@ -1,5 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Upload, User, Scroll, Wand2, Hammer, Gem, Plus, X, Share, Search, Trash2, Eye, EyeOff } from 'lucide-react';
+const toggleSecondaryProfession = (prof) => {
+      setFormData(prev => ({
+        ...prev,
+        secondaryProfessions: prev.secondaryProfessions.includes(prof)
+          ? prev.secondaryProfessions.filter(p => p !== prof)
+          : [...prev.secondaryProfessions, prof]
+      }));
+    };import React, { useState, useEffect } from 'react';
+import { ChevronDown, ChevronRight, Upload, User, Scroll, Wand2, Hammer, Gem, Plus, X, Share, Search, Trash2, Eye, EyeOff, Beaker, Pickaxe, Flower, Wrench, Scissors, Palette, Zap } from 'lucide-react';
 
 const WoWCraftingTracker = () => {
   const [currentView, setCurrentView] = useState('home');
@@ -39,15 +46,12 @@ const WoWCraftingTracker = () => {
   ];
 
   const professions = {
-    primary: ['Alchimie', 'Forge', 'Enchantement', 'Ingénierie', 'Herboristerie', 'Joaillerie', 'Travail du cuir', 'Minage', 'Calligraphie', 'Dépeçage', 'Couture'],
-    secondary: ['Archéologie', 'Cuisine', 'Pêche', 'Secourisme']
+    primary: ['Alchimie', 'Forge', 'Enchantement', 'Ingénierie', 'Herboristerie', 'Joaillerie', 'Travail du cuir', 'Minage', 'Calligraphie', 'Dépeçage', 'Couture']
   };
 
   const parseMarkdownList = (text, extension = 'mop-classic') => {
     const lines = text.split('\n');
     const items = [];
-    
-    console.log('Extension sélectionnée:', extension); // Debug
     
     lines.forEach((line, index) => {
       const trimmed = line.trim();
@@ -59,18 +63,10 @@ const WoWCraftingTracker = () => {
           const name = match[1];
           let url = match[2];
           
-          console.log(`Ligne ${index + 1} - URL avant:`, url); // Debug détaillé
-          
           // Conversion SYSTÉMATIQUE pour MoP Classic
           if (extension === 'mop-classic' && url.includes('/cata/')) {
             url = url.replace('/cata/', '/mop-classic/fr/');
-            console.log(`Ligne ${index + 1} - URL après:`, url); // Debug détaillé
           }
-          
-          // Vérification si c'est un spell ou item
-          const isSpell = url.includes('/spell=');
-          const isItem = url.includes('/item=');
-          console.log(`Ligne ${index + 1} - Type: ${isSpell ? 'SPELL' : isItem ? 'ITEM' : 'AUTRE'}`, name); // Debug type
           
           items.push({
             name: name,
@@ -78,17 +74,9 @@ const WoWCraftingTracker = () => {
             id: Math.random().toString(36).substr(2, 9),
             category: categorizeItem(name)
           });
-        } else {
-          console.log(`Ligne ${index + 1} - PARSING FAILED:`, trimmed); // Debug échecs
         }
       }
     });
-    
-    console.log('Total items parsés:', items.length); // Debug
-    const spells = items.filter(item => item.url.includes('/spell='));
-    const itemsOnly = items.filter(item => item.url.includes('/item='));
-    console.log('Spells parsés:', spells.length);
-    console.log('Items parsés:', itemsOnly.length);
     
     return items;
   };
@@ -232,8 +220,7 @@ const WoWCraftingTracker = () => {
       server: '',
       guild: '',
       primaryProfession1: '',
-      primaryProfession2: '',
-      secondaryProfessions: []
+      primaryProfession2: ''
     });
 
     const toggleSecondaryProfession = (prof) => {
@@ -386,23 +373,6 @@ const WoWCraftingTracker = () => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-yellow-300 font-semibold mb-2">Métiers secondaires</label>
-            <div className="grid grid-cols-2 gap-2">
-              {professions.secondary.map(prof => (
-                <label key={prof} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={formData.secondaryProfessions.includes(prof)}
-                    onChange={() => toggleSecondaryProfession(prof)}
-                    className="mr-2"
-                  />
-                  <span className="text-gray-300">{prof}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
           <button
             onClick={() => formData.name && formData.race && formData.class && handleCreateCharacter(formData)}
             className="w-full bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-3 px-6 rounded transition-colors disabled:opacity-50"
@@ -487,8 +457,7 @@ const WoWCraftingTracker = () => {
 
     const allProfessions = [
       currentCharacter.primaryProfession1,
-      currentCharacter.primaryProfession2,
-      ...currentCharacter.secondaryProfessions
+      currentCharacter.primaryProfession2
     ].filter(Boolean);
 
     const getShareUrl = () => {
@@ -551,16 +520,14 @@ const WoWCraftingTracker = () => {
         <div className="grid gap-6">
           {allProfessions.map(profession => {
             const crafts = currentCharacter.crafts[profession] || [];
-            const professionIcon = profession === 'Enchantement' ? Wand2 : 
-                                 profession === 'Forge' ? Hammer : 
-                                 profession === 'Joaillerie' ? Gem : Scroll;
+            const ProfessionIcon = getProfessionIcon(profession);
             
             return (
               <div key={profession} className="bg-gray-800 rounded-lg border border-yellow-600">
                 <div className="p-6 border-b border-gray-700">
                   <div className="flex justify-between items-center">
                     <h2 className="text-2xl font-bold text-yellow-400 flex items-center">
-                      {React.createElement(professionIcon, { className: "mr-3" })}
+                      <ProfessionIcon className="mr-3 w-8 h-8" />
                       {profession}
                     </h2>
                     <div className="flex space-x-2">
