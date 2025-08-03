@@ -49,7 +49,7 @@ const WoWCraftingTracker = () => {
     
     console.log('Extension sélectionnée:', extension); // Debug
     
-    lines.forEach(line => {
+    lines.forEach((line, index) => {
       const trimmed = line.trim();
       if (trimmed.startsWith('- [') && trimmed.includes('](')) {
         const nameMatch = trimmed.match(/\[([^\]]+)\]/);
@@ -57,13 +57,18 @@ const WoWCraftingTracker = () => {
         
         if (nameMatch && urlMatch) {
           let url = urlMatch[1];
-          console.log('URL avant conversion:', url); // Debug
+          console.log(`Ligne ${index + 1} - URL avant:`, url); // Debug détaillé
           
           // Conversion SYSTÉMATIQUE pour MoP Classic
           if (extension === 'mop-classic' && url.includes('/cata/')) {
             url = url.replace('/cata/', '/mop-classic/fr/');
-            console.log('URL après conversion:', url); // Debug
+            console.log(`Ligne ${index + 1} - URL après:`, url); // Debug détaillé
           }
+          
+          // Vérification si c'est un spell ou item
+          const isSpell = url.includes('/spell=');
+          const isItem = url.includes('/item=');
+          console.log(`Ligne ${index + 1} - Type: ${isSpell ? 'SPELL' : isItem ? 'ITEM' : 'AUTRE'}`, nameMatch[1]); // Debug type
           
           items.push({
             name: nameMatch[1],
@@ -71,11 +76,18 @@ const WoWCraftingTracker = () => {
             id: Math.random().toString(36).substr(2, 9),
             category: categorizeItem(nameMatch[1])
           });
+        } else {
+          console.log(`Ligne ${index + 1} - PARSING FAILED:`, trimmed); // Debug échecs
         }
       }
     });
     
-    console.log('Items parsés:', items.length); // Debug
+    console.log('Total items parsés:', items.length); // Debug
+    const spells = items.filter(item => item.url.includes('/spell='));
+    const itemsOnly = items.filter(item => item.url.includes('/item='));
+    console.log('Spells parsés:', spells.length);
+    console.log('Items parsés:', itemsOnly.length);
+    
     return items;
   };
 
