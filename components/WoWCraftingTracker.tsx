@@ -62,6 +62,7 @@ const WoWCraftingTracker: React.FC = () => {
   const [shareSuccess, setShareSuccess] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [publicCharacters, setPublicCharacters] = useState<PublicCharacter[]>([]);
+  const [levelFilter, setLevelFilter] = useState<number>(0);
 
   // Generate short ID for sharing
   const generateShareId = (): string => {
@@ -81,7 +82,18 @@ const WoWCraftingTracker: React.FC = () => {
     return 'Inconnu';
   };
 
-  // Fonction pour obtenir la couleur du niveau de métier
+  // Fonction pour obtenir l'icône du niveau de métier
+  const getProfessionLevelIcon = (level: number): string => {
+    if (level >= 1 && level <= 60) return '⭐';        // Apprenti
+    if (level >= 60 && level <= 140) return '⭐⭐';     // Compagnon
+    if (level >= 140 && level <= 205) return '⭐⭐⭐';   // Expert
+    if (level >= 205 && level <= 300) return '🔥';     // Artisan
+    if (level >= 300 && level <= 350) return '💎';     // Maître
+    if (level >= 350 && level <= 425) return '⚡';     // Grand Maître
+    if (level >= 425 && level <= 500) return '🌟';     // Illustre
+    if (level >= 500 && level <= 600) return '👑';     // Zen
+    return '';
+  };
   const getProfessionLevelColor = (level: number): string => {
     if (level >= 1 && level <= 60) return 'text-gray-400';      // Apprenti
     if (level >= 60 && level <= 140) return 'text-green-400';   // Compagnon
@@ -266,7 +278,49 @@ const WoWCraftingTracker: React.FC = () => {
     }));
   };
 
-  const toggleAllCategories = (profession: string, categories: string[]): void => {
+  const generateDiscordMessage = (character: Character): string => {
+    const totalRecipes = Object.values(character.crafts || {}).reduce((total, recipes) => total + recipes.length, 0);
+    const professions = [character.primaryProfession1, character.primaryProfession2].filter(Boolean);
+    
+    let message = `🎮 **${character.name}** - Niveau ${character.level} ${character.race} ${character.class}\n`;
+    message += `${character.faction === 'alliance' ? '🛡️ Alliance' : '⚔️ Horde'} | ${character.server}${character.guild ? ` | ${character.guild}` : ''}\n\n`;
+    
+    professions.forEach(prof => {
+      const level = character.professionLevels?.[prof] || 0;
+      const count = character.crafts[prof]?.length || 0;
+      const icon = getProfessionLevelIcon(level);
+      message += `${icon} **${prof}** ${level > 0 ? `niveau ${level}` : ''} - ${count} recettes\n`;
+    });
+    
+    message += `\n📊 **Total : ${totalRecipes} recettes**\n`;
+    message += `🔗 Voir le profil complet : ${window.location.origin}${window.location.pathname}?share=`;
+    
+    return message;
+  };
+
+  const shareToDiscord = async (): Promise<void> => {
+    if (!currentCharacter) return;
+    
+    try {
+      const shareId = await saveCharacterForSharing(currentCharacter);
+      if (shareId) {
+        const message = generateDiscordMessage(currentCharacter) + shareId;
+        await navigator.clipboard.writeText(message);
+        alert('Message Discord copié ! Collez-le dans votre serveur Discord 🎮');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la génération du message Discord:', error);
+    }
+  };
+    const links = items.map(item => item.url).join('\n');
+    try {
+      await navigator.clipboard.writeText(links);
+      alert(`${items.length} liens ${categoryName} copiés dans le presse-papiers !`);
+    } catch (error) {
+      console.error('Erreur lors de la copie:', error);
+      prompt('Copiez ces liens:', links);
+    }
+  };
     const newState = !allExpanded;
     setAllExpanded(newState);
     
@@ -831,7 +885,7 @@ const WoWCraftingTracker: React.FC = () => {
             <button
               onClick={handleShare}
               disabled={isLoading}
-              className={`px-4 py-2 rounded flex items-center transition-all duration-300 ${
+              className={`px-4 py-2 rounded flex items-center transition-all duration-300 mr-2 ${
                 shareSuccess 
                   ? 'bg-green-600 hover:bg-green-700 text-white' 
                   : isLoading
@@ -842,6 +896,13 @@ const WoWCraftingTracker: React.FC = () => {
             >
               <Share className="w-4 h-4 mr-2" />
               {isLoading ? 'Création...' : shareSuccess ? 'Lien copié !' : 'Partager'}
+            </button>
+            <button
+              onClick={shareToDiscord}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded flex items-center transition-colors"
+              title="Partager sur Discord"
+            >
+              💬 Discord
             </button>
           </div>
         </div>
@@ -886,7 +947,7 @@ const WoWCraftingTracker: React.FC = () => {
                         <span>{profession}</span>
                         {(currentCharacter.professionLevels?.[profession] || 0) > 0 && (
                           <span className={`text-sm font-normal ${getProfessionLevelColor(currentCharacter.professionLevels[profession])}`}>
-                            Niveau {currentCharacter.professionLevels[profession]} ({getProfessionLevelName(currentCharacter.professionLevels[profession])})
+                            {getProfessionLevelIcon(currentCharacter.professionLevels[profession])} Niveau {currentCharacter.professionLevels[profession]} ({getProfessionLevelName(currentCharacter.professionLevels[profession])})
                           </span>
                         )}
                       </div>
@@ -995,11 +1056,23 @@ const WoWCraftingTracker: React.FC = () => {
                                   <span className="text-yellow-300 font-semibold">
                                     {category} ({categoryItems.length})
                                   </span>
-                                  {isExpanded ? (
-                                    <ChevronDown className="w-5 h-5 text-yellow-400" />
-                                  ) : (
-                                    <ChevronRight className="w-5 h-5 text-yellow-400" />
-                                  )}
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        copyWowheadLinks(categoryItems, category);
+                                      }}
+                                      className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs transition-colors"
+                                      title="Copier tous les liens Wowhead de cette catégorie"
+                                    >
+                                      📋 Copier liens
+                                    </button>
+                                    {isExpanded ? (
+                                      <ChevronDown className="w-5 h-5 text-yellow-400" />
+                                    ) : (
+                                      <ChevronRight className="w-5 h-5 text-yellow-400" />
+                                    )}
+                                  </div>
                                 </button>
                                 
                                 {isExpanded && (
@@ -1085,6 +1158,33 @@ const WoWCraftingTracker: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Statistiques globales */}
+        {publicCharacters.length > 0 && (
+          <div className="bg-gradient-to-r from-purple-900 to-blue-900 border border-purple-600 rounded-lg p-6 mb-8">
+            <h2 className="text-2xl font-bold text-purple-300 mb-4">📊 Statistiques de la communauté</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+              <div className="bg-purple-800 bg-opacity-50 rounded-lg p-4">
+                <div className="text-3xl font-bold text-purple-300">{publicCharacters.length}</div>
+                <div className="text-purple-200">Personnages partagés</div>
+              </div>
+              <div className="bg-blue-800 bg-opacity-50 rounded-lg p-4">
+                <div className="text-3xl font-bold text-blue-300">
+                  {publicCharacters.reduce((total, char) => 
+                    total + Object.values(char.craftCounts as Record<string, number>).reduce((a, b) => a + b, 0), 0
+                  )}
+                </div>
+                <div className="text-blue-200">Recettes au total</div>
+              </div>
+              <div className="bg-green-800 bg-opacity-50 rounded-lg p-4">
+                <div className="text-3xl font-bold text-green-300">
+                  {new Set(publicCharacters.flatMap(char => [char.primaryProfession1, char.primaryProfession2].filter(Boolean))).size}
+                </div>
+                <div className="text-green-200">Métiers différents</div>
+              </div>
+            </div>
+          </div>
+        )}
         
         {characters.length === 0 ? (
           <button
@@ -1145,15 +1245,39 @@ const WoWCraftingTracker: React.FC = () => {
           <h2 className="text-3xl font-bold text-yellow-400 mb-6">🌟 Personnages de la communauté</h2>
           <p className="text-gray-300 mb-6">Découvrez les personnages et métiers partagés par la communauté</p>
           
+          {/* Filtre par niveau */}
+          <div className="mb-6 flex items-center space-x-4">
+            <label className="text-yellow-300 font-semibold">Filtrer par niveau :</label>
+            <select
+              value={levelFilter}
+              onChange={(e) => setLevelFilter(parseInt(e.target.value))}
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+            >
+              <option value={0}>Tous les niveaux</option>
+              <option value={600}>👑 Niveau 600 (Zen)</option>
+              <option value={500}>🌟 Niveau 500+ (Illustre)</option>
+              <option value={425}>⚡ Niveau 425+ (Grand Maître)</option>
+              <option value={350}>💎 Niveau 350+ (Maître)</option>
+            </select>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {publicCharacters.map(character => {
+            {publicCharacters.filter(character => {
+              if (levelFilter === 0) return true;
+              const levels = Object.values(character.professionLevels || {});
+              return levels.some(level => level >= levelFilter);
+            }).map(character => {
               const ProfessionIcon1 = getProfessionIcon(character.primaryProfession1);
               const ProfessionIcon2 = getProfessionIcon(character.primaryProfession2);
               
               return (
                 <div 
                   key={character.shareId}
-                  className="bg-gray-700 rounded-lg p-6 cursor-pointer hover:bg-gray-600 transition-all duration-300 border border-gray-600 hover:border-yellow-500"
+                  className={`bg-gray-700 rounded-lg p-6 cursor-pointer hover:bg-gray-600 transition-all duration-300 border-2 ${
+                    character.faction === 'alliance' 
+                      ? 'border-blue-500 hover:border-blue-400 hover:shadow-blue-500/20 hover:shadow-lg' 
+                      : 'border-red-500 hover:border-red-400 hover:shadow-red-500/20 hover:shadow-lg'
+                  }`}
                   onClick={() => {
                     window.open(`?share=${character.shareId}`, '_blank');
                   }}
@@ -1195,7 +1319,7 @@ const WoWCraftingTracker: React.FC = () => {
                             <span className="text-white text-sm font-medium">{character.primaryProfession1}</span>
                             {(character.professionLevels?.[character.primaryProfession1] || 0) > 0 && (
                               <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.primaryProfession1])}`}>
-                                Niveau {character.professionLevels[character.primaryProfession1]} ({getProfessionLevelName(character.professionLevels[character.primaryProfession1])})
+                                {getProfessionLevelIcon(character.professionLevels[character.primaryProfession1])} Niveau {character.professionLevels[character.primaryProfession1]} ({getProfessionLevelName(character.professionLevels[character.primaryProfession1])})
                               </span>
                             )}
                           </div>
@@ -1214,7 +1338,7 @@ const WoWCraftingTracker: React.FC = () => {
                             <span className="text-white text-sm font-medium">{character.primaryProfession2}</span>
                             {(character.professionLevels?.[character.primaryProfession2] || 0) > 0 && (
                               <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.primaryProfession2])}`}>
-                                Niveau {character.professionLevels[character.primaryProfession2]} ({getProfessionLevelName(character.professionLevels[character.primaryProfession2])})
+                                {getProfessionLevelIcon(character.professionLevels[character.primaryProfession2])} Niveau {character.professionLevels[character.primaryProfession2]} ({getProfessionLevelName(character.professionLevels[character.primaryProfession2])})
                               </span>
                             )}
                           </div>
