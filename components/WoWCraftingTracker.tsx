@@ -52,11 +52,13 @@ const WoWCraftingTracker = () => {
     lines.forEach((line, index) => {
       const trimmed = line.trim();
       if (trimmed.startsWith('- [') && trimmed.includes('](')) {
-        const nameMatch = trimmed.match(/\[([^\]]+)\]/);
-        const urlMatch = trimmed.match(/\(([^)]+)\)/);
+        // Regex plus robuste pour capturer nom et URL
+        const match = trimmed.match(/^- \[([^\]]+)\]\(([^)]+)\)$/);
         
-        if (nameMatch && urlMatch) {
-          let url = urlMatch[1];
+        if (match) {
+          const name = match[1];
+          let url = match[2];
+          
           console.log(`Ligne ${index + 1} - URL avant:`, url); // Debug détaillé
           
           // Conversion SYSTÉMATIQUE pour MoP Classic
@@ -68,13 +70,13 @@ const WoWCraftingTracker = () => {
           // Vérification si c'est un spell ou item
           const isSpell = url.includes('/spell=');
           const isItem = url.includes('/item=');
-          console.log(`Ligne ${index + 1} - Type: ${isSpell ? 'SPELL' : isItem ? 'ITEM' : 'AUTRE'}`, nameMatch[1]); // Debug type
+          console.log(`Ligne ${index + 1} - Type: ${isSpell ? 'SPELL' : isItem ? 'ITEM' : 'AUTRE'}`, name); // Debug type
           
           items.push({
-            name: nameMatch[1],
+            name: name,
             url: url,
             id: Math.random().toString(36).substr(2, 9),
-            category: categorizeItem(nameMatch[1])
+            category: categorizeItem(name)
           });
         } else {
           console.log(`Ligne ${index + 1} - PARSING FAILED:`, trimmed); // Debug échecs
