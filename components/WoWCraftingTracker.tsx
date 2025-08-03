@@ -218,13 +218,6 @@ const WoWCraftingTracker = () => {
       secondaryProfessions: []
     });
 
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      if (formData.name && formData.race && formData.class) {
-        handleCreateCharacter(formData);
-      }
-    };
-
     const toggleSecondaryProfession = (prof) => {
       setFormData(prev => ({
         ...prev,
@@ -512,7 +505,7 @@ const WoWCraftingTracker = () => {
           </div>
         </div>
 
-        {/* Professions */}
+        {/* Search Bar */}
         <div className="mb-6">
           <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600">
             <div className="flex items-center space-x-4">
@@ -536,6 +529,7 @@ const WoWCraftingTracker = () => {
           </div>
         </div>
 
+        {/* Professions */}
         <div className="grid gap-6">
           {allProfessions.map(profession => {
             const crafts = currentCharacter.crafts[profession] || [];
@@ -667,22 +661,14 @@ const WoWCraftingTracker = () => {
                                     {categoryItems.map(craft => (
                                       <div key={craft.id} className="bg-gray-700 rounded-lg p-3 hover:bg-gray-600 transition-colors ml-4">
                                         <div className="flex items-center justify-between">
-                                          <span className="text-yellow-300 font-medium flex-1 mr-4">
-                                            {craft.name}
-                                          </span>
+                                          <span className="text-yellow-300 font-medium">{craft.name}</span>
                                           <a 
-                                            href={craft.url} 
-                                            target="_blank" 
+                                            href={craft.url}
+                                            target="_blank"
                                             rel="noopener noreferrer"
-                                            className="inline-block bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded transition-colors whitespace-nowrap"
-                                            onMouseDown={(e) => e.stopPropagation()}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              e.preventDefault();
-                                              window.open(craft.url, '_blank', 'noopener,noreferrer');
-                                            }}
+                                            className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded transition-colors"
                                           >
-                                            Wowhead →
+                                            Wowhead
                                           </a>
                                         </div>
                                       </div>
