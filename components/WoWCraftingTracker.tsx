@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Upload, User, Scroll, Wand2, Hammer, Gem, Plus, X, Share, Search } from 'lucide-react';
+import { ChevronDown, ChevronRight, Upload, User, Scroll, Wand2, Hammer, Gem, Plus, X, Share, Search, Trash2, Eye, EyeOff } from 'lucide-react';
 
 const WoWCraftingTracker = () => {
   const [currentView, setCurrentView] = useState('home');
@@ -9,6 +9,7 @@ const WoWCraftingTracker = () => {
   const [wowExtension, setWowExtension] = useState('mop-classic');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedCategories, setExpandedCategories] = useState({});
+  const [allExpanded, setAllExpanded] = useState(true);
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -114,13 +115,14 @@ const WoWCraftingTracker = () => {
   };
 
   const filterItemsBySearch = (items, searchTerm) => {
-    if (!searchTerm.trim()) return items;
+    if (!searchTerm || !searchTerm.trim()) return items;
     
-    const search = searchTerm.toLowerCase();
-    return items.filter(item => 
-      item.name.toLowerCase().includes(search) ||
-      item.category.toLowerCase().includes(search)
-    );
+    const search = searchTerm.toLowerCase().trim();
+    return items.filter(item => {
+      if (!item || !item.name) return false;
+      return item.name.toLowerCase().includes(search) ||
+             (item.category && item.category.toLowerCase().includes(search));
+    });
   };
 
   const toggleCategory = (profession, category) => {
@@ -128,6 +130,42 @@ const WoWCraftingTracker = () => {
       ...prev,
       [`${profession}-${category}`]: !prev[`${profession}-${category}`]
     }));
+  };
+
+  const toggleAllCategories = (profession, categories) => {
+    const newState = !allExpanded;
+    setAllExpanded(newState);
+    
+    const updates = {};
+    categories.forEach(category => {
+      updates[`${profession}-${category}`] = newState;
+    });
+    
+    setExpandedCategories(prev => ({
+      ...prev,
+      ...updates
+    }));
+  };
+
+  const deleteProfessionCrafts = (profession) => {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer toutes les recettes de ${profession} ?`)) {
+      return;
+    }
+
+    const updatedCharacter = {
+      ...currentCharacter,
+      crafts: {
+        ...currentCharacter.crafts,
+        [profession]: []
+      }
+    };
+    
+    const updatedCharacters = characters.map(char => 
+      char.id === currentCharacter.id ? updatedCharacter : char
+    );
+    
+    setCharacters(updatedCharacters);
+    setCurrentCharacter(updatedCharacter);
   };
 
   const handleCreateCharacter = (characterData) => {
@@ -520,6 +558,16 @@ const WoWCraftingTracker = () => {
                         <Plus className="w-4 h-4 mr-2" />
                         Importer
                       </button>
+                      {crafts.length > 0 && (
+                        <button
+                          onClick={() => deleteProfessionCrafts(profession)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex items-center transition-colors"
+                          title="Supprimer toutes les recettes"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Supprimer
+                        </button>
+                      )}
                     </div>
                   </div>
                   {crafts.length > 0 && (
@@ -530,8 +578,35 @@ const WoWCraftingTracker = () => {
                 {crafts.length > 0 ? (
                   <div className="p-6">
                     {(() => {
+                      // Vérification de sécurité pour éviter les erreurs
+                      if (!crafts || !Array.isArray(crafts)) {
+                        return (
+                          <div className="text-center text-gray-500">
+                            <p>Erreur dans le chargement des recettes</p>
+                          </div>
+                        );
+                      }
+
                       const filteredCrafts = filterItemsBySearch(crafts, searchTerm);
+                      
+                      if (!filteredCrafts || filteredCrafts.length === 0) {
+                        if (searchTerm && searchTerm.trim()) {
+                          return (
+                            <div className="text-center text-gray-500">
+                              <p>Aucune recette trouvée pour "{searchTerm}"</p>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="text-center text-gray-500">
+                            <p>Aucune recette disponible</p>
+                          </div>
+                        );
+                      }
+
                       const categorizedCrafts = filteredCrafts.reduce((acc, craft) => {
+                        if (!craft || !craft.category) return acc;
+                        
                         if (!acc[craft.category]) {
                           acc[craft.category] = [];
                         }
@@ -541,57 +616,75 @@ const WoWCraftingTracker = () => {
 
                       const categories = Object.keys(categorizedCrafts).sort();
 
-                      if (filteredCrafts.length === 0) {
-                        return (
-                          <div className="text-center text-gray-500">
-                            <p>Aucune recette trouvée pour "{searchTerm}"</p>
-                          </div>
-                        );
-                      }
+                      return (
+                        <div>
+                          {/* Boutons Expand/Collapse All */}
+                          {categories.length > 1 && (
+                            <div className="mb-4 flex justify-end">
+                              <button
+                                onClick={() => toggleAllCategories(profession, categories)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
+                              >
+                                {allExpanded ? (
+                                  <>
+                                    <EyeOff className="w-4 h-4 mr-2" />
+                                    Tout replier
+                                  </>
+                                ) : (
+                                  <>
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    Tout déplier
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
 
-                      return categories.map(category => {
-                        const categoryKey = `${profession}-${category}`;
-                        const isExpanded = expandedCategories[categoryKey] !== false; // Par défaut ouvert
-                        const categoryItems = categorizedCrafts[category];
+                          {categories.map(category => {
+                            const categoryKey = `${profession}-${category}`;
+                            const isExpanded = expandedCategories[categoryKey] !== false; // Par défaut ouvert
+                            const categoryItems = categorizedCrafts[category];
 
-                        return (
-                          <div key={category} className="mb-4">
-                            <button
-                              onClick={() => toggleCategory(profession, category)}
-                              className="w-full flex items-center justify-between bg-gray-600 hover:bg-gray-500 rounded-lg p-3 transition-colors"
-                            >
-                              <span className="text-yellow-300 font-semibold">
-                                {category} ({categoryItems.length})
-                              </span>
-                              {isExpanded ? (
-                                <ChevronDown className="w-5 h-5 text-yellow-400" />
-                              ) : (
-                                <ChevronRight className="w-5 h-5 text-yellow-400" />
-                              )}
-                            </button>
-                            
-                            {isExpanded && (
-                              <div className="mt-2 space-y-2">
-                                {categoryItems.map(craft => (
-                                  <div key={craft.id} className="bg-gray-700 rounded-lg p-3 hover:bg-gray-600 transition-colors ml-4">
-                                    <a 
-                                      href={craft.url} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-yellow-300 hover:text-yellow-100 font-medium flex items-center justify-between group"
-                                    >
-                                      <span>{craft.name}</span>
-                                      <span className="text-xs text-gray-400 group-hover:text-gray-300">
-                                        Voir sur Wowhead →
-                                      </span>
-                                    </a>
+                            return (
+                              <div key={category} className="mb-4">
+                                <button
+                                  onClick={() => toggleCategory(profession, category)}
+                                  className="w-full flex items-center justify-between bg-gray-600 hover:bg-gray-500 rounded-lg p-3 transition-colors"
+                                >
+                                  <span className="text-yellow-300 font-semibold">
+                                    {category} ({categoryItems.length})
+                                  </span>
+                                  {isExpanded ? (
+                                    <ChevronDown className="w-5 h-5 text-yellow-400" />
+                                  ) : (
+                                    <ChevronRight className="w-5 h-5 text-yellow-400" />
+                                  )}
+                                </button>
+                                
+                                {isExpanded && (
+                                  <div className="mt-2 space-y-2">
+                                    {categoryItems.map(craft => (
+                                      <div key={craft.id} className="bg-gray-700 rounded-lg p-3 hover:bg-gray-600 transition-colors ml-4">
+                                        <a 
+                                          href={craft.url} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="text-yellow-300 hover:text-yellow-100 font-medium flex items-center justify-between group"
+                                        >
+                                          <span>{craft.name}</span>
+                                          <span className="text-xs text-gray-400 group-hover:text-gray-300">
+                                            Voir sur Wowhead →
+                                          </span>
+                                        </a>
+                                      </div>
+                                    ))}
                                   </div>
-                                ))}
+                                )}
                               </div>
-                            )}
-                          </div>
-                        );
-                      });
+                            );
+                          })}
+                        </div>
+                      );
                     })()}
                   </div>
                 ) : (
@@ -615,6 +708,42 @@ const WoWCraftingTracker = () => {
         <p className="text-xl text-gray-300 mb-8">
           Partagez vos métiers et recettes World of Warcraft avec vos amis
         </p>
+        
+        {/* Instructions pour l'addon */}
+        <div className="bg-blue-900 border border-blue-600 rounded-lg p-6 mb-8 text-left">
+          <h2 className="text-2xl font-bold text-blue-300 mb-4">📋 Comment exporter vos recettes</h2>
+          
+          <div className="space-y-4 text-gray-200">
+            <div>
+              <h3 className="text-lg font-semibold text-blue-200 mb-2">1. Installez l'addon requis :</h3>
+              <a 
+                href="https://www.curseforge.com/wow/addons/simple-trade-skill-exporter" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded transition-colors"
+              >
+                Télécharger Simple Trade Skill Exporter
+              </a>
+            </div>
+            
+            <div>
+              <h3 className="text-lg font-semibold text-blue-200 mb-2">2. Dans le jeu :</h3>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Ouvrez votre fenêtre de métier (Enchantement, Forge, etc.)</li>
+                <li>Tapez la commande : <code className="bg-gray-700 px-2 py-1 rounded text-yellow-300">/tsexport markdown</code></li>
+                <li>Utilisez <strong>Ctrl+C</strong> pour copier la liste</li>
+                <li>Collez la liste dans la zone d'import de ce site</li>
+              </ul>
+            </div>
+            
+            <div className="bg-gray-700 rounded p-3">
+              <p className="text-sm text-gray-300">
+                <strong>Note :</strong> Cet addon exporte automatiquement vos recettes avec les liens WowHead corrects.
+                L'export en format markdown est parfait pour ce site !
+              </p>
+            </div>
+          </div>
+        </div>
         
         {characters.length === 0 ? (
           <button
