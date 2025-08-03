@@ -51,3 +51,119 @@ Un tracker moderne et élégant pour partager vos métiers et recettes World of 
 ```bash
 git clone https://github.com/username/wow-crafting-tracker.git
 cd wow-crafting-tracker
+
+Installer les dépendances
+
+bashnpm install
+
+Configuration de la base Redis
+
+bash# Dans Vercel Dashboard > Storage > Create Database > Redis
+# Copier l'URL de connexion
+
+Variables d'environnement
+
+bash# .env.local
+REDIS_URL="redis://your-redis-connection-string"
+
+Déployer sur Vercel
+
+bashnpx vercel --prod
+📖 Guide d'utilisation
+Pour les joueurs
+
+Installer l'addon requis
+
+Télécharger Simple Trade Skill Exporter
+Installer via votre gestionnaire d'addons
+
+
+Exporter vos recettes
+/tsexport markdown
+
+Ouvrir votre fenêtre de métier
+Taper la commande
+Copier avec Ctrl+C
+
+
+Créer votre profil
+
+Remplir les informations de personnage
+Importer vos recettes par métier
+Partager avec votre guilde !
+
+
+
+Pour les développeurs
+typescript// Structure des données
+interface Character {
+  id: string;
+  name: string;
+  faction: 'alliance' | 'horde';
+  race: string;
+  class: string;
+  level: number;
+  server: string;
+  guild: string;
+  primaryProfession1: string;
+  primaryProfession2: string;
+  crafts: { [profession: string]: CraftItem[] };
+}
+🛡 Extensions WoW supportées
+
+✅ Cataclysm Classic (liens /cata/ conservés)
+✅ Mists of Pandaria Classic (conversion automatique vers /mop-classic/fr/)
+🔄 Support d'autres extensions à venir
+
+🎯 Métiers supportés
+MétierIcôneCatégorisationAlchimie🧪Potions, Élixirs, TransmutationsForge🔨Armes, Armures, OutilsEnchantement✨Enchants par slot d'équipementIngénierie⚙️Gadgets, Montures, ObjetsHerboristerie🌿Herbes par zone/niveauJoaillerie💎Gemmes, Bijoux, AccessoiresTravail du cuir✂️Armures cuir/maillesMinage⛏️Minerais, BarresCalligraphie📜Glyphes, TechniquesDépeçage⚡Cuirs, ÉcaillesCouture🎨Armures tissu, Sacs
+🔧 API Reference
+Partager un personnage
+typescriptPOST /api/character
+{
+  "shareId": "ABC123",
+  "character": Character
+}
+Récupérer un personnage partagé
+typescriptGET /api/character/[shareId]
+Liste publique
+typescriptGET /api/characters/public
+Supprimer un personnage
+typescriptPOST /api/character/delete
+{
+  "characterName": "string",
+  "characterServer": "string"
+}
+🤝 Contribuer
+
+Fork le projet
+Créer une branche feature (git checkout -b feature/amazing-feature)
+Commit vos changements (git commit -m 'Add amazing feature')
+Push sur la branche (git push origin feature/amazing-feature)
+Ouvrir une Pull Request
+
+📜 Roadmap
+
+ Support multi-langues (EN/FR/DE/ES)
+ Export PDF des recettes
+ Statistiques de guilde
+ Intégration API Battle.net
+ Mode sombre/clair
+ Notifications Discord webhook
+ Cache intelligent des données Wowhead
+
+🐛 Problèmes connus
+
+Import limité aux formats markdown de l'addon recommandé
+Base Redis limitée (optimisation en cours)
+Pas de synchronisation temps réel entre utilisateurs
+
+📄 Licence
+Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails.
+🙏 Remerciements
+
+Blizzard Entertainment pour World of Warcraft
+Wowhead pour leur base de données exceptionnelle
+Simple Trade Skill Exporter pour l'addon parfait
+Vercel pour l'hébergement et la base Redis
+La communauté WoW pour les tests et retours
