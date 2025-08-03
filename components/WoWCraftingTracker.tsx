@@ -1,4 +1,888 @@
-import React, { useState, useEffect } from 'react';
+<label className="flex items-center">
+                <input
+                  type="radio"
+                  value="horde"
+                  checked={formData.faction === 'horde'}
+                  onChange={(e) => setFormData(prev => ({...prev, faction: e.target.value, race: ''}))}
+                  className="mr-2"
+                />
+                <span className="text-red-400 font-semibold">Horde</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-yellow-300 font-semibold mb-2">Race</label>
+              <select
+                value={formData.race}
+                onChange={(e) => setFormData(prev => ({...prev, race: e.target.value}))}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+              >
+                <option value="">Choisir une race</option>
+                {(races as any)[formData.faction].map((race: string) => (
+                  <option key={race} value={race}>{race}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-yellow-300 font-semibold mb-2">Classe</label>
+              <select
+                value={formData.class}
+                onChange={(e) => setFormData(prev => ({...prev, class: e.target.value}))}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+              >
+                <option value="">Choisir une classe</option>
+                {classes.map(cls => (
+                  <option key={cls} value={cls}>{cls}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-yellow-300 font-semibold mb-2">Métier principal 1</label>
+              <select
+                value={formData.primaryProfession1}
+                onChange={(e) => setFormData(prev => ({...prev, primaryProfession1: e.target.value}))}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+              >
+                <option value="">Choisir un métier</option>
+                {professions.primary.map(prof => (
+                  <option key={prof} value={prof}>{prof}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-yellow-300 font-semibold mb-2">Métier principal 2</label>
+              <select
+                value={formData.primaryProfession2}
+                onChange={(e) => setFormData(prev => ({...prev, primaryProfession2: e.target.value}))}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+              >
+                <option value="">Choisir un métier</option>
+                {professions.primary.filter(prof => prof !== formData.primaryProfession1).map(prof => (
+                  <option key={prof} value={prof}>{prof}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <button
+            onClick={() => formData.name && formData.race && formData.class && handleCreateCharacter(formData)}
+            className="w-full bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-3 px-6 rounded transition-colors disabled:opacity-50"
+            disabled={!formData.name || !formData.race || !formData.class}
+          >
+            Créer le personnage
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const ImportView: React.FC<{ profession: string }> = ({ profession }) => (
+    <div className="max-w-4xl mx-auto bg-gray-800 rounded-lg p-8 border border-yellow-600">
+      <h2 className="text-3xl font-bold text-yellow-400 mb-6 flex items-center">
+        <Upload className="mr-3" />
+        Importer les recettes - {profession}
+      </h2>
+      
+      {/* Sélecteur d'extension WoW */}
+      <div className="mb-6">
+        <label className="block text-yellow-300 font-semibold mb-2">
+          Extension World of Warcraft :
+        </label>
+        <div className="flex space-x-4">
+          <label className="flex items-center">
+            <input
+              type="radio"
+              value="cataclysm"
+              checked={wowExtension === 'cataclysm'}
+              onChange={(e) => setWowExtension(e.target.value)}
+              className="mr-2"
+            />
+            <span className="text-orange-400 font-semibold">Cataclysm (garde /cata/)</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              value="mop-classic"
+              checked={wowExtension === 'mop-classic'}
+              onChange={(e) => setWowExtension(e.target.value)}
+              className="mr-2"
+            />
+            <span className="text-green-400 font-semibold">MoP Classic (convertit en /mop-classic/fr/)</span>
+          </label>
+        </div>
+      </div>
+      
+      <div className="mb-6">
+        <label className="block text-yellow-300 font-semibold mb-2">
+          Collez votre liste markdown ici :
+        </label>
+        <textarea
+          value={importText}
+          onChange={(e) => setImportText(e.target.value)}
+          className="w-full h-64 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none font-mono text-sm"
+          placeholder="- [Nom de l'item](https://wowhead.com/cata/item=12345)
+- [Autre item](https://wowhead.com/cata/spell=67890)"
+        />
+        
+        {/* Niveau de métier manuel */}
+        <div className="mt-4">
+          <label className="block text-yellow-300 font-semibold mb-2">
+            Niveau de {profession} (optionnel) :
+          </label>
+          <input
+            type="number"
+            min="0"
+            max="600"
+            placeholder="Ex: 450"
+            className="w-32 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+            onChange={(e) => {
+              const level = parseInt(e.target.value) || 0;
+              if (level > 0) {
+                setImportText(prev => `${profession} niveau: ${level}\n${prev}`);
+              }
+            }}
+          />
+          <p className="text-gray-400 text-sm mt-1">
+            Si le niveau n'est pas détecté automatiquement, vous pouvez le saisir ici
+          </p>
+        </div>
+      </div>
+      
+      <div className="flex space-x-4">
+        <button
+          onClick={() => handleImportCrafts(profession)}
+          className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded transition-colors"
+          disabled={!importText.trim()}
+        >
+          Importer les recettes
+        </button>
+        <button
+          onClick={() => setCurrentView('character')}
+          className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded transition-colors"
+        >
+          Annuler
+        </button>
+      </div>
+    </div>
+  );
+
+  const CharacterView: React.FC = () => {
+    if (!currentCharacter) return null;
+
+    const allProfessions = [
+      currentCharacter.primaryProfession1,
+      currentCharacter.primaryProfession2
+    ].filter(Boolean);
+
+    const handleShare = async (): Promise<void> => {
+      setIsLoading(true);
+      try {
+        const shareId = await saveCharacterForSharing(currentCharacter);
+        if (shareId) {
+          const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareId}`;
+          await navigator.clipboard.writeText(shareUrl);
+          setShareSuccess(true);
+          setTimeout(() => setShareSuccess(false), 3000);
+          
+          // Recharger les personnages publics après partage
+          await loadPublicCharacters();
+        } else {
+          alert('Erreur lors de la création du lien de partage');
+        }
+      } catch (error) {
+        console.error('Erreur lors du partage:', error);
+        alert('Erreur lors de la création du lien de partage');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    return (
+      <div className="max-w-6xl mx-auto">
+        {/* Character Header */}
+        <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-yellow-600">
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-4xl font-bold text-yellow-400 mb-2">{currentCharacter.name}</h1>
+              <div className="text-gray-300 space-y-1">
+                <p>Niveau {currentCharacter.level} {currentCharacter.race} {currentCharacter.class}</p>
+                {currentCharacter.server && <p>Serveur: {currentCharacter.server}</p>}
+                {currentCharacter.guild && <p>Guilde: {currentCharacter.guild}</p>}
+                <p className={currentCharacter.faction === 'alliance' ? 'text-blue-400' : 'text-red-400'}>
+                  {currentCharacter.faction === 'alliance' ? 'Alliance' : 'Horde'}
+                </p>
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleShare}
+                disabled={isLoading}
+                className={`px-4 py-2 rounded flex items-center transition-all duration-300 ${
+                  shareSuccess 
+                    ? 'bg-green-600 hover:bg-green-700 text-white' 
+                    : isLoading
+                    ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+                title="Créer un lien de partage"
+              >
+                <Share className="w-4 h-4 mr-2" />
+                {isLoading ? 'Création...' : shareSuccess ? 'Lien copié !' : 'Partager'}
+              </button>
+              <button
+                onClick={shareToDiscord}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded flex items-center transition-colors"
+                title="Partager sur Discord"
+              >
+                💬 Discord
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600">
+            <div className="flex items-center space-x-4">
+              <Search className="w-5 h-5 text-yellow-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Rechercher dans les recettes..."
+                className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Professions */}
+        <div className="grid gap-6">
+          {allProfessions.map(profession => {
+            const crafts = currentCharacter.crafts[profession] || [];
+            const ProfessionIcon = getProfessionIcon(profession);
+            
+            return (
+              <div key={profession} className="bg-gray-800 rounded-lg border border-yellow-600">
+                <div className="p-6 border-b border-gray-700">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-bold text-yellow-400 flex items-center">
+                      <ProfessionIcon className="mr-3 w-8 h-8" />
+                      <div className="flex flex-col">
+                        <span>{profession}</span>
+                        {(currentCharacter.professionLevels?.[profession] || 0) > 0 && (
+                          <span className={`text-sm font-normal ${getProfessionLevelColor(currentCharacter.professionLevels[profession])}`}>
+                            {getProfessionLevelIcon(currentCharacter.professionLevels[profession])} Niveau {currentCharacter.professionLevels[profession]} ({getProfessionLevelName(currentCharacter.professionLevels[profession])})
+                          </span>
+                        )}
+                      </div>
+                    </h2>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setCurrentView(`import-${profession}`)}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-black px-4 py-2 rounded flex items-center transition-colors"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Importer
+                      </button>
+                      {crafts.length > 0 && (
+                        <button
+                          onClick={() => deleteProfessionCrafts(profession)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex items-center transition-colors"
+                          title="Supprimer toutes les recettes"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Supprimer
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {crafts.length > 0 && (
+                    <p className="text-gray-400 mt-2">{crafts.length} recettes disponibles</p>
+                  )}
+                </div>
+                
+                {crafts.length > 0 ? (
+                  <div className="p-6">
+                    {(() => {
+                      // Vérification de sécurité pour éviter les erreurs
+                      if (!crafts || !Array.isArray(crafts)) {
+                        return (
+                          <div className="text-center text-gray-500">
+                            <p>Erreur dans le chargement des recettes</p>
+                          </div>
+                        );
+                      }
+
+                      const filteredCrafts = filterItemsBySearch(crafts, searchTerm);
+                      
+                      if (!filteredCrafts || filteredCrafts.length === 0) {
+                        if (searchTerm && searchTerm.trim()) {
+                          return (
+                            <div className="text-center text-gray-500">
+                              <p>Aucune recette trouvée pour "{searchTerm}"</p>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="text-center text-gray-500">
+                            <p>Aucune recette disponible</p>
+                          </div>
+                        );
+                      }
+
+                      const categorizedCrafts = filteredCrafts.reduce((acc: { [key: string]: CraftItem[] }, craft) => {
+                        if (!craft || !craft.category) return acc;
+                        
+                        if (!acc[craft.category]) {
+                          acc[craft.category] = [];
+                        }
+                        acc[craft.category].push(craft);
+                        return acc;
+                      }, {});
+
+                      const categories = Object.keys(categorizedCrafts).sort();
+
+                      return (
+                        <div>
+                          {/* Boutons Expand/Collapse All */}
+                          {categories.length > 1 && (
+                            <div className="mb-4 flex justify-end">
+                              <button
+                                onClick={() => toggleAllCategories(profession, categories)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
+                              >
+                                {allExpanded ? (
+                                  <>
+                                    <EyeOff className="w-4 h-4 mr-2" />
+                                    Tout replier
+                                  </>
+                                ) : (
+                                  <>
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    Tout déplier
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
+
+                          {categories.map(category => {
+                            const categoryKey = `${profession}-${category}`;
+                            const isExpanded = expandedCategories[categoryKey] !== false; // Par défaut ouvert
+                            const categoryItems = categorizedCrafts[category];
+
+                            return (
+                              <div key={category} className="mb-4">
+                                <button
+                                  onClick={() => toggleCategory(profession, category)}
+                                  className="w-full flex items-center justify-between bg-gray-600 hover:bg-gray-500 rounded-lg p-3 transition-colors"
+                                >
+                                  <span className="text-yellow-300 font-semibold">
+                                    {category} ({categoryItems.length})
+                                  </span>
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        copyWowheadLinks(categoryItems, category);
+                                      }}
+                                      className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs transition-colors"
+                                      title="Copier tous les liens Wowhead de cette catégorie"
+                                    >
+                                      📋 Copier liens
+                                    </button>
+                                    {isExpanded ? (
+                                      <ChevronDown className="w-5 h-5 text-yellow-400" />
+                                    ) : (
+                                      <ChevronRight className="w-5 h-5 text-yellow-400" />
+                                    )}
+                                  </div>
+                                </button>
+                                
+                                {isExpanded && (
+                                  <div className="mt-2 space-y-2">
+                                    {categoryItems.map(craft => (
+                                      <div key={craft.id} className="bg-gray-700 rounded-lg p-3 hover:bg-gray-600 transition-colors ml-4">
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-yellow-300 font-medium">{craft.name}</span>
+                                          <a 
+                                            href={craft.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded transition-colors"
+                                          >
+                                            Wowhead
+                                          </a>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center text-gray-500">
+                    <p>Aucune recette importée pour ce métier</p>
+                    <p className="text-sm mt-2">Cliquez sur "Importer" pour ajouter vos recettes</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const HomeView: React.FC = () => (
+    <div className="max-w-6xl mx-auto text-center">
+      <div className="bg-gray-800 rounded-lg p-12 border border-yellow-600 mb-8">
+        <h1 className="text-5xl font-bold text-yellow-400 mb-4">WoW Crafting Tracker</h1>
+        <p className="text-xl text-gray-300 mb-8">
+          Partagez vos métiers et recettes World of Warcraft avec vos amis
+        </p>
+        
+        {/* Instructions pour l'addon */}
+        <div className="bg-blue-900 border border-blue-600 rounded-lg p-6 mb-8 text-left">
+          <h2 className="text-2xl font-bold text-blue-300 mb-4">📋 Comment exporter vos recettes</h2>
+          
+          <div className="space-y-4 text-gray-200">
+            <div>
+              <h3 className="text-lg font-semibold text-blue-200 mb-2">1. Installez l'addon requis :</h3>
+              <a 
+                href="https://www.curseforge.com/wow/addons/simple-trade-skill-exporter" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded transition-colors"
+              >
+                Télécharger Simple Trade Skill Exporter
+              </a>
+            </div>
+            
+            <div>
+              <h3 className="text-lg font-semibold text-blue-200 mb-2">2. Dans le jeu :</h3>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Ouvrez votre fenêtre de métier (Enchantement, Forge, etc.)</li>
+                <li>Tapez la commande : <code className="bg-gray-700 px-2 py-1 rounded text-yellow-300">/tsexport markdown</code></li>
+                <li>Utilisez <strong>Ctrl+C</strong> pour copier la liste</li>
+                <li>Collez la liste dans la zone d'import de ce site</li>
+              </ul>
+            </div>
+            
+            <div className="bg-gray-700 rounded p-3">
+              <p className="text-sm text-gray-300">
+                <strong>Note :</strong> Cet addon exporte automatiquement vos recettes avec les liens WowHead corrects.
+                L'export en format markdown est parfait pour ce site !
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* BOUTONS DE DEBUG AJOUTÉS */}
+        <div className="bg-purple-900 border border-purple-600 rounded-lg p-6 mb-8">
+          <h3 className="text-xl font-bold text-purple-300 mb-4">🔍 Debug (Temporaire)</h3>
+          <div className="flex flex-wrap gap-2 justify-center">
+            <button
+              onClick={async () => {
+                console.log('=== DEBUG PERSONNAGES PUBLICS ===');
+                console.log('État actuel publicCharacters:', publicCharacters);
+                console.log('Longueur:', publicCharacters.length);
+                console.log('Type:', typeof publicCharacters);
+                console.log('Is Array:', Array.isArray(publicCharacters));
+                
+                // Test direct de l'API
+                const response = await fetch('/api/characters/public');
+                const data = await response.json();
+                console.log('Réponse API directe:', data);
+                
+                // Forcer le rechargement
+                await loadPublicCharacters();
+                
+                alert(`Debug: ${publicCharacters.length} personnages dans l'état React, ${data.length} de l'API`);
+              }}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm transition-colors"
+            >
+              🔍 Debug Personnages Publics
+            </button>
+            
+            <button
+              onClick={() => {
+                console.log('Force reload personnages publics...');
+                loadPublicCharacters();
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition-colors"
+            >
+              🔄 Forcer Rechargement
+            </button>
+
+            <button
+              onClick={async () => {
+                console.log('=== TEST API PUBLIQUE DIRECTE ===');
+                const response = await fetch('/api/characters/public');
+                const data = await response.json();
+                console.log('Data:', data);
+                alert(`API: ${response.status} - ${data.length || 0} personnages`);
+              }}
+              className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded text-sm transition-colors"
+            >
+              🌐 Test API Direct
+            </button>
+
+            <button
+              onClick={() => {
+                console.log('=== DEBUG ÉTAT REACT ===');
+                console.log('publicCharacters:', publicCharacters);
+                console.log('publicCharacters.length:', publicCharacters.length);
+                console.log('Type:', typeof publicCharacters);
+                console.log('Is Array:', Array.isArray(publicCharacters));
+                
+                // Forcer un re-render
+                setPublicCharacters([...publicCharacters]);
+                
+                alert(`État: ${publicCharacters.length} personnages (Type: ${typeof publicCharacters})`);
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm transition-colors"
+            >
+              🔧 Debug État React
+            </button>
+          </div>
+          <p className="text-purple-200 text-sm mt-3">
+            Ces boutons aident à diagnostiquer pourquoi les personnages n'apparaissent pas. Consultez la console (F12).
+          </p>
+        </div>
+
+        {/* Statistiques globales */}
+        {publicCharacters.length > 0 && (
+          <div className="bg-gradient-to-r from-purple-900 to-blue-900 border border-purple-600 rounded-lg p-6 mb-8">
+            <h2 className="text-2xl font-bold text-purple-300 mb-4">📊 Statistiques de la communauté</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+              <div className="bg-purple-800 bg-opacity-50 rounded-lg p-4">
+                <div className="text-3xl font-bold text-purple-300">{publicCharacters.length}</div>
+                <div className="text-purple-200">Personnages partagés</div>
+              </div>
+              <div className="bg-blue-800 bg-opacity-50 rounded-lg p-4">
+                <div className="text-3xl font-bold text-blue-300">
+                  {publicCharacters.reduce((total, char) => 
+                    total + Object.values(char.craftCounts as Record<string, number>).reduce((a, b) => a + b, 0), 0
+                  )}
+                </div>
+                <div className="text-blue-200">Recettes au total</div>
+              </div>
+              <div className="bg-green-800 bg-opacity-50 rounded-lg p-4">
+                <div className="text-3xl font-bold text-green-300">
+                  {new Set(publicCharacters.flatMap(char => [char.primaryProfession1, char.primaryProfession2].filter(Boolean))).size}
+                </div>
+                <div className="text-green-200">Métiers différents</div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {characters.length === 0 ? (
+          <button
+            onClick={() => setCurrentView('create')}
+            className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-4 px-8 rounded-lg text-xl transition-colors"
+          >
+            Créer mon premier personnage
+          </button>
+        ) : (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-yellow-400">Mes personnages</h2>
+            <div className="grid gap-4">
+              {characters.map(character => (
+                <div 
+                  key={character.id}
+                  className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-yellow-500 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div 
+                      className="flex-1 cursor-pointer"
+                      onClick={() => {
+                        setCurrentCharacter(character);
+                        setCurrentView('character');
+                      }}
+                    >
+                      <h3 className="text-xl font-bold text-yellow-300">{character.name}</h3>
+                      <p className="text-gray-300">
+                        Niveau {character.level} {character.race} {character.class}
+                      </p>
+                      {character.server && (
+                        <p className="text-gray-400 text-sm">{character.server}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDeleteCharacter(character)}
+                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors ml-4"
+                      title="Supprimer définitivement ce personnage"
+                    >
+                      🗑️ Supprimer
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setCurrentView('create')}
+              className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-2 px-6 rounded transition-colors"
+            >
+              Ajouter un personnage
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Section des personnages publics - FORCER L'AFFICHAGE TEMPORAIREMENT */}
+      {(publicCharacters.length > 0 || true) && (
+        <div className="bg-gray-800 rounded-lg p-8 border border-yellow-600">
+          <h2 className="text-3xl font-bold text-yellow-400 mb-6">🌟 Personnages de la communauté</h2>
+          <p className="text-gray-300 mb-6">Découvrez les personnages et métiers partagés par la communauté</p>
+          
+          {/* DEBUG INFO TEMPORAIRE */}
+          <div className="bg-red-900 border border-red-600 rounded-lg p-4 mb-6">
+            <h3 className="text-red-300 font-bold">🔍 Debug Info:</h3>
+            <p className="text-red-200">publicCharacters.length: {publicCharacters.length}</p>
+            <p className="text-red-200">Type: {typeof publicCharacters}</p>
+            <p className="text-red-200">Is Array: {Array.isArray(publicCharacters) ? 'OUI' : 'NON'}</p>
+            <p className="text-red-200 text-xs">État publicCharacters: {JSON.stringify(publicCharacters).substring(0, 200)}...</p>
+          </div>
+          
+          {/* Affichage conditionnel basé sur l'état réel */}
+          {publicCharacters.length === 0 ? (
+            <div className="bg-yellow-900 border border-yellow-600 rounded-lg p-6 text-center">
+              <h3 className="text-2xl font-bold text-yellow-300 mb-2">Aucun personnage public trouvé</h3>
+              <p className="text-yellow-200 mb-4">
+                Il semble qu'il n'y ait pas encore de personnages partagés publiquement.
+              </p>
+              <button
+                onClick={() => {
+                  console.log('Test manuel de rechargement...');
+                  loadPublicCharacters();
+                }}
+                className="bg-yellow-600 hover:bg-yellow-700 text-black px-4 py-2 rounded transition-colors"
+              >
+                🔄 Recharger les personnages
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Filtre par niveau */}
+              <div className="mb-6 flex items-center space-x-4">
+                <label className="text-yellow-300 font-semibold">Filtrer par niveau :</label>
+                <select
+                  value={levelFilter}
+                  onChange={(e) => setLevelFilter(parseInt(e.target.value))}
+                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+                >
+                  <option value={0}>Tous les niveaux</option>
+                  <option value={600}>👑 Niveau 600 (Zen)</option>
+                  <option value={500}>🌟 Niveau 500+ (Illustre)</option>
+                  <option value={425}>⚡ Niveau 425+ (Grand Maître)</option>
+                  <option value={350}>💎 Niveau 350+ (Maître)</option>
+                </select>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {publicCharacters.filter(character => {
+                  if (levelFilter === 0) return true;
+                  const levels = Object.values(character.professionLevels || {});
+                  return levels.some(level => level >= levelFilter);
+                }).map(character => {
+                  const ProfessionIcon1 = getProfessionIcon(character.primaryProfession1);
+                  const ProfessionIcon2 = getProfessionIcon(character.primaryProfession2);
+                  
+                  return (
+                    <div 
+                      key={character.shareId}
+                      className={`bg-gray-700 rounded-lg p-6 cursor-pointer hover:bg-gray-600 transition-all duration-300 border-2 ${
+                        character.faction === 'alliance' 
+                          ? 'border-blue-500 hover:border-blue-400 hover:shadow-blue-500/20 hover:shadow-lg' 
+                          : 'border-red-500 hover:border-red-400 hover:shadow-red-500/20 hover:shadow-lg'
+                      }`}
+                      onClick={() => {
+                        window.open(`?share=${character.shareId}`, '_blank');
+                      }}
+                    >
+                      {/* En-tête du personnage */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-xl font-bold text-yellow-300">{character.name}</h3>
+                          <p className="text-gray-300 text-sm">
+                            Niveau {character.level} {character.race} {character.class}
+                          </p>
+                        </div>
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          character.faction === 'alliance' ? 'bg-blue-600 text-blue-100' : 'bg-red-600 text-red-100'
+                        }`}>
+                          {character.faction === 'alliance' ? 'Alliance' : 'Horde'}
+                        </span>
+                      </div>
+
+                      {/* Serveur et Guilde */}
+                      <div className="mb-4 space-y-1">
+                        {character.server && (
+                          <p className="text-gray-400 text-sm">📍 {character.server}</p>
+                        )}
+                        {character.guild && (
+                          <p className="text-gray-400 text-sm">⚔️ {character.guild}</p>
+                        )}
+                      </div>
+
+                      {/* Métiers */}
+                      <div className="space-y-3">
+                        <h4 className="text-yellow-400 font-semibold text-sm">Métiers principaux :</h4>
+                        
+                        {character.primaryProfession1 && (
+                          <div className="flex items-center justify-between bg-gray-600 rounded p-2">
+                            <div className="flex items-center">
+                              <ProfessionIcon1 className="w-5 h-5 text-yellow-400 mr-2" />
+                              <div className="flex flex-col">
+                                <span className="text-white text-sm font-medium">{character.primaryProfession1}</span>
+                                {(character.professionLevels?.[character.primaryProfession1] || 0) > 0 && (
+                                  <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.primaryProfession1])}`}>
+                                    {getProfessionLevelIcon(character.professionLevels[character.primaryProfession1])} Niveau {character.professionLevels[character.primaryProfession1]} ({getProfessionLevelName(character.professionLevels[character.primaryProfession1])})
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
+                              {character.craftCounts[character.primaryProfession1] || 0} recettes
+                            </span>
+                          </div>
+                        )}
+                        
+                        {character.primaryProfession2 && (
+                          <div className="flex items-center justify-between bg-gray-600 rounded p-2">
+                            <div className="flex items-center">
+                              <ProfessionIcon2 className="w-5 h-5 text-yellow-400 mr-2" />
+                              <div className="flex flex-col">
+                                <span className="text-white text-sm font-medium">{character.primaryProfession2}</span>
+                                {(character.professionLevels?.[character.primaryProfession2] || 0) > 0 && (
+                                  <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.primaryProfession2])}`}>
+                                    {getProfessionLevelIcon(character.professionLevels[character.primaryProfession2])} Niveau {character.professionLevels[character.primaryProfession2]} ({getProfessionLevelName(character.professionLevels[character.primaryProfession2])})
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
+                              {character.craftCounts[character.primaryProfession2] || 0} recettes
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Total des recettes */}
+                      <div className="mt-4 pt-4 border-t border-gray-600">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400 text-sm">Total des recettes :</span>
+                          <span className="text-yellow-400 font-bold">
+                            {Object.values(character.craftCounts as Record<string, number>).reduce((a: number, b: number) => a + b, 0)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Indicateur de lien */}
+                      <div className="mt-3 text-center">
+                        <span className="text-blue-400 text-xs">🔗 Cliquez pour voir le profil complet</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {/* Bouton pour rafraîchir */}
+          <div className="mt-6 text-center space-x-4">
+            <button
+              onClick={() => {
+                console.log('Actualisation manuelle...');
+                loadPublicCharacters();
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors text-sm"
+            >
+              🔄 Actualiser la liste
+            </button>
+            <button
+              onClick={() => {
+                console.log('Nettoyage manuel... (ATTENTION)');
+                cleanupDuplicates();
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors text-sm"
+            >
+              🧹 Nettoyer les doublons
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+          <p className="text-xl text-gray-300">Chargement du personnage partagé...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+      <nav className="bg-gray-800 border-b border-yellow-600 p-4">
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
+          <button
+            onClick={() => setCurrentView('home')}
+            className="text-2xl font-bold text-yellow-400 hover:text-yellow-300 transition-colors"
+          >
+            WoW Crafting Tracker
+          </button>
+          
+          {currentCharacter && currentView === 'character' && (
+            <div className="text-yellow-300">
+              {currentCharacter.name} - {currentCharacter.server}
+            </div>
+          )}
+        </div>
+      </nav>
+
+      <main className="container mx-auto px-4 py-8">
+        {currentView === 'home' && <HomeView />}
+        {currentView === 'create' && <CharacterCreation />}
+        {currentView === 'character' && <CharacterView />}
+        {currentView.startsWith('import-') && (
+          <ImportView profession={currentView.replace('import-', '')} />
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default WoWCraftingTracker;
+            </button>import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Upload, User, Scroll, Wand2, Hammer, Gem, Plus, X, Share, Search, Trash2, Eye, EyeOff, Beaker, Mountain, Flower, Wrench, Scissors, Palette, Zap, LucideIcon } from 'lucide-react';
 
 interface PublicCharacter {
@@ -542,7 +1426,7 @@ const WoWCraftingTracker: React.FC = () => {
     }
   };
 
-  // Cleanup duplicates automatically
+  // Cleanup duplicates automatically - DÉSACTIVÉ TEMPORAIREMENT
   const cleanupDuplicates = async () => {
     try {
       await fetch('/api/cleanup', { method: 'POST' });
@@ -552,7 +1436,7 @@ const WoWCraftingTracker: React.FC = () => {
     }
   };
 
-  // Load data from localStorage on mount
+  // Load data from localStorage on mount - NETTOYAGE AUTOMATIQUE DÉSACTIVÉ
   useEffect(() => {
     const savedCharacters = localStorage.getItem('wowCharacters');
     if (savedCharacters) {
@@ -569,20 +1453,20 @@ const WoWCraftingTracker: React.FC = () => {
         setCurrentCharacter(migratedCharacters[0]);
       }
     }
-  
+
     // Load public characters
     loadPublicCharacters();
-  
-    // COMMENTÉ TEMPORAIREMENT - C'EST LUI QUI SUPPRIME VOS PERSONNAGES !
+
+    // COMMENTÉ TEMPORAIREMENT - C'EST LUI QUI SUPPRIMAIT VOS PERSONNAGES !
     // cleanupDuplicates();
-  
+
     // Check for shared character in URL
     const urlParams = new URLSearchParams(window.location.search);
     const shareId = urlParams.get('share');
     if (shareId) {
       loadSharedCharacter(shareId);
-  }
-}, []);
+    }
+  }, []);
 
   // Save to localStorage whenever characters change
   useEffect(() => {
@@ -684,831 +1568,4 @@ const WoWCraftingTracker: React.FC = () => {
                 />
                 <span className="text-blue-400 font-semibold">Alliance</span>
               </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="horde"
-                  checked={formData.faction === 'horde'}
-                  onChange={(e) => setFormData(prev => ({...prev, faction: e.target.value, race: ''}))}
-                  className="mr-2"
-                />
-                <span className="text-red-400 font-semibold">Horde</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-yellow-300 font-semibold mb-2">Race</label>
-              <select
-                value={formData.race}
-                onChange={(e) => setFormData(prev => ({...prev, race: e.target.value}))}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-              >
-                <option value="">Choisir une race</option>
-                {(races as any)[formData.faction].map((race: string) => (
-                  <option key={race} value={race}>{race}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-yellow-300 font-semibold mb-2">Classe</label>
-              <select
-                value={formData.class}
-                onChange={(e) => setFormData(prev => ({...prev, class: e.target.value}))}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-              >
-                <option value="">Choisir une classe</option>
-                {classes.map(cls => (
-                  <option key={cls} value={cls}>{cls}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-yellow-300 font-semibold mb-2">Métier principal 1</label>
-              <select
-                value={formData.primaryProfession1}
-                onChange={(e) => setFormData(prev => ({...prev, primaryProfession1: e.target.value}))}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-              >
-                <option value="">Choisir un métier</option>
-                {professions.primary.map(prof => (
-                  <option key={prof} value={prof}>{prof}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-yellow-300 font-semibold mb-2">Métier principal 2</label>
-              <select
-                value={formData.primaryProfession2}
-                onChange={(e) => setFormData(prev => ({...prev, primaryProfession2: e.target.value}))}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-              >
-                <option value="">Choisir un métier</option>
-                {professions.primary.filter(prof => prof !== formData.primaryProfession1).map(prof => (
-                  <option key={prof} value={prof}>{prof}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <button
-            onClick={() => formData.name && formData.race && formData.class && handleCreateCharacter(formData)}
-            className="w-full bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-3 px-6 rounded transition-colors disabled:opacity-50"
-            disabled={!formData.name || !formData.race || !formData.class}
-          >
-            Créer le personnage
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const ImportView: React.FC<{ profession: string }> = ({ profession }) => (
-    <div className="max-w-4xl mx-auto bg-gray-800 rounded-lg p-8 border border-yellow-600">
-      <h2 className="text-3xl font-bold text-yellow-400 mb-6 flex items-center">
-        <Upload className="mr-3" />
-        Importer les recettes - {profession}
-      </h2>
-      
-      {/* Sélecteur d'extension WoW */}
-      <div className="mb-6">
-        <label className="block text-yellow-300 font-semibold mb-2">
-          Extension World of Warcraft :
-        </label>
-        <div className="flex space-x-4">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              value="cataclysm"
-              checked={wowExtension === 'cataclysm'}
-              onChange={(e) => setWowExtension(e.target.value)}
-              className="mr-2"
-            />
-            <span className="text-orange-400 font-semibold">Cataclysm (garde /cata/)</span>
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              value="mop-classic"
-              checked={wowExtension === 'mop-classic'}
-              onChange={(e) => setWowExtension(e.target.value)}
-              className="mr-2"
-            />
-            <span className="text-green-400 font-semibold">MoP Classic (convertit en /mop-classic/fr/)</span>
-          </label>
-        </div>
-      </div>
-      
-      <div className="mb-6">
-        <label className="block text-yellow-300 font-semibold mb-2">
-          Collez votre liste markdown ici :
-        </label>
-        <textarea
-          value={importText}
-          onChange={(e) => setImportText(e.target.value)}
-          className="w-full h-64 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none font-mono text-sm"
-          placeholder="- [Nom de l'item](https://wowhead.com/cata/item=12345)
-- [Autre item](https://wowhead.com/cata/spell=67890)"
-        />
-        
-        {/* Niveau de métier manuel */}
-        <div className="mt-4">
-          <label className="block text-yellow-300 font-semibold mb-2">
-            Niveau de {profession} (optionnel) :
-          </label>
-          <input
-            type="number"
-            min="0"
-            max="600"
-            placeholder="Ex: 450"
-            className="w-32 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-            onChange={(e) => {
-              const level = parseInt(e.target.value) || 0;
-              if (level > 0) {
-                setImportText(prev => `${profession} niveau: ${level}\n${prev}`);
-              }
-            }}
-          />
-          <p className="text-gray-400 text-sm mt-1">
-            Si le niveau n'est pas détecté automatiquement, vous pouvez le saisir ici
-          </p>
-        </div>
-      </div>
-      
-      <div className="flex space-x-4">
-        <button
-          onClick={() => handleImportCrafts(profession)}
-          className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded transition-colors"
-          disabled={!importText.trim()}
-        >
-          Importer les recettes
-        </button>
-        <button
-          onClick={() => setCurrentView('character')}
-          className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded transition-colors"
-        >
-          Annuler
-        </button>
-      </div>
-    </div>
-  );
-
-  const CharacterView: React.FC = () => {
-    if (!currentCharacter) return null;
-
-    const allProfessions = [
-      currentCharacter.primaryProfession1,
-      currentCharacter.primaryProfession2
-    ].filter(Boolean);
-
-    const handleShare = async (): Promise<void> => {
-      setIsLoading(true);
-      try {
-        const shareId = await saveCharacterForSharing(currentCharacter);
-        if (shareId) {
-          const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareId}`;
-          await navigator.clipboard.writeText(shareUrl);
-          setShareSuccess(true);
-          setTimeout(() => setShareSuccess(false), 3000);
-        } else {
-          alert('Erreur lors de la création du lien de partage');
-        }
-      } catch (error) {
-        console.error('Erreur lors du partage:', error);
-        alert('Erreur lors de la création du lien de partage');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    return (
-      <div className="max-w-6xl mx-auto">
-        {/* Character Header */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-yellow-600">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-4xl font-bold text-yellow-400 mb-2">{currentCharacter.name}</h1>
-              <div className="text-gray-300 space-y-1">
-                <p>Niveau {currentCharacter.level} {currentCharacter.race} {currentCharacter.class}</p>
-                {currentCharacter.server && <p>Serveur: {currentCharacter.server}</p>}
-                {currentCharacter.guild && <p>Guilde: {currentCharacter.guild}</p>}
-                <p className={currentCharacter.faction === 'alliance' ? 'text-blue-400' : 'text-red-400'}>
-                  {currentCharacter.faction === 'alliance' ? 'Alliance' : 'Horde'}
-                </p>
-              </div>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={handleShare}
-                disabled={isLoading}
-                className={`px-4 py-2 rounded flex items-center transition-all duration-300 ${
-                  shareSuccess 
-                    ? 'bg-green-600 hover:bg-green-700 text-white' 
-                    : isLoading
-                    ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
-                title="Créer un lien de partage"
-              >
-                <Share className="w-4 h-4 mr-2" />
-                {isLoading ? 'Création...' : shareSuccess ? 'Lien copié !' : 'Partager'}
-              </button>
-              <button
-                onClick={shareToDiscord}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded flex items-center transition-colors"
-                title="Partager sur Discord"
-              >
-                💬 Discord
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600">
-            <div className="flex items-center space-x-4">
-              <Search className="w-5 h-5 text-yellow-400" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Rechercher dans les recettes..."
-                className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Professions */}
-        <div className="grid gap-6">
-          {allProfessions.map(profession => {
-            const crafts = currentCharacter.crafts[profession] || [];
-            const ProfessionIcon = getProfessionIcon(profession);
-            
-            return (
-              <div key={profession} className="bg-gray-800 rounded-lg border border-yellow-600">
-                <div className="p-6 border-b border-gray-700">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold text-yellow-400 flex items-center">
-                      <ProfessionIcon className="mr-3 w-8 h-8" />
-                      <div className="flex flex-col">
-                        <span>{profession}</span>
-                        {(currentCharacter.professionLevels?.[profession] || 0) > 0 && (
-                          <span className={`text-sm font-normal ${getProfessionLevelColor(currentCharacter.professionLevels[profession])}`}>
-                            {getProfessionLevelIcon(currentCharacter.professionLevels[profession])} Niveau {currentCharacter.professionLevels[profession]} ({getProfessionLevelName(currentCharacter.professionLevels[profession])})
-                          </span>
-                        )}
-                      </div>
-                    </h2>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => setCurrentView(`import-${profession}`)}
-                        className="bg-yellow-600 hover:bg-yellow-700 text-black px-4 py-2 rounded flex items-center transition-colors"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Importer
-                      </button>
-                      {crafts.length > 0 && (
-                        <button
-                          onClick={() => deleteProfessionCrafts(profession)}
-                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex items-center transition-colors"
-                          title="Supprimer toutes les recettes"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Supprimer
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  {crafts.length > 0 && (
-                    <p className="text-gray-400 mt-2">{crafts.length} recettes disponibles</p>
-                  )}
-                </div>
-                
-                {crafts.length > 0 ? (
-                  <div className="p-6">
-                    {(() => {
-                      // Vérification de sécurité pour éviter les erreurs
-                      if (!crafts || !Array.isArray(crafts)) {
-                        return (
-                          <div className="text-center text-gray-500">
-                            <p>Erreur dans le chargement des recettes</p>
-                          </div>
-                        );
-                      }
-
-                      const filteredCrafts = filterItemsBySearch(crafts, searchTerm);
-                      
-                      if (!filteredCrafts || filteredCrafts.length === 0) {
-                        if (searchTerm && searchTerm.trim()) {
-                          return (
-                            <div className="text-center text-gray-500">
-                              <p>Aucune recette trouvée pour "{searchTerm}"</p>
-                            </div>
-                          );
-                        }
-                        return (
-                          <div className="text-center text-gray-500">
-                            <p>Aucune recette disponible</p>
-                          </div>
-                        );
-                      }
-
-                      const categorizedCrafts = filteredCrafts.reduce((acc: { [key: string]: CraftItem[] }, craft) => {
-                        if (!craft || !craft.category) return acc;
-                        
-                        if (!acc[craft.category]) {
-                          acc[craft.category] = [];
-                        }
-                        acc[craft.category].push(craft);
-                        return acc;
-                      }, {});
-
-                      const categories = Object.keys(categorizedCrafts).sort();
-
-                      return (
-                        <div>
-                          {/* Boutons Expand/Collapse All */}
-                          {categories.length > 1 && (
-                            <div className="mb-4 flex justify-end">
-                              <button
-                                onClick={() => toggleAllCategories(profession, categories)}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
-                              >
-                                {allExpanded ? (
-                                  <>
-                                    <EyeOff className="w-4 h-4 mr-2" />
-                                    Tout replier
-                                  </>
-                                ) : (
-                                  <>
-                                    <Eye className="w-4 h-4 mr-2" />
-                                    Tout déplier
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                          )}
-
-                          {categories.map(category => {
-                            const categoryKey = `${profession}-${category}`;
-                            const isExpanded = expandedCategories[categoryKey] !== false; // Par défaut ouvert
-                            const categoryItems = categorizedCrafts[category];
-
-                            return (
-                              <div key={category} className="mb-4">
-                                <button
-                                  onClick={() => toggleCategory(profession, category)}
-                                  className="w-full flex items-center justify-between bg-gray-600 hover:bg-gray-500 rounded-lg p-3 transition-colors"
-                                >
-                                  <span className="text-yellow-300 font-semibold">
-                                    {category} ({categoryItems.length})
-                                  </span>
-                                  <div className="flex items-center space-x-2">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        copyWowheadLinks(categoryItems, category);
-                                      }}
-                                      className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs transition-colors"
-                                      title="Copier tous les liens Wowhead de cette catégorie"
-                                    >
-                                      📋 Copier liens
-                                    </button>
-                                    {isExpanded ? (
-                                      <ChevronDown className="w-5 h-5 text-yellow-400" />
-                                    ) : (
-                                      <ChevronRight className="w-5 h-5 text-yellow-400" />
-                                    )}
-                                  </div>
-                                </button>
-                                
-                                {isExpanded && (
-                                  <div className="mt-2 space-y-2">
-                                    {categoryItems.map(craft => (
-                                      <div key={craft.id} className="bg-gray-700 rounded-lg p-3 hover:bg-gray-600 transition-colors ml-4">
-                                        <div className="flex items-center justify-between">
-                                          <span className="text-yellow-300 font-medium">{craft.name}</span>
-                                          <a 
-                                            href={craft.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded transition-colors"
-                                          >
-                                            Wowhead
-                                          </a>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                ) : (
-                  <div className="p-6 text-center text-gray-500">
-                    <p>Aucune recette importée pour ce métier</p>
-                    <p className="text-sm mt-2">Cliquez sur "Importer" pour ajouter vos recettes</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  const HomeView: React.FC = () => (
-    <div className="max-w-6xl mx-auto text-center">
-      <div className="bg-gray-800 rounded-lg p-12 border border-yellow-600 mb-8">
-        <h1 className="text-5xl font-bold text-yellow-400 mb-4">WoW Crafting Tracker</h1>
-        <p className="text-xl text-gray-300 mb-8">
-          Partagez vos métiers et recettes World of Warcraft avec vos amis
-        </p>
-        
-        {/* Instructions pour l'addon */}
-        <div className="bg-blue-900 border border-blue-600 rounded-lg p-6 mb-8 text-left">
-          <h2 className="text-2xl font-bold text-blue-300 mb-4">📋 Comment exporter vos recettes</h2>
-          
-          <div className="space-y-4 text-gray-200">
-            <div>
-              <h3 className="text-lg font-semibold text-blue-200 mb-2">1. Installez l'addon requis :</h3>
-              <a 
-                href="https://www.curseforge.com/wow/addons/simple-trade-skill-exporter" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded transition-colors"
-              >
-                Télécharger Simple Trade Skill Exporter
-              </a>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-semibold text-blue-200 mb-2">2. Dans le jeu :</h3>
-              <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Ouvrez votre fenêtre de métier (Enchantement, Forge, etc.)</li>
-                <li>Tapez la commande : <code className="bg-gray-700 px-2 py-1 rounded text-yellow-300">/tsexport markdown</code></li>
-                <li>Utilisez <strong>Ctrl+C</strong> pour copier la liste</li>
-                <li>Collez la liste dans la zone d'import de ce site</li>
-              </ul>
-            </div>
-            
-            <div className="bg-gray-700 rounded p-3">
-              <p className="text-sm text-gray-300">
-                <strong>Note :</strong> Cet addon exporte automatiquement vos recettes avec les liens WowHead corrects.
-                L'export en format markdown est parfait pour ce site !
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* BOUTONS DE DEBUG AJOUTÉS */}
-        <div className="bg-purple-900 border border-purple-600 rounded-lg p-6 mb-8">
-          <h3 className="text-xl font-bold text-purple-300 mb-4">🔍 Debug (Temporaire)</h3>
-          <div className="flex flex-wrap gap-2 justify-center">
-            <button
-              onClick={async () => {
-                console.log('=== DEBUG PERSONNAGES PUBLICS ===');
-                console.log('État actuel publicCharacters:', publicCharacters);
-                console.log('Longueur:', publicCharacters.length);
-                
-                // Test direct de l'API
-                const response = await fetch('/api/characters/public');
-                const data = await response.json();
-                console.log('Réponse API directe:', data);
-                
-                // Forcer le rechargement
-                await loadPublicCharacters();
-                
-                alert(`Debug: ${publicCharacters.length} personnages dans l'état, ${data.length} de l'API`);
-              }}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm transition-colors"
-            >
-              🔍 Debug Personnages Publics
-            </button>
-            
-            <button
-              onClick={() => {
-                console.log('Force reload personnages publics...');
-                loadPublicCharacters();
-              }}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition-colors"
-            >
-              🔄 Forcer Rechargement
-            </button>
-
-            <button
-              onClick={async () => {
-                console.log('=== TEST API PUBLIQUE DIRECTE ===');
-                const response = await fetch('/api/characters/public');
-                const data = await response.json();
-                console.log('Data:', data);
-                alert(`API: ${response.status} - ${data.length || 0} personnages`);
-              }}
-              className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded text-sm transition-colors"
-            >
-              🌐 Test API Direct
-            </button>
-          </div>
-          <p className="text-purple-200 text-sm mt-3">
-            Ces boutons aident à diagnostiquer pourquoi les personnages n'apparaissent pas. Consultez la console (F12).
-          </p>
-        </div>
-
-        {/* Statistiques globales */}
-        {publicCharacters.length > 0 && (
-          <div className="bg-gradient-to-r from-purple-900 to-blue-900 border border-purple-600 rounded-lg p-6 mb-8">
-            <h2 className="text-2xl font-bold text-purple-300 mb-4">📊 Statistiques de la communauté</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-              <div className="bg-purple-800 bg-opacity-50 rounded-lg p-4">
-                <div className="text-3xl font-bold text-purple-300">{publicCharacters.length}</div>
-                <div className="text-purple-200">Personnages partagés</div>
-              </div>
-              <div className="bg-blue-800 bg-opacity-50 rounded-lg p-4">
-                <div className="text-3xl font-bold text-blue-300">
-                  {publicCharacters.reduce((total, char) => 
-                    total + Object.values(char.craftCounts as Record<string, number>).reduce((a, b) => a + b, 0), 0
-                  )}
-                </div>
-                <div className="text-blue-200">Recettes au total</div>
-              </div>
-              <div className="bg-green-800 bg-opacity-50 rounded-lg p-4">
-                <div className="text-3xl font-bold text-green-300">
-                  {new Set(publicCharacters.flatMap(char => [char.primaryProfession1, char.primaryProfession2].filter(Boolean))).size}
-                </div>
-                <div className="text-green-200">Métiers différents</div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {characters.length === 0 ? (
-          <button
-            onClick={() => setCurrentView('create')}
-            className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-4 px-8 rounded-lg text-xl transition-colors"
-          >
-            Créer mon premier personnage
-          </button>
-        ) : (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-yellow-400">Mes personnages</h2>
-            <div className="grid gap-4">
-              {characters.map(character => (
-                <div 
-                  key={character.id}
-                  className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-yellow-500 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div 
-                      className="flex-1 cursor-pointer"
-                      onClick={() => {
-                        setCurrentCharacter(character);
-                        setCurrentView('character');
-                      }}
-                    >
-                      <h3 className="text-xl font-bold text-yellow-300">{character.name}</h3>
-                      <p className="text-gray-300">
-                        Niveau {character.level} {character.race} {character.class}
-                      </p>
-                      {character.server && (
-                        <p className="text-gray-400 text-sm">{character.server}</p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleDeleteCharacter(character)}
-                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors ml-4"
-                      title="Supprimer définitivement ce personnage"
-                    >
-                      🗑️ Supprimer
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={() => setCurrentView('create')}
-              className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-2 px-6 rounded transition-colors"
-            >
-              Ajouter un personnage
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Section des personnages publics */}
-      {publicCharacters.length > 0 && (
-        <div className="bg-gray-800 rounded-lg p-8 border border-yellow-600">
-          <h2 className="text-3xl font-bold text-yellow-400 mb-6">🌟 Personnages de la communauté</h2>
-          <p className="text-gray-300 mb-6">Découvrez les personnages et métiers partagés par la communauté</p>
-          
-          {/* Filtre par niveau */}
-          <div className="mb-6 flex items-center space-x-4">
-            <label className="text-yellow-300 font-semibold">Filtrer par niveau :</label>
-            <select
-              value={levelFilter}
-              onChange={(e) => setLevelFilter(parseInt(e.target.value))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-            >
-              <option value={0}>Tous les niveaux</option>
-              <option value={600}>👑 Niveau 600 (Zen)</option>
-              <option value={500}>🌟 Niveau 500+ (Illustre)</option>
-              <option value={425}>⚡ Niveau 425+ (Grand Maître)</option>
-              <option value={350}>💎 Niveau 350+ (Maître)</option>
-            </select>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {publicCharacters.filter(character => {
-              if (levelFilter === 0) return true;
-              const levels = Object.values(character.professionLevels || {});
-              return levels.some(level => level >= levelFilter);
-            }).map(character => {
-              const ProfessionIcon1 = getProfessionIcon(character.primaryProfession1);
-              const ProfessionIcon2 = getProfessionIcon(character.primaryProfession2);
-              
-              return (
-                <div 
-                  key={character.shareId}
-                  className={`bg-gray-700 rounded-lg p-6 cursor-pointer hover:bg-gray-600 transition-all duration-300 border-2 ${
-                    character.faction === 'alliance' 
-                      ? 'border-blue-500 hover:border-blue-400 hover:shadow-blue-500/20 hover:shadow-lg' 
-                      : 'border-red-500 hover:border-red-400 hover:shadow-red-500/20 hover:shadow-lg'
-                  }`}
-                  onClick={() => {
-                    window.open(`?share=${character.shareId}`, '_blank');
-                  }}
-                >
-                  {/* En-tête du personnage */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-xl font-bold text-yellow-300">{character.name}</h3>
-                      <p className="text-gray-300 text-sm">
-                        Niveau {character.level} {character.race} {character.class}
-                      </p>
-                    </div>
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                      character.faction === 'alliance' ? 'bg-blue-600 text-blue-100' : 'bg-red-600 text-red-100'
-                    }`}>
-                      {character.faction === 'alliance' ? 'Alliance' : 'Horde'}
-                    </span>
-                  </div>
-
-                  {/* Serveur et Guilde */}
-                  <div className="mb-4 space-y-1">
-                    {character.server && (
-                      <p className="text-gray-400 text-sm">📍 {character.server}</p>
-                    )}
-                    {character.guild && (
-                      <p className="text-gray-400 text-sm">⚔️ {character.guild}</p>
-                    )}
-                  </div>
-
-                  {/* Métiers */}
-                  <div className="space-y-3">
-                    <h4 className="text-yellow-400 font-semibold text-sm">Métiers principaux :</h4>
-                    
-                    {character.primaryProfession1 && (
-                      <div className="flex items-center justify-between bg-gray-600 rounded p-2">
-                        <div className="flex items-center">
-                          <ProfessionIcon1 className="w-5 h-5 text-yellow-400 mr-2" />
-                          <div className="flex flex-col">
-                            <span className="text-white text-sm font-medium">{character.primaryProfession1}</span>
-                            {(character.professionLevels?.[character.primaryProfession1] || 0) > 0 && (
-                              <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.primaryProfession1])}`}>
-                                {getProfessionLevelIcon(character.professionLevels[character.primaryProfession1])} Niveau {character.professionLevels[character.primaryProfession1]} ({getProfessionLevelName(character.professionLevels[character.primaryProfession1])})
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
-                          {character.craftCounts[character.primaryProfession1] || 0} recettes
-                        </span>
-                      </div>
-                    )}
-                    
-                    {character.primaryProfession2 && (
-                      <div className="flex items-center justify-between bg-gray-600 rounded p-2">
-                        <div className="flex items-center">
-                          <ProfessionIcon2 className="w-5 h-5 text-yellow-400 mr-2" />
-                          <div className="flex flex-col">
-                            <span className="text-white text-sm font-medium">{character.primaryProfession2}</span>
-                            {(character.professionLevels?.[character.primaryProfession2] || 0) > 0 && (
-                              <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.primaryProfession2])}`}>
-                                {getProfessionLevelIcon(character.professionLevels[character.primaryProfession2])} Niveau {character.professionLevels[character.primaryProfession2]} ({getProfessionLevelName(character.professionLevels[character.primaryProfession2])})
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
-                          {character.craftCounts[character.primaryProfession2] || 0} recettes
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Total des recettes */}
-                  <div className="mt-4 pt-4 border-t border-gray-600">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-400 text-sm">Total des recettes :</span>
-                      <span className="text-yellow-400 font-bold">
-                        {Object.values(character.craftCounts as Record<string, number>).reduce((a: number, b: number) => a + b, 0)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Indicateur de lien */}
-                  <div className="mt-3 text-center">
-                    <span className="text-blue-400 text-xs">🔗 Cliquez pour voir le profil complet</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Bouton pour rafraîchir */}
-          <div className="mt-6 text-center space-x-4">
-            <button
-              onClick={() => {
-                loadPublicCharacters();
-                cleanupDuplicates();
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors text-sm"
-            >
-              🔄 Actualiser la liste
-            </button>
-            <button
-              onClick={cleanupDuplicates}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors text-sm"
-            >
-              🧹 Nettoyer les doublons
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-          <p className="text-xl text-gray-300">Chargement du personnage partagé...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
-      <nav className="bg-gray-800 border-b border-yellow-600 p-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <button
-            onClick={() => setCurrentView('home')}
-            className="text-2xl font-bold text-yellow-400 hover:text-yellow-300 transition-colors"
-          >
-            WoW Crafting Tracker
-          </button>
-          
-          {currentCharacter && currentView === 'character' && (
-            <div className="text-yellow-300">
-              {currentCharacter.name} - {currentCharacter.server}
-            </div>
-          )}
-        </div>
-      </nav>
-
-      <main className="container mx-auto px-4 py-8">
-        {currentView === 'home' && <HomeView />}
-        {currentView === 'create' && <CharacterCreation />}
-        {currentView === 'character' && <CharacterView />}
-        {currentView.startsWith('import-') && (
-          <ImportView profession={currentView.replace('import-', '')} />
-        )}
-      </main>
-    </div>
-  );
-};
-
-export default WoWCraftingTracker;
+              <label className="flex items-center
