@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Upload, User, Scroll, Wand2, Hammer, Gem, Plus, X, Share, Search, Trash2, Eye, EyeOff, Beaker, Mountain, Flower, Wrench, Scissors, Palette, Zap, LucideIcon } from 'lucide-react';
 
+interface PublicCharacter {
+  shareId: string;
+  name: string;
+  level: number;
+  race: string;
+  class: string;
+  faction: string;
+  server: string;
+  guild: string;
+  primaryProfession1: string;
+  primaryProfession2: string;
+  craftCounts: Record<string, number>;
+}
+
 interface Character {
   id: string;
   name: string;
@@ -45,7 +59,7 @@ const WoWCraftingTracker: React.FC = () => {
   const [allExpanded, setAllExpanded] = useState<boolean>(true);
   const [shareSuccess, setShareSuccess] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [publicCharacters, setPublicCharacters] = useState<any[]>([]);
+  const [publicCharacters, setPublicCharacters] = useState<PublicCharacter[]>([]);
 
   // Generate short ID for sharing
   const generateShareId = (): string => {
@@ -79,7 +93,7 @@ const WoWCraftingTracker: React.FC = () => {
     try {
       const response = await fetch('/api/characters/public');
       if (response.ok) {
-        const publicChars = await response.json();
+        const publicChars: PublicCharacter[] = await response.json();
         setPublicCharacters(publicChars);
       }
     } catch (error) {
@@ -979,7 +993,7 @@ const WoWCraftingTracker: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-gray-400 text-sm">Total des recettes :</span>
                       <span className="text-yellow-400 font-bold">
-                        {Object.values(character.craftCounts).reduce((a: number, b: number) => a + b, 0)}
+                        {Object.values(character.craftCounts as Record<string, number>).reduce((a: number, b: number) => a + b, 0)}
                       </span>
                     </div>
                   </div>
