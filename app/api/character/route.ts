@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { kv } from '@vercel/kv';
+import { createClient } from 'redis';
+
+// Créer le client Redis
+const redis = createClient({ url: process.env.REDIS_URL });
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,8 +15,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Sauvegarder le personnage avec expiration de 30 jours (optionnel)
-    await kv.setex(`character:${shareId}`, 60 * 60 * 24 * 30, character);
+    // Connecter à Redis si pas encore connecté
+    if (!redis.isReady) {
+      await redis.connect();
+    }
+
+    // Sauvegarder le personnage avec expiration de 30 jours (2592000 secondes)
+    await redis.setEx(`character:${shareId}`, 2592000, JSON.stringify(character));
     
     return NextResponse.json({ success: true, shareId });
   } catch (error) {
