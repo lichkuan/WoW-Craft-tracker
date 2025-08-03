@@ -358,7 +358,14 @@ const WoWCraftingTracker: React.FC = () => {
       const response = await fetch(`/api/character/${shareId}`);
       if (response.ok) {
         const sharedCharacter = await response.json();
-        setCurrentCharacter(sharedCharacter);
+        
+        // Migration pour ajouter professionLevels si manquant
+        const migratedCharacter = {
+          ...sharedCharacter,
+          professionLevels: sharedCharacter.professionLevels || {}
+        };
+        
+        setCurrentCharacter(migratedCharacter);
         setCurrentView('character');
       } else {
         console.error('Personnage partagé non trouvé');
@@ -446,9 +453,16 @@ const WoWCraftingTracker: React.FC = () => {
     const savedCharacters = localStorage.getItem('wowCharacters');
     if (savedCharacters) {
       const parsedCharacters = JSON.parse(savedCharacters);
-      setCharacters(parsedCharacters);
-      if (parsedCharacters.length > 0) {
-        setCurrentCharacter(parsedCharacters[0]);
+      
+      // Migration pour ajouter professionLevels aux anciens personnages
+      const migratedCharacters = parsedCharacters.map((char: any) => ({
+        ...char,
+        professionLevels: char.professionLevels || {}
+      }));
+      
+      setCharacters(migratedCharacters);
+      if (migratedCharacters.length > 0) {
+        setCurrentCharacter(migratedCharacters[0]);
       }
     }
 
@@ -818,7 +832,7 @@ const WoWCraftingTracker: React.FC = () => {
                       <ProfessionIcon className="mr-3 w-8 h-8" />
                       <div className="flex flex-col">
                         <span>{profession}</span>
-                        {currentCharacter.professionLevels[profession] > 0 && (
+                        {(currentCharacter.professionLevels?.[profession] || 0) > 0 && (
                           <span className={`text-sm font-normal ${getProfessionLevelColor(currentCharacter.professionLevels[profession])}`}>
                             Niveau {currentCharacter.professionLevels[profession]} ({getProfessionLevelName(currentCharacter.professionLevels[profession])})
                           </span>
@@ -1127,7 +1141,7 @@ const WoWCraftingTracker: React.FC = () => {
                           <ProfessionIcon1 className="w-5 h-5 text-yellow-400 mr-2" />
                           <div className="flex flex-col">
                             <span className="text-white text-sm font-medium">{character.primaryProfession1}</span>
-                            {character.professionLevels[character.primaryProfession1] > 0 && (
+                            {(character.professionLevels?.[character.primaryProfession1] || 0) > 0 && (
                               <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.primaryProfession1])}`}>
                                 Niveau {character.professionLevels[character.primaryProfession1]} ({getProfessionLevelName(character.professionLevels[character.primaryProfession1])})
                               </span>
@@ -1146,7 +1160,7 @@ const WoWCraftingTracker: React.FC = () => {
                           <ProfessionIcon2 className="w-5 h-5 text-yellow-400 mr-2" />
                           <div className="flex flex-col">
                             <span className="text-white text-sm font-medium">{character.primaryProfession2}</span>
-                            {character.professionLevels[character.primaryProfession2] > 0 && (
+                            {(character.professionLevels?.[character.primaryProfession2] || 0) > 0 && (
                               <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.primaryProfession2])}`}>
                                 Niveau {character.professionLevels[character.primaryProfession2]} ({getProfessionLevelName(character.professionLevels[character.primaryProfession2])})
                               </span>
