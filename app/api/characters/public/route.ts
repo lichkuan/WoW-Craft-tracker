@@ -1,19 +1,25 @@
 import { NextResponse } from 'next/server';
-import { kv } from '@vercel/kv';
+import { createClient } from 'redis';
 
 export async function GET() {
+  let redis;
+  
   try {
+    // Créer et connecter le client Redis
+    redis = createClient({ url: process.env.REDIS_URL });
+    await redis.connect();
+    
     // Récupérer toutes les clés qui commencent par "character:"
-    const keys = await kv.keys('character:*');
+    const keys = await redis.keys('character:*');
     
     const publicCharacters = [];
     
     // Pour chaque clé, récupérer les données du personnage
     for (const key of keys) {
       try {
-        const characterData = await kv.get(key);
+        const characterData = await redis.get(key);
         if (characterData) {
-          const character = typeof characterData === 'string' ? JSON.parse(characterData) : characterData;
+          const character = JSON.parse(characterData);
           const shareId = key.replace('character:', '');
           
           // Créer un résumé public du personnage
@@ -51,5 +57,14 @@ export async function GET() {
       { error: 'Erreur serveur' },
       { status: 500 }
     );
+  } finally {
+    // Fermer la connexion Redis
+    if (redis) {
+      try {
+        await redis.quit();
+      } catch (error) {
+        console.error('Erreur lors de la fermeture de Redis:', error);
+      }
+    }
   }
 }
