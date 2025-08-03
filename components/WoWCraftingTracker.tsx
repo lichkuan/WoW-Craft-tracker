@@ -47,6 +47,8 @@ const WoWCraftingTracker = () => {
     const lines = text.split('\n');
     const items = [];
     
+    console.log('Extension sélectionnée:', extension); // Debug
+    
     lines.forEach(line => {
       const trimmed = line.trim();
       if (trimmed.startsWith('- [') && trimmed.includes('](')) {
@@ -55,19 +57,15 @@ const WoWCraftingTracker = () => {
         
         if (nameMatch && urlMatch) {
           let url = urlMatch[1];
+          console.log('URL avant conversion:', url); // Debug
           
           // Conversion d'URL selon l'extension choisie
           if (extension === 'mop-classic') {
-            // Convertir tous les liens Wowhead vers MoP Classic FR
             if (url.includes('wowhead.com/cata/')) {
               url = url.replace('wowhead.com/cata/', 'wowhead.com/mop-classic/fr/');
-            }
-            // Si le lien ne contient pas déjà mop-classic, on l'ajoute
-            else if (url.includes('wowhead.com/') && !url.includes('mop-classic')) {
-              url = url.replace('wowhead.com/', 'wowhead.com/mop-classic/fr/');
+              console.log('URL après conversion:', url); // Debug
             }
           }
-          // Pour Cataclysm, on garde les liens /cata/ tels quels
           
           items.push({
             name: nameMatch[1],
@@ -79,6 +77,7 @@ const WoWCraftingTracker = () => {
       }
     });
     
+    console.log('Items parsés:', items.length); // Debug
     return items;
   };
 
