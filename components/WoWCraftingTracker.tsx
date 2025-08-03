@@ -569,20 +569,20 @@ const WoWCraftingTracker: React.FC = () => {
         setCurrentCharacter(migratedCharacters[0]);
       }
     }
-
+  
     // Load public characters
     loadPublicCharacters();
-
-    // Nettoyage automatique des doublons au chargement
-    cleanupDuplicates();
-
+  
+    // COMMENTÉ TEMPORAIREMENT - C'EST LUI QUI SUPPRIME VOS PERSONNAGES !
+    // cleanupDuplicates();
+  
     // Check for shared character in URL
     const urlParams = new URLSearchParams(window.location.search);
     const shareId = urlParams.get('share');
     if (shareId) {
       loadSharedCharacter(shareId);
-    }
-  }, []);
+  }
+}, []);
 
   // Save to localStorage whenever characters change
   useEffect(() => {
