@@ -45,6 +45,7 @@ const WoWCraftingTracker: React.FC = () => {
   const [allExpanded, setAllExpanded] = useState<boolean>(true);
   const [shareSuccess, setShareSuccess] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [publicCharacters, setPublicCharacters] = useState<any[]>([]);
 
   // Generate short ID for sharing
   const generateShareId = (): string => {
@@ -62,6 +63,9 @@ const WoWCraftingTracker: React.FC = () => {
       }
     }
 
+    // Load public characters
+    loadPublicCharacters();
+
     // Check for shared character in URL
     const urlParams = new URLSearchParams(window.location.search);
     const shareId = urlParams.get('share');
@@ -69,6 +73,19 @@ const WoWCraftingTracker: React.FC = () => {
       loadSharedCharacter(shareId);
     }
   }, []);
+
+  // Load public characters from API
+  const loadPublicCharacters = async () => {
+    try {
+      const response = await fetch('/api/characters/public');
+      if (response.ok) {
+        const publicChars = await response.json();
+        setPublicCharacters(publicChars);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des personnages publics:', error);
+    }
+  };
 
   // Load shared character from API
   const loadSharedCharacter = async (shareId: string) => {
@@ -801,7 +818,7 @@ const WoWCraftingTracker: React.FC = () => {
   };
 
   const HomeView: React.FC = () => (
-    <div className="max-w-4xl mx-auto text-center">
+    <div className="max-w-6xl mx-auto text-center">
       <div className="bg-gray-800 rounded-lg p-12 border border-yellow-600 mb-8">
         <h1 className="text-5xl font-bold text-yellow-400 mb-4">WoW Crafting Tracker</h1>
         <p className="text-xl text-gray-300 mb-8">
@@ -883,6 +900,110 @@ const WoWCraftingTracker: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Section des personnages publics */}
+      {publicCharacters.length > 0 && (
+        <div className="bg-gray-800 rounded-lg p-8 border border-yellow-600">
+          <h2 className="text-3xl font-bold text-yellow-400 mb-6">🌟 Personnages de la communauté</h2>
+          <p className="text-gray-300 mb-6">Découvrez les personnages et métiers partagés par la communauté</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {publicCharacters.map(character => {
+              const ProfessionIcon1 = getProfessionIcon(character.primaryProfession1);
+              const ProfessionIcon2 = getProfessionIcon(character.primaryProfession2);
+              
+              return (
+                <div 
+                  key={character.shareId}
+                  className="bg-gray-700 rounded-lg p-6 cursor-pointer hover:bg-gray-600 transition-all duration-300 border border-gray-600 hover:border-yellow-500"
+                  onClick={() => {
+                    window.open(`?share=${character.shareId}`, '_blank');
+                  }}
+                >
+                  {/* En-tête du personnage */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-yellow-300">{character.name}</h3>
+                      <p className="text-gray-300 text-sm">
+                        Niveau {character.level} {character.race} {character.class}
+                      </p>
+                    </div>
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                      character.faction === 'alliance' ? 'bg-blue-600 text-blue-100' : 'bg-red-600 text-red-100'
+                    }`}>
+                      {character.faction === 'alliance' ? 'Alliance' : 'Horde'}
+                    </span>
+                  </div>
+
+                  {/* Serveur et Guilde */}
+                  <div className="mb-4 space-y-1">
+                    {character.server && (
+                      <p className="text-gray-400 text-sm">📍 {character.server}</p>
+                    )}
+                    {character.guild && (
+                      <p className="text-gray-400 text-sm">⚔️ {character.guild}</p>
+                    )}
+                  </div>
+
+                  {/* Métiers */}
+                  <div className="space-y-3">
+                    <h4 className="text-yellow-400 font-semibold text-sm">Métiers principaux :</h4>
+                    
+                    {character.primaryProfession1 && (
+                      <div className="flex items-center justify-between bg-gray-600 rounded p-2">
+                        <div className="flex items-center">
+                          <ProfessionIcon1 className="w-5 h-5 text-yellow-400 mr-2" />
+                          <span className="text-white text-sm font-medium">{character.primaryProfession1}</span>
+                        </div>
+                        <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
+                          {character.craftCounts[character.primaryProfession1] || 0} recettes
+                        </span>
+                      </div>
+                    )}
+                    
+                    {character.primaryProfession2 && (
+                      <div className="flex items-center justify-between bg-gray-600 rounded p-2">
+                        <div className="flex items-center">
+                          <ProfessionIcon2 className="w-5 h-5 text-yellow-400 mr-2" />
+                          <span className="text-white text-sm font-medium">{character.primaryProfession2}</span>
+                        </div>
+                        <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
+                          {character.craftCounts[character.primaryProfession2] || 0} recettes
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Total des recettes */}
+                  <div className="mt-4 pt-4 border-t border-gray-600">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 text-sm">Total des recettes :</span>
+                      <span className="text-yellow-400 font-bold">
+                        {Object.values(character.craftCounts).reduce((a: number, b: number) => a + b, 0)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Indicateur de lien */}
+                  <div className="mt-3 text-center">
+                    <span className="text-blue-400 text-xs">🔗 Cliquez pour voir le profil complet</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Bouton pour rafraîchir */}
+          <div className="mt-6 text-center">
+            <button
+              onClick={loadPublicCharacters}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors text-sm"
+            >
+              🔄 Actualiser la liste
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 
