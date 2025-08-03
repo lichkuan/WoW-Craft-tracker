@@ -79,21 +79,22 @@ const WoWCraftingTracker = () => {
     const name = itemName.toLowerCase();
     
     // Catégories pour enchantements
-    if (name.includes('arme') || name.includes('weapon')) return 'Armes';
-    if (name.includes('bottes') || name.includes('boots')) return 'Bottes';
+    if (name.includes('arme') || name.includes('weapon') || name.includes('bâton')) return 'Armes';
+    if (name.includes('bottes') || name.includes('boots') || name.includes('pandaren') || name.includes('pas')) return 'Bottes';
     if (name.includes('brassards') || name.includes('bracer')) return 'Brassards';
     if (name.includes('gants') || name.includes('gloves')) return 'Gants';
     if (name.includes('plastron') || name.includes('chest')) return 'Plastron';
     if (name.includes('cape') || name.includes('cloak')) return 'Cape';
     if (name.includes('bouclier') || name.includes('shield')) return 'Bouclier';
     if (name.includes('anneau') || name.includes('ring')) return 'Anneaux';
-    if (name.includes('bâton') || name.includes('staff')) return 'Bâtons';
-    if (name.includes('main gauche') || name.includes('off-hand')) return 'Main gauche';
+    if (name.includes('main gauche') || name.includes('off-hand') || name.includes('objet en main gauche')) return 'Main gauche';
     
     // Matériaux et objets spéciaux
     if (name.includes('cristal') || name.includes('éclat') || name.includes('essence') || 
         name.includes('barre') || name.includes('cuir') || name.includes('bris') ||
-        name.includes('sphère') || name.includes('huile') || name.includes('lanterne')) {
+        name.includes('sphère') || name.includes('huile') || name.includes('lanterne') ||
+        name.includes('baguette') || name.includes('bâtonnet') || name.includes('diffusion') ||
+        name.includes('eclatement') || name.includes('transformation')) {
       return 'Matériaux et objets';
     }
     
@@ -665,17 +666,18 @@ const WoWCraftingTracker = () => {
                                   <div className="mt-2 space-y-2">
                                     {categoryItems.map(craft => (
                                       <div key={craft.id} className="bg-gray-700 rounded-lg p-3 hover:bg-gray-600 transition-colors ml-4">
-                                        <a 
-                                          href={craft.url} 
-                                          target="_blank" 
-                                          rel="noopener noreferrer"
-                                          className="text-yellow-300 hover:text-yellow-100 font-medium flex items-center justify-between group"
-                                        >
+                                        <div className="text-yellow-300 hover:text-yellow-100 font-medium flex items-center justify-between group">
                                           <span>{craft.name}</span>
-                                          <span className="text-xs text-gray-400 group-hover:text-gray-300">
+                                          <a 
+                                            href={craft.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-gray-400 group-hover:text-gray-300 hover:text-blue-400 transition-colors"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
                                             Voir sur Wowhead →
-                                          </span>
-                                        </a>
+                                          </a>
+                                        </div>
                                       </div>
                                     ))}
                                   </div>
