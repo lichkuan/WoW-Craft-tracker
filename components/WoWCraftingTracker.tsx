@@ -44,6 +44,12 @@ const WoWCraftingTracker: React.FC = () => {
   const [expandedCategories, setExpandedCategories] = useState<{ [key: string]: boolean }>({});
   const [allExpanded, setAllExpanded] = useState<boolean>(true);
   const [shareSuccess, setShareSuccess] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Generate short ID for sharing
+  const generateShareId = (): string => {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+  };
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -58,84 +64,57 @@ const WoWCraftingTracker: React.FC = () => {
 
     // Check for shared character in URL
     const urlParams = new URLSearchParams(window.location.search);
-    const sharedData = urlParams.get('data');
-    const summaryData = urlParams.get('summary');
-    
-    if (sharedData) {
-      try {
-        // Decode base64 to UTF-8 string safely
-        const decodedString = decodeURIComponent(Array.prototype.map.call(atob(sharedData), (c) => {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        const decodedData = JSON.parse(decodedString);
-        
-        // Reconstituer le format complet depuis le format compressé
-        const fullCharacter: Character = {
-          id: 'shared',
-          name: decodedData.n,
-          faction: decodedData.f,
-          race: decodedData.r,
-          class: decodedData.c,
-          level: decodedData.l,
-          server: decodedData.s,
-          guild: decodedData.g,
-          primaryProfession1: decodedData.p1,
-          primaryProfession2: decodedData.p2,
-          crafts: Object.keys(decodedData.cr || {}).reduce((acc: any, prof) => {
-            acc[prof] = decodedData.cr[prof].map((craft: any) => ({
-              id: Math.random().toString(36).substr(2, 9),
-              name: craft.n,
-              url: craft.u,
-              category: craft.c
-            }));
-            return acc;
-          }, {})
-        };
-        
-        setCurrentCharacter(fullCharacter);
-        setCurrentView('character');
-      } catch (error) {
-        console.error('Erreur lors du décodage des données partagées:', error);
-      }
-    } else if (summaryData) {
-      try {
-        // Decode summary data (version simplifiée)
-        const decodedString = decodeURIComponent(Array.prototype.map.call(atob(summaryData), (c) => {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        const decodedData = JSON.parse(decodedString);
-        
-        // Créer un personnage avec juste les infos de base
-        const summaryCharacter: Character = {
-          id: 'shared-summary',
-          name: decodedData.n,
-          faction: decodedData.f,
-          race: decodedData.r,
-          class: decodedData.c,
-          level: decodedData.l,
-          server: decodedData.s,
-          guild: decodedData.g,
-          primaryProfession1: decodedData.p1,
-          primaryProfession2: decodedData.p2,
-          crafts: Object.keys(decodedData.cr || {}).reduce((acc: any, prof) => {
-            // Créer une seule entrée qui explique le résumé
-            acc[prof] = [{
-              id: 'summary-info',
-              name: `${decodedData.cr[prof]} recettes disponibles (voir le personnage original pour les détails)`,
-              url: '#',
-              category: 'Résumé'
-            }];
-            return acc;
-          }, {})
-        };
-        
-        setCurrentCharacter(summaryCharacter);
-        setCurrentView('character');
-      } catch (error) {
-        console.error('Erreur lors du décodage des données résumées:', error);
-      }
+    const shareId = urlParams.get('share');
+    if (shareId) {
+      loadSharedCharacter(shareId);
     }
   }, []);
+
+  // Load shared character from API
+  const loadSharedCharacter = async (shareId: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/character/${shareId}`);
+      if (response.ok) {
+        const sharedCharacter = await response.json();
+        setCurrentCharacter(sharedCharacter);
+        setCurrentView('character');
+      } else {
+        console.error('Personnage partagé non trouvé');
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement du personnage partagé:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Save character to database for sharing
+  const saveCharacterForSharing = async (character: Character): Promise<string | null> => {
+    try {
+      const shareId = generateShareId();
+      const response = await fetch('/api/character', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          shareId,
+          character
+        })
+      });
+
+      if (response.ok) {
+        return shareId;
+      } else {
+        console.error('Erreur lors de la sauvegarde');
+        return null;
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      return null;
+    }
+  };
 
   // Save to localStorage whenever characters change
   useEffect(() => {
@@ -578,118 +557,23 @@ const WoWCraftingTracker: React.FC = () => {
       currentCharacter.primaryProfession2
     ].filter(Boolean);
 
-    const getShareUrl = (): string => {
-      // Essayer d'abord de partager seulement les recettes les plus importantes
-      const limitedCrafts: { [key: string]: CraftItem[] } = {};
-      let totalItems = 0;
-      
-      Object.keys(currentCharacter.crafts).forEach(prof => {
-        const crafts = currentCharacter.crafts[prof];
-        if (crafts && crafts.length > 0) {
-          // Limiter à 20 recettes par métier pour éviter les URLs trop longues
-          limitedCrafts[prof] = crafts.slice(0, 20);
-          totalItems += limitedCrafts[prof].length;
-        }
-      });
-
-      // Créer une version compressée des données
-      const dataToShare = {
-        n: currentCharacter.name,
-        f: currentCharacter.faction,
-        r: currentCharacter.race,
-        c: currentCharacter.class,
-        l: currentCharacter.level,
-        s: currentCharacter.server,
-        g: currentCharacter.guild,
-        p1: currentCharacter.primaryProfession1,
-        p2: currentCharacter.primaryProfession2,
-        cr: Object.keys(limitedCrafts).reduce((acc: any, prof) => {
-          acc[prof] = limitedCrafts[prof].map(craft => ({
-            n: craft.name,
-            u: craft.url,
-            c: craft.category
-          }));
-          return acc;
-        }, {})
-      };
-      
-      const jsonString = JSON.stringify(dataToShare);
-      
-      // Vérifier la taille avant encodage
-      if (jsonString.length > 1200 || totalItems > 50) {
-        // Si encore trop grand, créer une version résumé
-        const compressedData = {
-          n: currentCharacter.name,
-          f: currentCharacter.faction,
-          r: currentCharacter.race,
-          c: currentCharacter.class,
-          l: currentCharacter.level,
-          s: currentCharacter.server,
-          g: currentCharacter.guild,
-          p1: currentCharacter.primaryProfession1,
-          p2: currentCharacter.primaryProfession2,
-          // Seulement le nombre de recettes par métier
-          cr: Object.keys(currentCharacter.crafts).reduce((acc: any, prof) => {
-            acc[prof] = currentCharacter.crafts[prof].length;
-            return acc;
-          }, {})
-        };
-        
-        const encodedData = btoa(encodeURIComponent(JSON.stringify(compressedData)).replace(/%([0-9A-F]{2})/g, (match, p1) => {
-          return String.fromCharCode(parseInt(p1, 16));
-        }));
-        
-        const baseUrl = window.location.origin + window.location.pathname;
-        return `${baseUrl}?summary=${encodedData}`;
-      } else {
-        // Encodage normal si la taille est acceptable
-        const encodedData = btoa(encodeURIComponent(jsonString).replace(/%([0-9A-F]{2})/g, (match, p1) => {
-          return String.fromCharCode(parseInt(p1, 16));
-        }));
-        
-        const baseUrl = window.location.origin + window.location.pathname;
-        const finalUrl = `${baseUrl}?data=${encodedData}`;
-        
-        // Si l'URL finale est encore trop longue, forcer le mode résumé
-        if (finalUrl.length > 2000) {
-          const compressedData = {
-            n: currentCharacter.name,
-            f: currentCharacter.faction,
-            r: currentCharacter.race,
-            c: currentCharacter.class,
-            l: currentCharacter.level,
-            s: currentCharacter.server,
-            g: currentCharacter.guild,
-            p1: currentCharacter.primaryProfession1,
-            p2: currentCharacter.primaryProfession2,
-            cr: Object.keys(currentCharacter.crafts).reduce((acc: any, prof) => {
-              acc[prof] = currentCharacter.crafts[prof].length;
-              return acc;
-            }, {})
-          };
-          
-          const summaryEncoded = btoa(encodeURIComponent(JSON.stringify(compressedData)).replace(/%([0-9A-F]{2})/g, (match, p1) => {
-            return String.fromCharCode(parseInt(p1, 16));
-          }));
-          
-          return `${baseUrl}?summary=${summaryEncoded}`;
-        }
-        
-        return finalUrl;
-      }
-    };
-
     const handleShare = async (): Promise<void> => {
+      setIsLoading(true);
       try {
-        const shareUrl = getShareUrl();
-        await navigator.clipboard.writeText(shareUrl);
-        setShareSuccess(true);
-        setTimeout(() => setShareSuccess(false), 3000); // Reset after 3 seconds
+        const shareId = await saveCharacterForSharing(currentCharacter);
+        if (shareId) {
+          const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareId}`;
+          await navigator.clipboard.writeText(shareUrl);
+          setShareSuccess(true);
+          setTimeout(() => setShareSuccess(false), 3000);
+        } else {
+          alert('Erreur lors de la création du lien de partage');
+        }
       } catch (error) {
-        console.error('Erreur lors de la copie:', error);
-        // Fallback for older browsers
-        const shareUrl = getShareUrl();
-        prompt('Copiez ce lien pour partager:', shareUrl);
+        console.error('Erreur lors du partage:', error);
+        alert('Erreur lors de la création du lien de partage');
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -697,18 +581,6 @@ const WoWCraftingTracker: React.FC = () => {
       <div className="max-w-6xl mx-auto">
         {/* Character Header */}
         <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-yellow-600">
-          {/* Notification pour le mode résumé */}
-          {currentCharacter.id === 'shared-summary' && (
-            <div className="bg-orange-900 border border-orange-600 rounded-lg p-4 mb-4">
-              <div className="flex items-center">
-                <div className="text-orange-300">
-                  <strong>📊 Mode Résumé</strong> - Ce lien contient trop de recettes pour être partagé en détail. 
-                  Seules les statistiques sont affichées. Pour voir les recettes complètes, consultez le personnage original.
-                </div>
-              </div>
-            </div>
-          )}
-          
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-4xl font-bold text-yellow-400 mb-2">{currentCharacter.name}</h1>
@@ -723,15 +595,18 @@ const WoWCraftingTracker: React.FC = () => {
             </div>
             <button
               onClick={handleShare}
+              disabled={isLoading}
               className={`px-4 py-2 rounded flex items-center transition-all duration-300 ${
                 shareSuccess 
                   ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : isLoading
+                  ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700 text-white'
               }`}
-              title="Copier le lien de partage"
+              title="Créer un lien de partage"
             >
               <Share className="w-4 h-4 mr-2" />
-              {shareSuccess ? 'Lien copié !' : 'Partager'}
+              {isLoading ? 'Création...' : shareSuccess ? 'Lien copié !' : 'Partager'}
             </button>
           </div>
         </div>
@@ -1010,6 +885,17 @@ const WoWCraftingTracker: React.FC = () => {
       </div>
     </div>
   );
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+          <p className="text-xl text-gray-300">Chargement du personnage partagé...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
