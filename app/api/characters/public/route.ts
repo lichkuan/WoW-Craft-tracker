@@ -34,6 +34,7 @@ export async function GET() {
             guild: character.guild,
             primaryProfession1: character.primaryProfession1,
             primaryProfession2: character.primaryProfession2,
+            professionLevels: character.professionLevels || {},
             craftCounts: Object.keys(character.crafts || {}).reduce((acc: any, prof) => {
               acc[prof] = character.crafts[prof]?.length || 0;
               return acc;
