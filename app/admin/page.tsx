@@ -101,6 +101,113 @@ export default function AdminPage() {
     }
   };
 
+  // Fonctions de debug
+  const debugRedis = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/debug/redis');
+      const data = await response.json();
+      console.log('=== DEBUG REDIS ===');
+      console.log('Total clés:', data.totalKeys);
+      console.log('Détails:', data);
+      alert(`Debug Redis: ${data.totalKeys} clés trouvées. Voir console pour détails.`);
+    } catch (error) {
+      console.error('Erreur debug Redis:', error);
+      alert('Erreur lors du debug Redis');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const testRedisSave = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/test-save', { method: 'POST' });
+      const result = await response.json();
+      console.log('=== TEST SAUVEGARDE REDIS ===');
+      console.log(result);
+      
+      if (result.success) {
+        alert('✅ Test Redis réussi ! Connexion et sauvegarde OK.');
+      } else {
+        alert(`❌ Test Redis échoué: ${result.error}`);
+      }
+      
+      // Recharger les données après le test
+      await loadData();
+    } catch (error) {
+      console.error('Erreur test sauvegarde:', error);
+      alert('Erreur lors du test de sauvegarde');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const testCharacterSave = async () => {
+    setLoading(true);
+    try {
+      // Créer un personnage de test
+      const testCharacter = {
+        id: 'debug-test',
+        name: 'DebugTest',
+        server: 'TestServer',
+        level: 90,
+        race: 'Humain',
+        class: 'Paladin',
+        faction: 'alliance',
+        guild: 'Debug Guild',
+        primaryProfession1: 'Forge',
+        primaryProfession2: 'Minage',
+        professionLevels: {
+          'Forge': 600,
+          'Minage': 600
+        },
+        crafts: {
+          'Forge': [
+            { id: '1', name: 'Test Item 1', url: 'https://test.com/1', category: 'Test' }
+          ],
+          'Minage': []
+        }
+      };
+
+      const testShareId = 'DEBUG' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      
+      console.log('=== TEST SAUVEGARDE PERSONNAGE ===');
+      console.log('ShareId:', testShareId);
+      console.log('Character:', testCharacter);
+
+      const response = await fetch('/api/character', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shareId: testShareId,
+          character: testCharacter
+        })
+      });
+
+      const result = await response.json();
+      console.log('Résultat sauvegarde:', result);
+
+      if (result.success) {
+        alert(`✅ Test sauvegarde personnage réussi ! ShareId: ${testShareId}`);
+        
+        // Vérifier immédiatement
+        const debugResponse = await fetch('/api/debug/redis');
+        const debugData = await debugResponse.json();
+        console.log('Vérification après sauvegarde:', debugData);
+        
+        await loadData();
+      } else {
+        alert(`❌ Test sauvegarde personnage échoué: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Erreur test personnage:', error);
+      alert('Erreur lors du test de sauvegarde personnage');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadData();
   }, []);
@@ -138,6 +245,37 @@ export default function AdminPage() {
           />
           <p className="text-gray-400 text-sm mt-2">
             Code requis: DELETE_ALL_SHARES_2025
+          </p>
+        </div>
+
+        {/* Section Debug */}
+        <div className="bg-purple-900 border border-purple-600 rounded-lg p-6 mb-8">
+          <h2 className="text-2xl font-bold text-purple-300 mb-4">🔍 Debug & Tests</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <button
+              onClick={debugRedis}
+              disabled={loading}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition-colors disabled:opacity-50 flex items-center justify-center"
+            >
+              🔍 Debug Redis
+            </button>
+            <button
+              onClick={testRedisSave}
+              disabled={loading}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded transition-colors disabled:opacity-50 flex items-center justify-center"
+            >
+              🧪 Test Sauvegarde
+            </button>
+            <button
+              onClick={testCharacterSave}
+              disabled={loading}
+              className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded transition-colors disabled:opacity-50 flex items-center justify-center"
+            >
+              👤 Test Personnage
+            </button>
+          </div>
+          <p className="text-purple-200 text-sm mt-3">
+            Ces boutons permettent de diagnostiquer les problèmes de sauvegarde. Consultez la console pour les détails.
           </p>
         </div>
 
@@ -198,8 +336,26 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* Message si aucun personnage */}
+        {data && data.total === 0 && (
+          <div className="bg-yellow-900 border border-yellow-600 rounded-lg p-6 mb-8 text-center">
+            <h3 className="text-2xl font-bold text-yellow-300 mb-2">Aucun personnage trouvé</h3>
+            <p className="text-yellow-200 mb-4">
+              Il n'y a actuellement aucun personnage dans Redis. Cela peut signifier :
+            </p>
+            <ul className="text-yellow-200 text-left max-w-md mx-auto space-y-2">
+              <li>• Les personnages ne sont pas sauvegardés correctement</li>
+              <li>• Ils ont tous expiré</li>
+              <li>• Il y a un problème de connexion Redis</li>
+            </ul>
+            <p className="text-yellow-200 mt-4">
+              Utilisez les boutons de debug ci-dessus pour diagnostiquer le problème.
+            </p>
+          </div>
+        )}
+
         {/* Liste des personnages */}
-        {data && (
+        {data && data.total > 0 && (
           <div className="bg-gray-800 rounded-lg border border-gray-600">
             <div className="p-6 border-b border-gray-700">
               <h2 className="text-2xl font-bold text-white">Personnages ({data.total})</h2>
