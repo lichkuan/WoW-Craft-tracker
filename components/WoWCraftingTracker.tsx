@@ -147,6 +147,27 @@ const WoWCraftingTracker: React.FC = () => {
     }
   };
 
+  // Delete character from database
+  const deleteCharacterFromDatabase = async (character: Character): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/character/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          characterName: character.name,
+          characterServer: character.server
+        })
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la base:', error);
+      return false;
+    }
+  };
+
   // Save to localStorage whenever characters change
   useEffect(() => {
     localStorage.setItem('wowCharacters', JSON.stringify(characters));
@@ -323,6 +344,39 @@ const WoWCraftingTracker: React.FC = () => {
     setCharacters(updatedCharacters);
     setCurrentCharacter(newCharacter);
     setCurrentView('character');
+  };
+
+  const handleDeleteCharacter = async (character: Character): Promise<void> => {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer définitivement ${character.name} ?`)) {
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      // Supprimer de la base de données
+      await deleteCharacterFromDatabase(character);
+      
+      // Supprimer du localStorage
+      const updatedCharacters = characters.filter(char => char.id !== character.id);
+      setCharacters(updatedCharacters);
+      
+      // Si c'était le personnage actuel, revenir à l'accueil
+      if (currentCharacter?.id === character.id) {
+        setCurrentCharacter(null);
+        setCurrentView('home');
+      }
+      
+      // Recharger la liste publique
+      loadPublicCharacters();
+      
+      alert('Personnage supprimé avec succès !');
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      alert('Erreur lors de la suppression du personnage');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleImportCrafts = (profession: string): void => {
@@ -889,19 +943,32 @@ const WoWCraftingTracker: React.FC = () => {
               {characters.map(character => (
                 <div 
                   key={character.id}
-                  className="bg-gray-700 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors"
-                  onClick={() => {
-                    setCurrentCharacter(character);
-                    setCurrentView('character');
-                  }}
+                  className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-yellow-500 transition-colors"
                 >
-                  <h3 className="text-xl font-bold text-yellow-300">{character.name}</h3>
-                  <p className="text-gray-300">
-                    Niveau {character.level} {character.race} {character.class}
-                  </p>
-                  {character.server && (
-                    <p className="text-gray-400 text-sm">{character.server}</p>
-                  )}
+                  <div className="flex items-center justify-between">
+                    <div 
+                      className="flex-1 cursor-pointer"
+                      onClick={() => {
+                        setCurrentCharacter(character);
+                        setCurrentView('character');
+                      }}
+                    >
+                      <h3 className="text-xl font-bold text-yellow-300">{character.name}</h3>
+                      <p className="text-gray-300">
+                        Niveau {character.level} {character.race} {character.class}
+                      </p>
+                      {character.server && (
+                        <p className="text-gray-400 text-sm">{character.server}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDeleteCharacter(character)}
+                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors ml-4"
+                      title="Supprimer définitivement ce personnage"
+                    >
+                      🗑️ Supprimer
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
