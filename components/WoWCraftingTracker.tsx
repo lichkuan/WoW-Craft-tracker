@@ -1164,6 +1164,7 @@ const WoWCraftingTracker: React.FC = () => {
     </div>
   );
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
