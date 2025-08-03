@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Upload, User, Scroll, Wand2, Hammer, Gem, Plus, X, Share, Search, Trash2, Eye, EyeOff, Beaker, Pickaxe, Flower, Wrench, Scissors, Palette, Zap, LucideIcon } from 'lucide-react';
+import { ChevronDown, ChevronRight, Upload, User, Scroll, Wand2, Hammer, Gem, Plus, X, Share, Search, Trash2, Eye, EyeOff, Beaker, Mountain, Flower, Wrench, Scissors, Palette, Zap, LucideIcon } from 'lucide-react';
 
 interface Character {
   id: string;
@@ -85,7 +85,7 @@ const WoWCraftingTracker: React.FC = () => {
       'Herboristerie': Flower,
       'Joaillerie': Gem,
       'Travail du cuir': Scissors,
-      'Minage': Pickaxe,
+      'Minage': Mountain,
       'Calligraphie': Scroll,
       'Dépeçage': Zap,
       'Couture': Palette
