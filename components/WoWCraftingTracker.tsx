@@ -12,6 +12,7 @@ interface PublicCharacter {
   guild: string;
   primaryProfession1: string;
   primaryProfession2: string;
+  professionLevels: Record<string, number>;
   craftCounts: Record<string, number>;
 }
 
@@ -26,6 +27,7 @@ interface Character {
   guild: string;
   primaryProfession1: string;
   primaryProfession2: string;
+  professionLevels: Record<string, number>;
   crafts: { [key: string]: CraftItem[] };
 }
 
@@ -200,8 +202,31 @@ const WoWCraftingTracker: React.FC = () => {
     primary: ['Alchimie', 'Forge', 'Enchantement', 'Ingénierie', 'Herboristerie', 'Joaillerie', 'Travail du cuir', 'Minage', 'Calligraphie', 'Dépeçage', 'Couture']
   };
 
-  // Fonction pour obtenir l'icône du métier
-  const getProfessionIcon = (profession: string): LucideIcon => {
+  // Fonction pour obtenir le nom du niveau de métier
+  const getProfessionLevelName = (level: number): string => {
+    if (level >= 1 && level <= 60) return 'Apprenti';
+    if (level >= 60 && level <= 140) return 'Compagnon';
+    if (level >= 140 && level <= 205) return 'Expert';
+    if (level >= 205 && level <= 300) return 'Artisan';
+    if (level >= 300 && level <= 350) return 'Maître';
+    if (level >= 350 && level <= 425) return 'Grand Maître';
+    if (level >= 425 && level <= 500) return 'Illustre';
+    if (level >= 500 && level <= 600) return 'Zen';
+    return 'Inconnu';
+  };
+
+  // Fonction pour obtenir la couleur du niveau de métier
+  const getProfessionLevelColor = (level: number): string => {
+    if (level >= 1 && level <= 60) return 'text-gray-400';      // Apprenti
+    if (level >= 60 && level <= 140) return 'text-green-400';   // Compagnon
+    if (level >= 140 && level <= 205) return 'text-yellow-400'; // Expert
+    if (level >= 205 && level <= 300) return 'text-orange-400'; // Artisan
+    if (level >= 300 && level <= 350) return 'text-red-400';    // Maître
+    if (level >= 350 && level <= 425) return 'text-purple-400'; // Grand Maître
+    if (level >= 425 && level <= 500) return 'text-blue-400';   // Illustre
+    if (level >= 500 && level <= 600) return 'text-pink-400';   // Zen
+    return 'text-gray-400';
+  };
     const iconMap: { [key: string]: LucideIcon } = {
       'Alchimie': Beaker,
       'Forge': Hammer,
@@ -218,7 +243,7 @@ const WoWCraftingTracker: React.FC = () => {
     return iconMap[profession] || Scroll;
   };
 
-  const parseMarkdownList = (text: string, extension: string = 'mop-classic'): CraftItem[] => {
+  const parseMarkdownList = (text: string, extension: string = 'mop-classic', profession: string = ''): CraftItem[] => {
     const lines = text.split('\n');
     const items: CraftItem[] = [];
     
@@ -350,6 +375,7 @@ const WoWCraftingTracker: React.FC = () => {
     const newCharacter: Character = {
       ...characterData,
       id: Math.random().toString(36).substr(2, 9),
+      professionLevels: {},
       crafts: {}
     };
     
@@ -395,9 +421,16 @@ const WoWCraftingTracker: React.FC = () => {
   const handleImportCrafts = (profession: string): void => {
     if (!importText.trim() || !currentCharacter) return;
     
-    const items = parseMarkdownList(importText, wowExtension);
+    // Extraire le niveau de métier
+    const professionLevel = extractProfessionLevel(importText, profession);
+    
+    const items = parseMarkdownList(importText, wowExtension, profession);
     const updatedCharacter: Character = {
       ...currentCharacter,
+      professionLevels: {
+        ...currentCharacter.professionLevels,
+        [profession]: professionLevel
+      },
       crafts: {
         ...currentCharacter.crafts,
         [profession]: items
@@ -745,7 +778,14 @@ const WoWCraftingTracker: React.FC = () => {
                   <div className="flex justify-between items-center">
                     <h2 className="text-2xl font-bold text-yellow-400 flex items-center">
                       <ProfessionIcon className="mr-3 w-8 h-8" />
-                      {profession}
+                      <div className="flex flex-col">
+                        <span>{profession}</span>
+                        {currentCharacter.professionLevels[profession] > 0 && (
+                          <span className={`text-sm font-normal ${getProfessionLevelColor(currentCharacter.professionLevels[profession])}`}>
+                            Niveau {currentCharacter.professionLevels[profession]} ({getProfessionLevelName(currentCharacter.professionLevels[profession])})
+                          </span>
+                        )}
+                      </div>
                     </h2>
                     <div className="flex space-x-2">
                       <button
@@ -1047,7 +1087,14 @@ const WoWCraftingTracker: React.FC = () => {
                       <div className="flex items-center justify-between bg-gray-600 rounded p-2">
                         <div className="flex items-center">
                           <ProfessionIcon1 className="w-5 h-5 text-yellow-400 mr-2" />
-                          <span className="text-white text-sm font-medium">{character.primaryProfession1}</span>
+                          <div className="flex flex-col">
+                            <span className="text-white text-sm font-medium">{character.primaryProfession1}</span>
+                            {character.professionLevels[character.primaryProfession1] > 0 && (
+                              <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.primaryProfession1])}`}>
+                                Niveau {character.professionLevels[character.primaryProfession1]} ({getProfessionLevelName(character.professionLevels[character.primaryProfession1])})
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
                           {character.craftCounts[character.primaryProfession1] || 0} recettes
@@ -1059,7 +1106,14 @@ const WoWCraftingTracker: React.FC = () => {
                       <div className="flex items-center justify-between bg-gray-600 rounded p-2">
                         <div className="flex items-center">
                           <ProfessionIcon2 className="w-5 h-5 text-yellow-400 mr-2" />
-                          <span className="text-white text-sm font-medium">{character.primaryProfession2}</span>
+                          <div className="flex flex-col">
+                            <span className="text-white text-sm font-medium">{character.primaryProfession2}</span>
+                            {character.professionLevels[character.primaryProfession2] > 0 && (
+                              <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.primaryProfession2])}`}>
+                                Niveau {character.professionLevels[character.primaryProfession2]} ({getProfessionLevelName(character.professionLevels[character.primaryProfession2])})
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
                           {character.craftCounts[character.primaryProfession2] || 0} recettes
