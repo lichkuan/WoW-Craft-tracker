@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     redis = createClient({ url: process.env.REDIS_URL });
     await redis.connect();
 
-    // Supprimer les anciens partages de ce personnage (basé sur nom + serveur)
+    // Marquer les anciens partages pour suppression dans 3 jours
     const existingKeys = await redis.keys('character:*');
     for (const key of existingKeys) {
       try {
@@ -26,8 +26,10 @@ export async function POST(request: NextRequest) {
           const existingCharacter = JSON.parse(existingData);
           if (existingCharacter.name === character.name && 
               existingCharacter.server === character.server) {
-            await redis.del(key);
-            console.log(`Supprimé l'ancien partage: ${key}`);
+            
+            // Marquer pour suppression dans 3 jours (259200 secondes)
+            await redis.expire(key, 259200);
+            console.log(`Ancien partage marqué pour suppression dans 3 jours: ${key}`);
           }
         }
       } catch (error) {
@@ -35,8 +37,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Sauvegarder le nouveau partage avec expiration de 30 jours
-    await redis.setEx(`character:${shareId}`, 2592000, JSON.stringify(character));
+    // Sauvegarder le nouveau partage SANS expiration (permanent)
+    await redis.set(`character:${shareId}`, JSON.stringify(character));
     
     return NextResponse.json({ success: true, shareId });
   } catch (error) {
