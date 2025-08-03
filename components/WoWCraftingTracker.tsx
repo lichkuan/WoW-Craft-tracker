@@ -1,22 +1,48 @@
-const toggleSecondaryProfession = (prof) => {
-      setFormData(prev => ({
-        ...prev,
-        secondaryProfessions: prev.secondaryProfessions.includes(prof)
-          ? prev.secondaryProfessions.filter(p => p !== prof)
-          : [...prev.secondaryProfessions, prof]
-      }));
-    };import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Upload, User, Scroll, Wand2, Hammer, Gem, Plus, X, Share, Search, Trash2, Eye, EyeOff, Beaker, Pickaxe, Flower, Wrench, Scissors, Palette, Zap } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronDown, ChevronRight, Upload, User, Scroll, Wand2, Hammer, Gem, Plus, X, Share, Search, Trash2, Eye, EyeOff, Beaker, Pickaxe, Flower, Wrench, Scissors, Palette, Zap, LucideIcon } from 'lucide-react';
 
-const WoWCraftingTracker = () => {
-  const [currentView, setCurrentView] = useState('home');
-  const [characters, setCharacters] = useState([]);
-  const [currentCharacter, setCurrentCharacter] = useState(null);
-  const [importText, setImportText] = useState('');
-  const [wowExtension, setWowExtension] = useState('mop-classic');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [expandedCategories, setExpandedCategories] = useState({});
-  const [allExpanded, setAllExpanded] = useState(true);
+interface Character {
+  id: string;
+  name: string;
+  faction: string;
+  race: string;
+  class: string;
+  level: number;
+  server: string;
+  guild: string;
+  primaryProfession1: string;
+  primaryProfession2: string;
+  crafts: { [key: string]: CraftItem[] };
+}
+
+interface CraftItem {
+  id: string;
+  name: string;
+  url: string;
+  category: string;
+}
+
+interface FormData {
+  name: string;
+  faction: string;
+  race: string;
+  class: string;
+  level: number;
+  server: string;
+  guild: string;
+  primaryProfession1: string;
+  primaryProfession2: string;
+}
+
+const WoWCraftingTracker: React.FC = () => {
+  const [currentView, setCurrentView] = useState<string>('home');
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [currentCharacter, setCurrentCharacter] = useState<Character | null>(null);
+  const [importText, setImportText] = useState<string>('');
+  const [wowExtension, setWowExtension] = useState<string>('mop-classic');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [expandedCategories, setExpandedCategories] = useState<{ [key: string]: boolean }>({});
+  const [allExpanded, setAllExpanded] = useState<boolean>(true);
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -49,11 +75,29 @@ const WoWCraftingTracker = () => {
     primary: ['Alchimie', 'Forge', 'Enchantement', 'Ingénierie', 'Herboristerie', 'Joaillerie', 'Travail du cuir', 'Minage', 'Calligraphie', 'Dépeçage', 'Couture']
   };
 
-  const parseMarkdownList = (text, extension = 'mop-classic') => {
+  // Fonction pour obtenir l'icône du métier
+  const getProfessionIcon = (profession: string): LucideIcon => {
+    const iconMap: { [key: string]: LucideIcon } = {
+      'Alchimie': Beaker,
+      'Forge': Hammer,
+      'Enchantement': Wand2,
+      'Ingénierie': Wrench,
+      'Herboristerie': Flower,
+      'Joaillerie': Gem,
+      'Travail du cuir': Scissors,
+      'Minage': Pickaxe,
+      'Calligraphie': Scroll,
+      'Dépeçage': Zap,
+      'Couture': Palette
+    };
+    return iconMap[profession] || Scroll;
+  };
+
+  const parseMarkdownList = (text: string, extension: string = 'mop-classic'): CraftItem[] => {
     const lines = text.split('\n');
-    const items = [];
+    const items: CraftItem[] = [];
     
-    lines.forEach((line, index) => {
+    lines.forEach((line) => {
       const trimmed = line.trim();
       if (trimmed.startsWith('- [') && trimmed.includes('](')) {
         // Regex plus robuste pour capturer nom et URL
@@ -81,7 +125,7 @@ const WoWCraftingTracker = () => {
     return items;
   };
 
-  const categorizeItem = (itemName) => {
+  const categorizeItem = (itemName: string): string => {
     const name = itemName.toLowerCase();
     
     // Catégories pour enchantements
@@ -121,7 +165,7 @@ const WoWCraftingTracker = () => {
     return 'Autres';
   };
 
-  const filterItemsBySearch = (items, searchTerm) => {
+  const filterItemsBySearch = (items: CraftItem[], searchTerm: string): CraftItem[] => {
     if (!searchTerm || !searchTerm.trim()) return items;
     
     const search = searchTerm.toLowerCase().trim();
@@ -132,18 +176,18 @@ const WoWCraftingTracker = () => {
     });
   };
 
-  const toggleCategory = (profession, category) => {
+  const toggleCategory = (profession: string, category: string): void => {
     setExpandedCategories(prev => ({
       ...prev,
       [`${profession}-${category}`]: !prev[`${profession}-${category}`]
     }));
   };
 
-  const toggleAllCategories = (profession, categories) => {
+  const toggleAllCategories = (profession: string, categories: string[]): void => {
     const newState = !allExpanded;
     setAllExpanded(newState);
     
-    const updates = {};
+    const updates: { [key: string]: boolean } = {};
     categories.forEach(category => {
       updates[`${profession}-${category}`] = newState;
     });
@@ -154,12 +198,14 @@ const WoWCraftingTracker = () => {
     }));
   };
 
-  const deleteProfessionCrafts = (profession) => {
+  const deleteProfessionCrafts = (profession: string): void => {
     if (!confirm(`Êtes-vous sûr de vouloir supprimer toutes les recettes de ${profession} ?`)) {
       return;
     }
 
-    const updatedCharacter = {
+    if (!currentCharacter) return;
+
+    const updatedCharacter: Character = {
       ...currentCharacter,
       crafts: {
         ...currentCharacter.crafts,
@@ -175,8 +221,8 @@ const WoWCraftingTracker = () => {
     setCurrentCharacter(updatedCharacter);
   };
 
-  const handleCreateCharacter = (characterData) => {
-    const newCharacter = {
+  const handleCreateCharacter = (characterData: FormData): void => {
+    const newCharacter: Character = {
       ...characterData,
       id: Math.random().toString(36).substr(2, 9),
       crafts: {}
@@ -188,11 +234,11 @@ const WoWCraftingTracker = () => {
     setCurrentView('character');
   };
 
-  const handleImportCrafts = (profession) => {
-    if (!importText.trim()) return;
+  const handleImportCrafts = (profession: string): void => {
+    if (!importText.trim() || !currentCharacter) return;
     
     const items = parseMarkdownList(importText, wowExtension);
-    const updatedCharacter = {
+    const updatedCharacter: Character = {
       ...currentCharacter,
       crafts: {
         ...currentCharacter.crafts,
@@ -210,8 +256,8 @@ const WoWCraftingTracker = () => {
     setCurrentView('character');
   };
 
-  const CharacterCreation = () => {
-    const [formData, setFormData] = useState({
+  const CharacterCreation: React.FC = () => {
+    const [formData, setFormData] = useState<FormData>({
       name: '',
       faction: 'alliance',
       race: '',
@@ -222,15 +268,6 @@ const WoWCraftingTracker = () => {
       primaryProfession1: '',
       primaryProfession2: ''
     });
-
-    const toggleSecondaryProfession = (prof) => {
-      setFormData(prev => ({
-        ...prev,
-        secondaryProfessions: prev.secondaryProfessions.includes(prof)
-          ? prev.secondaryProfessions.filter(p => p !== prof)
-          : [...prev.secondaryProfessions, prof]
-      }));
-    };
 
     return (
       <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg p-8 border border-yellow-600">
@@ -322,7 +359,7 @@ const WoWCraftingTracker = () => {
                 className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
               >
                 <option value="">Choisir une race</option>
-                {races[formData.faction].map(race => (
+                {(races as any)[formData.faction].map((race: string) => (
                   <option key={race} value={race}>{race}</option>
                 ))}
               </select>
@@ -385,7 +422,7 @@ const WoWCraftingTracker = () => {
     );
   };
 
-  const ImportView = ({ profession }) => (
+  const ImportView: React.FC<{ profession: string }> = ({ profession }) => (
     <div className="max-w-4xl mx-auto bg-gray-800 rounded-lg p-8 border border-yellow-600">
       <h2 className="text-3xl font-bold text-yellow-400 mb-6 flex items-center">
         <Upload className="mr-3" />
@@ -452,7 +489,7 @@ const WoWCraftingTracker = () => {
     </div>
   );
 
-  const CharacterView = () => {
+  const CharacterView: React.FC = () => {
     if (!currentCharacter) return null;
 
     const allProfessions = [
@@ -460,7 +497,7 @@ const WoWCraftingTracker = () => {
       currentCharacter.primaryProfession2
     ].filter(Boolean);
 
-    const getShareUrl = () => {
+    const getShareUrl = (): string => {
       const baseUrl = window.location.origin + window.location.pathname;
       return `${baseUrl}?character=${encodeURIComponent(currentCharacter.id)}`;
     };
@@ -584,7 +621,7 @@ const WoWCraftingTracker = () => {
                         );
                       }
 
-                      const categorizedCrafts = filteredCrafts.reduce((acc, craft) => {
+                      const categorizedCrafts = filteredCrafts.reduce((acc: { [key: string]: CraftItem[] }, craft) => {
                         if (!craft || !craft.category) return acc;
                         
                         if (!acc[craft.category]) {
@@ -681,7 +718,7 @@ const WoWCraftingTracker = () => {
     );
   };
 
-  const HomeView = () => (
+  const HomeView: React.FC = () => (
     <div className="max-w-4xl mx-auto text-center">
       <div className="bg-gray-800 rounded-lg p-12 border border-yellow-600 mb-8">
         <h1 className="text-5xl font-bold text-yellow-400 mb-4">WoW Crafting Tracker</h1>
