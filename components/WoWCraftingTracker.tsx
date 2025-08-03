@@ -80,6 +80,9 @@ const WoWCraftingTracker: React.FC = () => {
     // Load public characters
     loadPublicCharacters();
 
+    // Nettoyage automatique des doublons au chargement
+    cleanupDuplicates();
+
     // Check for shared character in URL
     const urlParams = new URLSearchParams(window.location.search);
     const shareId = urlParams.get('share');
@@ -98,6 +101,16 @@ const WoWCraftingTracker: React.FC = () => {
       }
     } catch (error) {
       console.error('Erreur lors du chargement des personnages publics:', error);
+    }
+  };
+
+  // Cleanup duplicates automatically
+  const cleanupDuplicates = async () => {
+    try {
+      await fetch('/api/cleanup', { method: 'POST' });
+      console.log('Nettoyage automatique effectué');
+    } catch (error) {
+      console.error('Erreur lors du nettoyage:', error);
     }
   };
 
@@ -1075,12 +1088,21 @@ const WoWCraftingTracker: React.FC = () => {
           </div>
 
           {/* Bouton pour rafraîchir */}
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-x-4">
             <button
-              onClick={loadPublicCharacters}
+              onClick={() => {
+                loadPublicCharacters();
+                cleanupDuplicates();
+              }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors text-sm"
             >
               🔄 Actualiser la liste
+            </button>
+            <button
+              onClick={cleanupDuplicates}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors text-sm"
+            >
+              🧹 Nettoyer les doublons
             </button>
           </div>
         </div>
