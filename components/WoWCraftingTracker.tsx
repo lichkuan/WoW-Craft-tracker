@@ -57,8 +57,15 @@ const WoWCraftingTracker = () => {
           let url = urlMatch[1];
           
           // Conversion d'URL selon l'extension choisie
-          if (extension === 'mop-classic' && url.includes('/cata/')) {
-            url = url.replace('/cata/', '/mop-classic/fr/');
+          if (extension === 'mop-classic') {
+            // Convertir tous les liens Wowhead vers MoP Classic FR
+            if (url.includes('wowhead.com/cata/')) {
+              url = url.replace('wowhead.com/cata/', 'wowhead.com/mop-classic/fr/');
+            }
+            // Si le lien ne contient pas déjà mop-classic, on l'ajoute
+            else if (url.includes('wowhead.com/') && !url.includes('mop-classic')) {
+              url = url.replace('wowhead.com/', 'wowhead.com/mop-classic/fr/');
+            }
           }
           // Pour Cataclysm, on garde les liens /cata/ tels quels
           
