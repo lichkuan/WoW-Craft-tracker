@@ -666,16 +666,23 @@ const WoWCraftingTracker = () => {
                                   <div className="mt-2 space-y-2">
                                     {categoryItems.map(craft => (
                                       <div key={craft.id} className="bg-gray-700 rounded-lg p-3 hover:bg-gray-600 transition-colors ml-4">
-                                        <div className="text-yellow-300 hover:text-yellow-100 font-medium flex items-center justify-between group">
-                                          <span>{craft.name}</span>
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-yellow-300 font-medium flex-1 mr-4">
+                                            {craft.name}
+                                          </span>
                                           <a 
                                             href={craft.url} 
                                             target="_blank" 
                                             rel="noopener noreferrer"
-                                            className="text-xs text-gray-400 group-hover:text-gray-300 hover:text-blue-400 transition-colors"
-                                            onClick={(e) => e.stopPropagation()}
+                                            className="inline-block bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded transition-colors whitespace-nowrap"
+                                            onMouseDown={(e) => e.stopPropagation()}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              e.preventDefault();
+                                              window.open(craft.url, '_blank', 'noopener,noreferrer');
+                                            }}
                                           >
-                                            Voir sur Wowhead →
+                                            Wowhead →
                                           </a>
                                         </div>
                                       </div>
