@@ -514,16 +514,31 @@ const WoWCraftingTracker: React.FC = () => {
     }
   };
 
-  // Load public characters from API
+  // FONCTION CORRIGÉE : Load public characters from API
   const loadPublicCharacters = async () => {
     try {
+      console.log('🔄 Chargement des personnages publics...');
       const response = await fetch('/api/characters/public');
+      console.log('📡 Réponse API public:', response.status, response.ok);
+      
       if (response.ok) {
         const publicChars: PublicCharacter[] = await response.json();
+        console.log('✅ Personnages publics chargés:', publicChars.length);
+        console.log('📋 Détails:', publicChars);
+        
         setPublicCharacters(publicChars);
+        
+        if (publicChars.length > 0) {
+          console.log('🎯 Personnages mis à jour dans l\'état React');
+        } else {
+          console.log('⚠️ Aucun personnage public trouvé');
+        }
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Erreur API personnages publics:', errorData);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des personnages publics:', error);
+      console.error('❌ Erreur lors du chargement des personnages publics:', error);
     }
   };
 
@@ -1165,6 +1180,59 @@ const WoWCraftingTracker: React.FC = () => {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* BOUTONS DE DEBUG AJOUTÉS */}
+        <div className="bg-purple-900 border border-purple-600 rounded-lg p-6 mb-8">
+          <h3 className="text-xl font-bold text-purple-300 mb-4">🔍 Debug (Temporaire)</h3>
+          <div className="flex flex-wrap gap-2 justify-center">
+            <button
+              onClick={async () => {
+                console.log('=== DEBUG PERSONNAGES PUBLICS ===');
+                console.log('État actuel publicCharacters:', publicCharacters);
+                console.log('Longueur:', publicCharacters.length);
+                
+                // Test direct de l'API
+                const response = await fetch('/api/characters/public');
+                const data = await response.json();
+                console.log('Réponse API directe:', data);
+                
+                // Forcer le rechargement
+                await loadPublicCharacters();
+                
+                alert(`Debug: ${publicCharacters.length} personnages dans l'état, ${data.length} de l'API`);
+              }}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm transition-colors"
+            >
+              🔍 Debug Personnages Publics
+            </button>
+            
+            <button
+              onClick={() => {
+                console.log('Force reload personnages publics...');
+                loadPublicCharacters();
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition-colors"
+            >
+              🔄 Forcer Rechargement
+            </button>
+
+            <button
+              onClick={async () => {
+                console.log('=== TEST API PUBLIQUE DIRECTE ===');
+                const response = await fetch('/api/characters/public');
+                const data = await response.json();
+                console.log('Data:', data);
+                alert(`API: ${response.status} - ${data.length || 0} personnages`);
+              }}
+              className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded text-sm transition-colors"
+            >
+              🌐 Test API Direct
+            </button>
+          </div>
+          <p className="text-purple-200 text-sm mt-3">
+            Ces boutons aident à diagnostiquer pourquoi les personnages n'apparaissent pas. Consultez la console (F12).
+          </p>
         </div>
 
         {/* Statistiques globales */}
