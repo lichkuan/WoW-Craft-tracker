@@ -30,6 +30,36 @@ interface PublicCharacter extends Character {
   craftCounts: { [profession: string]: number };
 }
 
+// Composant SearchBar en dehors du composant principal
+const SearchBar = React.memo(({ 
+  searchTerm, 
+  onSearchChange, 
+  onClearSearch 
+}: { 
+  searchTerm: string; 
+  onSearchChange: (value: string) => void; 
+  onClearSearch: () => void; 
+}) => (
+  <div className="mb-6">
+    <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600 flex items-center space-x-4">
+      <Search className="w-5 h-5 text-yellow-400" />
+      <input
+        type="text"
+        value={searchTerm}
+        onChange={(e) => onSearchChange(e.target.value)}
+        placeholder="Rechercher..."
+        className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+        autoComplete="off"
+      />
+      {searchTerm && (
+        <button onClick={onClearSearch} className="text-gray-400 hover:text-white">
+          <X className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  </div>
+));
+
 const WoWCraftingTracker: React.FC = () => {
   const [view, setView] = useState<'home' | 'create' | 'character' | string>('home');
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -369,28 +399,6 @@ const WoWCraftingTracker: React.FC = () => {
     localStorage.setItem('wowCharacters', JSON.stringify(characters));
   }, [characters]);
 
-  // Optimisation des composants avec React.memo
-  const SearchBar = React.memo(() => (
-    <div className="mb-6">
-      <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600 flex items-center space-x-4">
-        <Search className="w-5 h-5 text-yellow-400" />
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          placeholder="Rechercher..."
-          className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-          autoComplete="off"
-        />
-        {searchTerm && (
-          <button onClick={clearSearch} className="text-gray-400 hover:text-white">
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-    </div>
-  ));
-
   // Composants
   const CharacterForm = () => {
     const [form, setForm] = useState<{
@@ -599,7 +607,11 @@ const WoWCraftingTracker: React.FC = () => {
         </div>
 
         {/* Search */}
-        <SearchBar />
+        <SearchBar 
+          searchTerm={searchTerm}
+          onSearchChange={handleSearchChange}
+          onClearSearch={clearSearch}
+        />
 
         {/* Professions */}
         {professionsArray.map(profession => {
