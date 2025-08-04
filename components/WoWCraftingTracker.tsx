@@ -461,8 +461,12 @@ const WoWCraftingTracker: React.FC = () => {
           value={importText}
           onChange={e => setImportText(e.target.value)}
           className="w-full h-64 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none font-mono text-sm"
-          placeholder="- [Item Name](https://wowhead.com/cata/item=12345)"
+          placeholder="- [Item Name](https://wowhead.com/cata/item=12345)
+- [Autre Item](https://wowhead.com/cata/spell=67890)"
         />
+        <p className="text-gray-400 text-sm mt-2">
+          ℹ️ Le niveau de métier sera automatiquement détecté depuis votre export
+        </p>
       </div>
       
       <div className="flex space-x-4">
@@ -486,7 +490,7 @@ const WoWCraftingTracker: React.FC = () => {
   const CharacterView = () => {
     if (!currentCharacter) return null;
 
-    const professions = [currentCharacter.profession1, currentCharacter.profession2].filter(Boolean);
+    const professionsArray = [currentCharacter.profession1, currentCharacter.profession2].filter(Boolean);
     
     return (
       <div className="max-w-6xl mx-auto">
@@ -520,11 +524,7 @@ const WoWCraftingTracker: React.FC = () => {
               >
                 💬 Discord
               </button>
-            </div> py-2 rounded flex items-center disabled:opacity-50"
-            >
-              <Share className="w-4 h-4 mr-2" />
-              {loading ? 'Partage...' : 'Partager'}
-            </button>
+            </div>
           </div>
         </div>
 
@@ -548,7 +548,7 @@ const WoWCraftingTracker: React.FC = () => {
         </div>
 
         {/* Professions */}
-        {professions.map(profession => {
+        {professionsArray.map(profession => {
           const crafts = currentCharacter.crafts[profession] || [];
           const filteredCrafts = crafts.filter(craft => 
             !searchTerm || craft.name.toLowerCase().includes(searchTerm.toLowerCase())
