@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronDown, ChevronRight, Upload, User, Share, Search, Trash2, Plus, X } from 'lucide-react';
 
 interface Character {
@@ -88,8 +88,8 @@ const WoWCraftingTracker: React.FC = () => {
     return 'text-gray-400';
   };
 
-  // Fonctions pour expand/collapse
-  const toggleAllCategories = (profession: string, categories: string[]) => {
+  // Fonctions pour expand/collapse (optimisées avec useCallback)
+  const toggleAllCategories = useCallback((profession: string, categories: string[]) => {
     const isCurrentlyAllExpanded = allExpanded[profession] || false;
     const newState = !isCurrentlyAllExpanded;
     
@@ -107,7 +107,16 @@ const WoWCraftingTracker: React.FC = () => {
       ...prev,
       ...updates
     }));
-  };
+  }, [allExpanded]);
+
+  // Handler pour la recherche (optimisé)
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchTerm(value);
+  }, []);
+
+  const clearSearch = useCallback(() => {
+    setSearchTerm('');
+  }, []);
 
   // Extraction du niveau de métier depuis le texte markdown
   const extractProfessionLevel = (text: string, profession: string): number => {
@@ -526,7 +535,27 @@ const WoWCraftingTracker: React.FC = () => {
     </div>
   );
 
-  const CharacterView = () => {
+  // Optimisation des composants avec React.memo
+  const SearchBar = React.memo(() => (
+    <div className="mb-6">
+      <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600 flex items-center space-x-4">
+        <Search className="w-5 h-5 text-yellow-400" />
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          placeholder="Rechercher..."
+          className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+          autoComplete="off"
+        />
+        {searchTerm && (
+          <button onClick={clearSearch} className="text-gray-400 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+    </div>
+  ));
     if (!currentCharacter) return null;
 
     const professionsArray = [currentCharacter.profession1, currentCharacter.profession2].filter(Boolean);
@@ -574,12 +603,13 @@ const WoWCraftingTracker: React.FC = () => {
             <input
               type="text"
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="Rechercher..."
               className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+              autoComplete="off"
             />
             {searchTerm && (
-              <button onClick={() => setSearchTerm('')} className="text-gray-400 hover:text-white">
+              <button onClick={clearSearch} className="text-gray-400 hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             )}
