@@ -333,8 +333,18 @@ const WoWCraftingTracker: React.FC = () => {
 
   // Composants
   const CharacterForm = () => {
-    const [form, setForm] = useState({
-      name: '', server: '', level: 90, faction: 'alliance' as const,
+    const [form, setForm] = useState<{
+      name: string;
+      server: string;
+      level: number;
+      faction: 'alliance' | 'horde';
+      race: string;
+      class: string;
+      guild: string;
+      profession1: string;
+      profession2: string;
+    }>({
+      name: '', server: '', level: 90, faction: 'alliance',
       race: '', class: '', guild: '', profession1: '', profession2: ''
     });
 
