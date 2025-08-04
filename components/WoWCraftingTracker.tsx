@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronDown, ChevronRight, Upload, User, Share, Search, Trash2, Plus, X } from 'lucide-react';
 
 interface Character {
@@ -39,26 +39,32 @@ const SearchBar = React.memo(({
   searchTerm: string; 
   onSearchChange: (value: string) => void; 
   onClearSearch: () => void; 
-}) => (
-  <div className="mb-6">
-    <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600 flex items-center space-x-4">
-      <Search className="w-5 h-5 text-yellow-400" />
-      <input
-        type="text"
-        value={searchTerm}
-        onChange={(e) => onSearchChange(e.target.value)}
-        placeholder="Rechercher..."
-        className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-        autoComplete="off"
-      />
-      {searchTerm && (
-        <button onClick={onClearSearch} className="text-gray-400 hover:text-white">
-          <X className="w-4 h-4" />
-        </button>
-      )}
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="mb-6">
+      <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600 flex items-center space-x-4">
+        <Search className="w-5 h-5 text-yellow-400" />
+        <input
+          ref={inputRef}
+          type="text"
+          value={searchTerm}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Rechercher..."
+          className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+          autoComplete="off"
+          key="search-input"
+        />
+        {searchTerm && (
+          <button onClick={onClearSearch} className="text-gray-400 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
     </div>
-  </div>
-));
+  );
+});
 
 const WoWCraftingTracker: React.FC = () => {
   const [view, setView] = useState<'home' | 'create' | 'character' | string>('home');
@@ -606,12 +612,29 @@ const WoWCraftingTracker: React.FC = () => {
           </div>
         </div>
 
-        {/* Search */}
-        <SearchBar 
-          searchTerm={searchTerm}
-          onSearchChange={handleSearchChange}
-          onClearSearch={clearSearch}
-        />
+        {/* Search - Intégrée directement */}
+        <div className="mb-6">
+          <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600 flex items-center space-x-4">
+            <Search className="w-5 h-5 text-yellow-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Rechercher..."
+              className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+              autoComplete="off"
+            />
+            {searchTerm && (
+              <button 
+                onClick={() => setSearchTerm('')} 
+                className="text-gray-400 hover:text-white"
+                type="button"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Professions */}
         {professionsArray.map(profession => {
