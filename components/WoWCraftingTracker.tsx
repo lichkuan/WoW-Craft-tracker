@@ -211,13 +211,21 @@ const WoWCraftingTracker: React.FC = () => {
 
   const loadPublicCharacters = async () => {
     try {
+      console.log('🔄 Chargement des personnages publics...');
       const response = await fetch('/api/characters/public');
+      console.log('📡 Réponse API:', response.status, response.ok);
+      
       if (response.ok) {
         const chars = await response.json();
+        console.log('✅ Personnages chargés:', chars.length);
+        console.log('📋 Détails personnages:', chars);
         setPublicCharacters(chars);
+      } else {
+        const errorData = await response.text();
+        console.error('❌ Erreur API personnages publics:', errorData);
       }
     } catch (error) {
-      console.error('Erreur chargement public:', error);
+      console.error('❌ Erreur chargement public:', error);
     }
   };
 
@@ -750,105 +758,125 @@ const WoWCraftingTracker: React.FC = () => {
       </div>
 
       {/* Personnages publics */}
-      {publicCharacters.length > 0 && (
-        <div className="bg-gray-800 rounded-lg p-8 border border-yellow-600">
-          <h2 className="text-3xl font-bold text-yellow-400 mb-6">🌟 Communauté</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {publicCharacters.map(character => (
-              <div 
-                key={character.shareId}
-                className={`bg-gray-700 rounded-lg p-6 cursor-pointer hover:bg-gray-600 border-2 ${
-                  character.faction === 'alliance' ? 'border-blue-500' : 'border-red-500'
-                }`}
-                onClick={() => window.open(`?share=${character.shareId}`, '_blank')}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-yellow-300">{character.name}</h3>
-                    <p className="text-gray-300 text-sm">
-                      Niveau {character.level} {character.race} {character.class}
-                    </p>
-                  </div>
-                  <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                    character.faction === 'alliance' ? 'bg-blue-600 text-blue-100' : 'bg-red-600 text-red-100'
-                  }`}>
-                    {character.faction === 'alliance' ? '🛡️ Alliance' : '⚔️ Horde'}
-                  </span>
-                </div>
-
-                <div className="mb-4 space-y-1">
-                  {character.server && (
-                    <p className="text-gray-400 text-sm">📍 {character.server}</p>
-                  )}
-                  {character.guild && (
-                    <p className="text-gray-400 text-sm">⚔️ {character.guild}</p>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <h4 className="text-yellow-400 font-semibold text-sm">Métiers principaux :</h4>
-                  
-                  {character.profession1 && (
-                    <div className="flex items-center justify-between bg-gray-600 rounded p-2">
-                      <div className="flex flex-col">
-                        <span className="text-white text-sm font-medium">{character.profession1}</span>
-                        {(character.professionLevels?.[character.profession1] || 0) > 0 && (
-                          <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.profession1])}`}>
-                            {getProfessionLevelIcon(character.professionLevels[character.profession1])} Niveau {character.professionLevels[character.profession1]} ({getProfessionLevelName(character.professionLevels[character.profession1])})
-                          </span>
-                        )}
-                      </div>
-                      <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
-                        {character.craftCounts[character.profession1] || 0}
-                      </span>
+      <div className="bg-gray-800 rounded-lg p-8 border border-yellow-600">
+        <h2 className="text-3xl font-bold text-yellow-400 mb-6">🌟 Communauté</h2>
+        
+        {publicCharacters.length > 0 ? (
+          <>
+            <p className="text-gray-300 mb-6">Découvrez les personnages partagés par la communauté</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {publicCharacters.map(character => (
+                <div 
+                  key={character.shareId}
+                  className={`bg-gray-700 rounded-lg p-6 cursor-pointer hover:bg-gray-600 border-2 ${
+                    character.faction === 'alliance' ? 'border-blue-500' : 'border-red-500'
+                  }`}
+                  onClick={() => window.open(`?share=${character.shareId}`, '_blank')}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-yellow-300">{character.name}</h3>
+                      <p className="text-gray-300 text-sm">
+                        Niveau {character.level} {character.race} {character.class}
+                      </p>
                     </div>
-                  )}
-                  
-                  {character.profession2 && (
-                    <div className="flex items-center justify-between bg-gray-600 rounded p-2">
-                      <div className="flex flex-col">
-                        <span className="text-white text-sm font-medium">{character.profession2}</span>
-                        {(character.professionLevels?.[character.profession2] || 0) > 0 && (
-                          <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.profession2])}`}>
-                            {getProfessionLevelIcon(character.professionLevels[character.profession2])} Niveau {character.professionLevels[character.profession2]} ({getProfessionLevelName(character.professionLevels[character.profession2])})
-                          </span>
-                        )}
-                      </div>
-                      <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
-                        {character.craftCounts[character.profession2] || 0}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-gray-600">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-400 text-sm">Total des recettes :</span>
-                    <span className="text-yellow-400 font-bold">
-                      {Object.values(character.craftCounts as Record<string, number>).reduce((a: number, b: number) => a + b, 0)}
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                      character.faction === 'alliance' ? 'bg-blue-600 text-blue-100' : 'bg-red-600 text-red-100'
+                    }`}>
+                      {character.faction === 'alliance' ? '🛡️ Alliance' : '⚔️ Horde'}
                     </span>
                   </div>
-                </div>
 
-                <div className="mt-3 text-center">
-                  <span className="text-blue-400 text-xs">🔗 Cliquez pour voir le profil complet</span>
+                  <div className="mb-4 space-y-1">
+                    {character.server && (
+                      <p className="text-gray-400 text-sm">📍 {character.server}</p>
+                    )}
+                    {character.guild && (
+                      <p className="text-gray-400 text-sm">⚔️ {character.guild}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-yellow-400 font-semibold text-sm">Métiers principaux :</h4>
+                    
+                    {character.profession1 && (
+                      <div className="flex items-center justify-between bg-gray-600 rounded p-2">
+                        <div className="flex flex-col">
+                          <span className="text-white text-sm font-medium">{character.profession1}</span>
+                          {(character.professionLevels?.[character.profession1] || 0) > 0 && (
+                            <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.profession1])}`}>
+                              {getProfessionLevelIcon(character.professionLevels[character.profession1])} Niveau {character.professionLevels[character.profession1]} ({getProfessionLevelName(character.professionLevels[character.profession1])})
+                            </span>
+                          )}
+                        </div>
+                        <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
+                          {character.craftCounts[character.profession1] || 0}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {character.profession2 && (
+                      <div className="flex items-center justify-between bg-gray-600 rounded p-2">
+                        <div className="flex flex-col">
+                          <span className="text-white text-sm font-medium">{character.profession2}</span>
+                          {(character.professionLevels?.[character.profession2] || 0) > 0 && (
+                            <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.profession2])}`}>
+                              {getProfessionLevelIcon(character.professionLevels[character.profession2])} Niveau {character.professionLevels[character.profession2]} ({getProfessionLevelName(character.professionLevels[character.profession2])})
+                            </span>
+                          )}
+                        </div>
+                        <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
+                          {character.craftCounts[character.profession2] || 0}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-gray-600">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 text-sm">Total des recettes :</span>
+                      <span className="text-yellow-400 font-bold">
+                        {Object.values(character.craftCounts as Record<string, number>).reduce((a: number, b: number) => a + b, 0)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 text-center">
+                    <span className="text-blue-400 text-xs">🔗 Cliquez pour voir le profil complet</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">👥</div>
+            <h3 className="text-2xl font-bold text-yellow-300 mb-4">Aucun personnage partagé</h3>
+            <p className="text-gray-400 mb-6">
+              Soyez le premier à partager vos métiers avec la communauté !<br/>
+              Créez un personnage, ajoutez vos recettes et cliquez sur "Partager".
+            </p>
+            <div className="bg-blue-900 border border-blue-600 rounded-lg p-4 max-w-md mx-auto">
+              <p className="text-blue-200 text-sm">
+                💡 <strong>Astuce :</strong> Les personnages partagés apparaissent ici automatiquement
+                et permettent à la communauté de voir vos métiers !
+              </p>
+            </div>
           </div>
-          
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => {
-                loadPublicCharacters();
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
-            >
-              🔄 Actualiser la liste
-            </button>
-          </div>
+        )}
+        
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => {
+              console.log('🔄 Actualisation manuelle des personnages publics');
+              loadPublicCharacters();
+            }}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
+          >
+            🔄 Actualiser la liste
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 
