@@ -107,7 +107,7 @@ export async function GET() {
     }
 
     // Deuxième passe : construire la liste publique avec SEULEMENT les permanents
-    const publicCharacters = [];
+    const publicCharacters: any[] = [];
     
     charactersMap.forEach(({ key, data: character, ttl }, identifier) => {
       // FILTRER : Afficher seulement les personnages permanents
