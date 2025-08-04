@@ -143,33 +143,14 @@ const WoWCraftingTracker: React.FC = () => {
   };
 
   // Génération du message Discord
-  // Fonctions pour expand/collapse
-  const toggleAllCategories = (profession: string, categories: string[]) => {
-    const isCurrentlyAllExpanded = allExpanded[profession] || false;
-    const newState = !isCurrentlyAllExpanded;
-    
-    setAllExpanded(prev => ({
-      ...prev,
-      [profession]: newState
-    }));
-    
-    const updates: { [key: string]: boolean } = {};
-    categories.forEach(category => {
-      updates[`${profession}-${category}`] = newState;
-    });
-    
-    setExpandedCategories(prev => ({
-      ...prev,
-      ...updates
-    }));
-  };
+  const generateDiscordMessage = (character: Character): string => {
     const totalRecipes = Object.values(character.crafts || {}).reduce((total, recipes) => total + recipes.length, 0);
-    const professions = [character.profession1, character.profession2].filter(Boolean);
+    const characterProfessions = [character.profession1, character.profession2].filter(Boolean);
     
     let message = `🎮 **${character.name}** - Niveau ${character.level} ${character.race} ${character.class}\n`;
     message += `${character.faction === 'alliance' ? '🛡️ Alliance' : '⚔️ Horde'} | ${character.server}${character.guild ? ` | ${character.guild}` : ''}\n\n`;
     
-    professions.forEach(prof => {
+    characterProfessions.forEach(prof => {
       const level = character.professionLevels?.[prof] || 0;
       const count = character.crafts[prof]?.length || 0;
       const icon = getProfessionLevelIcon(level);
