@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ChevronDown, ChevronRight, Upload, User, Share, Search, Trash2, Plus, X } from 'lucide-react';
 
 interface Character {
@@ -576,6 +576,29 @@ const WoWCraftingTracker: React.FC = () => {
 
     const professionsArray = [currentCharacter.profession1, currentCharacter.profession2].filter(Boolean);
     
+    // Mémoriser le filtrage pour éviter les re-renders
+    const filteredProfessionData = useMemo(() => {
+      return professionsArray.map(profession => {
+        const crafts = currentCharacter.crafts[profession] || [];
+        const filteredCrafts = crafts.filter(craft => 
+          !searchTerm || craft.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        
+        const categories = filteredCrafts.reduce((acc, craft) => {
+          if (!acc[craft.category]) acc[craft.category] = [];
+          acc[craft.category].push(craft);
+          return acc;
+        }, {} as { [key: string]: CraftItem[] });
+
+        return {
+          profession,
+          crafts,
+          filteredCrafts,
+          categories
+        };
+      });
+    }, [professionsArray, currentCharacter.crafts, searchTerm]);
+    
     return (
       <div className="max-w-6xl mx-auto">
         {/* Header */}
@@ -623,6 +646,7 @@ const WoWCraftingTracker: React.FC = () => {
               placeholder="Rechercher..."
               className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
               autoComplete="off"
+              key="character-search"
             />
             {searchTerm && (
               <button 
@@ -637,136 +661,123 @@ const WoWCraftingTracker: React.FC = () => {
         </div>
 
         {/* Professions */}
-        {professionsArray.map(profession => {
-          const crafts = currentCharacter.crafts[profession] || [];
-          const filteredCrafts = crafts.filter(craft => 
-            !searchTerm || craft.name.toLowerCase().includes(searchTerm.toLowerCase())
-          );
-          
-          const categories = filteredCrafts.reduce((acc, craft) => {
-            if (!acc[craft.category]) acc[craft.category] = [];
-            acc[craft.category].push(craft);
-            return acc;
-          }, {} as { [key: string]: CraftItem[] });
-
-          return (
-            <div key={profession} className="bg-gray-800 rounded-lg border border-yellow-600 mb-6">
-              <div className="p-6 border-b border-gray-700">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h2 className="text-2xl font-bold text-yellow-400">{profession}</h2>
-                    {(currentCharacter.professionLevels?.[profession] || 0) > 0 && (
-                      <p className={`text-sm ${getProfessionLevelColor(currentCharacter.professionLevels[profession])}`}>
-                        {getProfessionLevelIcon(currentCharacter.professionLevels[profession])} Niveau {currentCharacter.professionLevels[profession]} ({getProfessionLevelName(currentCharacter.professionLevels[profession])})
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => setView(`import-${profession}`)}
-                      className="bg-yellow-600 hover:bg-yellow-700 text-black px-4 py-2 rounded flex items-center"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Importer
-                    </button>
-                    {crafts.length > 0 && (
-                      <button
-                        onClick={() => {
-                          if (confirm(`Supprimer toutes les recettes de ${profession} ?`)) {
-                            const updated = {
-                              ...currentCharacter,
-                              professionLevels: {
-                                ...currentCharacter.professionLevels,
-                                [profession]: 0
-                              },
-                              crafts: { ...currentCharacter.crafts, [profession]: [] }
-                            };
-                            setCharacters(chars => chars.map(c => c.id === currentCharacter.id ? updated : c));
-                            setCurrentCharacter(updated);
-                          }
-                        }}
-                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex items-center"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Supprimer
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <p className="text-gray-400 mt-2">{crafts.length} recettes</p>
-              </div>
-              
-              {Object.keys(categories).length > 0 ? (
-                <div className="p-6">
-                  {/* Bouton Expand/Collapse All */}
-                  {Object.keys(categories).length > 1 && (
-                    <div className="mb-4 flex justify-end">
-                      <button
-                        onClick={() => toggleAllCategories(profession, Object.keys(categories))}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
-                      >
-                        {allExpanded[profession] ? (
-                          <>
-                            <ChevronDown className="w-4 h-4 mr-2" />
-                            Tout replier
-                          </>
-                        ) : (
-                          <>
-                            <ChevronRight className="w-4 h-4 mr-2" />
-                            Tout déplier
-                          </>
-                        )}
-                      </button>
-                    </div>
+        {filteredProfessionData.map(({ profession, crafts, categories }) => (
+          <div key={profession} className="bg-gray-800 rounded-lg border border-yellow-600 mb-6">
+            <div className="p-6 border-b border-gray-700">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-yellow-400">{profession}</h2>
+                  {(currentCharacter.professionLevels?.[profession] || 0) > 0 && (
+                    <p className={`text-sm ${getProfessionLevelColor(currentCharacter.professionLevels[profession])}`}>
+                      {getProfessionLevelIcon(currentCharacter.professionLevels[profession])} Niveau {currentCharacter.professionLevels[profession]} ({getProfessionLevelName(currentCharacter.professionLevels[profession])})
+                    </p>
                   )}
-
-                  {Object.entries(categories).map(([category, items]) => {
-                    const isExpanded = expandedCategories[`${profession}-${category}`] || false;
-                    
-                    return (
-                      <div key={category} className="mb-4">
-                        <button
-                          onClick={() => setExpandedCategories(prev => ({
-                            ...prev,
-                            [`${profession}-${category}`]: !isExpanded
-                          }))}
-                          className="w-full flex items-center justify-between bg-gray-600 hover:bg-gray-500 rounded-lg p-3"
-                        >
-                          <span className="text-yellow-300 font-semibold">
-                            {category} ({items.length})
-                          </span>
-                          {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                        </button>
-                        
-                        {isExpanded && (
-                          <div className="mt-2 space-y-2 ml-4">
-                            {items.map(item => (
-                              <div key={item.id} className="bg-gray-700 rounded-lg p-3 flex items-center justify-between">
-                                <span className="text-yellow-300">{item.name}</span>
-                                <a
-                                  href={item.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded"
-                                >
-                                  Wowhead
-                                </a>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
                 </div>
-              ) : (
-                <div className="p-6 text-center text-gray-500">
-                  <p>Aucune recette</p>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setView(`import-${profession}`)}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-black px-4 py-2 rounded flex items-center"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Importer
+                  </button>
+                  {crafts.length > 0 && (
+                    <button
+                      onClick={() => {
+                        if (confirm(`Supprimer toutes les recettes de ${profession} ?`)) {
+                          const updated = {
+                            ...currentCharacter,
+                            professionLevels: {
+                              ...currentCharacter.professionLevels,
+                              [profession]: 0
+                            },
+                            crafts: { ...currentCharacter.crafts, [profession]: [] }
+                          };
+                          setCharacters(chars => chars.map(c => c.id === currentCharacter.id ? updated : c));
+                          setCurrentCharacter(updated);
+                        }
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex items-center"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Supprimer
+                    </button>
+                  )}
                 </div>
-              )}
+              </div>
+              <p className="text-gray-400 mt-2">{crafts.length} recettes</p>
             </div>
-          );
-        })}
+            
+            {Object.keys(categories).length > 0 ? (
+              <div className="p-6">
+                {/* Bouton Expand/Collapse All */}
+                {Object.keys(categories).length > 1 && (
+                  <div className="mb-4 flex justify-end">
+                    <button
+                      onClick={() => toggleAllCategories(profession, Object.keys(categories))}
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
+                    >
+                      {allExpanded[profession] ? (
+                        <>
+                          <ChevronDown className="w-4 h-4 mr-2" />
+                          Tout replier
+                        </>
+                      ) : (
+                        <>
+                          <ChevronRight className="w-4 h-4 mr-2" />
+                          Tout déplier
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {Object.entries(categories).map(([category, items]) => {
+                  const isExpanded = expandedCategories[`${profession}-${category}`] || false;
+                  
+                  return (
+                    <div key={category} className="mb-4">
+                      <button
+                        onClick={() => setExpandedCategories(prev => ({
+                          ...prev,
+                          [`${profession}-${category}`]: !isExpanded
+                        }))}
+                        className="w-full flex items-center justify-between bg-gray-600 hover:bg-gray-500 rounded-lg p-3"
+                      >
+                        <span className="text-yellow-300 font-semibold">
+                          {category} ({items.length})
+                        </span>
+                        {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                      </button>
+                      
+                      {isExpanded && (
+                        <div className="mt-2 space-y-2 ml-4">
+                          {items.map(item => (
+                            <div key={item.id} className="bg-gray-700 rounded-lg p-3 flex items-center justify-between">
+                              <span className="text-yellow-300">{item.name}</span>
+                              <a
+                                href={item.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded"
+                              >
+                                Wowhead
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-6 text-center text-gray-500">
+                <p>Aucune recette</p>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     );
   };
