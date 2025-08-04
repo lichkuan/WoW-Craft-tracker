@@ -369,6 +369,28 @@ const WoWCraftingTracker: React.FC = () => {
     localStorage.setItem('wowCharacters', JSON.stringify(characters));
   }, [characters]);
 
+  // Optimisation des composants avec React.memo
+  const SearchBar = React.memo(() => (
+    <div className="mb-6">
+      <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600 flex items-center space-x-4">
+        <Search className="w-5 h-5 text-yellow-400" />
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          placeholder="Rechercher..."
+          className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+          autoComplete="off"
+        />
+        {searchTerm && (
+          <button onClick={clearSearch} className="text-gray-400 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+    </div>
+  ));
+
   // Composants
   const CharacterForm = () => {
     const [form, setForm] = useState<{
@@ -535,27 +557,7 @@ const WoWCraftingTracker: React.FC = () => {
     </div>
   );
 
-  // Optimisation des composants avec React.memo
-  const SearchBar = React.memo(() => (
-    <div className="mb-6">
-      <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600 flex items-center space-x-4">
-        <Search className="w-5 h-5 text-yellow-400" />
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          placeholder="Rechercher..."
-          className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-          autoComplete="off"
-        />
-        {searchTerm && (
-          <button onClick={clearSearch} className="text-gray-400 hover:text-white">
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-    </div>
-  ));
+  const CharacterView = () => {
     if (!currentCharacter) return null;
 
     const professionsArray = [currentCharacter.profession1, currentCharacter.profession2].filter(Boolean);
@@ -597,24 +599,7 @@ const WoWCraftingTracker: React.FC = () => {
         </div>
 
         {/* Search */}
-        <div className="mb-6">
-          <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600 flex items-center space-x-4">
-            <Search className="w-5 h-5 text-yellow-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Rechercher..."
-              className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-              autoComplete="off"
-            />
-            {searchTerm && (
-              <button onClick={clearSearch} className="text-gray-400 hover:text-white">
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
+        <SearchBar />
 
         {/* Professions */}
         {professionsArray.map(profession => {
