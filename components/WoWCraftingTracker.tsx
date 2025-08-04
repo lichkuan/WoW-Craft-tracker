@@ -30,41 +30,65 @@ interface PublicCharacter extends Character {
   craftCounts: { [profession: string]: number };
 }
 
-// Composant SearchBar en dehors du composant principal
-const SearchBar = React.memo(({ 
-  searchTerm, 
-  onSearchChange, 
-  onClearSearch 
-}: { 
-  searchTerm: string; 
-  onSearchChange: (value: string) => void; 
-  onClearSearch: () => void; 
-}) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+// Composant SearchBar complètement isolé avec son propre état
+const SearchBar = ({ onSearchChange }: { onSearchChange: (value: string) => void }) => {
+  const [localSearchTerm, setLocalSearchTerm] = useState('');
+  const timeoutRef = useRef<NodeJS.Timeout>();
+
+  const handleChange = (value: string) => {
+    setLocalSearchTerm(value);
+    
+    // Debounce pour éviter trop d'appels
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = setTimeout(() => {
+      onSearchChange(value);
+    }, 300);
+  };
+
+  const handleClear = () => {
+    setLocalSearchTerm('');
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    onSearchChange('');
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="mb-6">
       <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600 flex items-center space-x-4">
         <Search className="w-5 h-5 text-yellow-400" />
         <input
-          ref={inputRef}
           type="text"
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
+          value={localSearchTerm}
+          onChange={(e) => handleChange(e.target.value)}
           placeholder="Rechercher..."
           className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
           autoComplete="off"
-          key="search-input"
         />
-        {searchTerm && (
-          <button onClick={onClearSearch} className="text-gray-400 hover:text-white">
+        {localSearchTerm && (
+          <button 
+            onClick={handleClear} 
+            className="text-gray-400 hover:text-white"
+            type="button"
+          >
             <X className="w-4 h-4" />
           </button>
         )}
       </div>
     </div>
   );
-});
+};
 
 const WoWCraftingTracker: React.FC = () => {
   const [view, setView] = useState<'home' | 'create' | 'character' | string>('home');
@@ -145,13 +169,9 @@ const WoWCraftingTracker: React.FC = () => {
     }));
   }, [allExpanded]);
 
-  // Handler pour la recherche (optimisé)
+  // Handler pour la recherche (simplifié)
   const handleSearchChange = useCallback((value: string) => {
     setSearchTerm(value);
-  }, []);
-
-  const clearSearch = useCallback(() => {
-    setSearchTerm('');
   }, []);
 
   // Extraction du niveau de métier depuis le texte markdown
@@ -635,30 +655,8 @@ const WoWCraftingTracker: React.FC = () => {
           </div>
         </div>
 
-        {/* Search - Intégrée directement */}
-        <div className="mb-6">
-          <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600 flex items-center space-x-4">
-            <Search className="w-5 h-5 text-yellow-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Rechercher..."
-              className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-              autoComplete="off"
-              key="character-search"
-            />
-            {searchTerm && (
-              <button 
-                onClick={() => setSearchTerm('')} 
-                className="text-gray-400 hover:text-white"
-                type="button"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
+        {/* Search - Composant isolé */}
+        <SearchBar onSearchChange={handleSearchChange} />
 
         {/* Professions */}
         {filteredProfessionData.map(({ profession, crafts, categories }) => (
