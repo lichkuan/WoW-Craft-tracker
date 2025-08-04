@@ -38,6 +38,7 @@ const WoWCraftingTracker: React.FC = () => {
   const [importText, setImportText] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<{ [key: string]: boolean }>({});
+  const [allExpanded, setAllExpanded] = useState<{ [key: string]: boolean }>({});
   const [loading, setLoading] = useState(false);
 
   const professions = ['Alchimie', 'Forge', 'Enchantement', 'Ingénierie', 'Herboristerie', 'Joaillerie', 'Travail du cuir', 'Minage', 'Calligraphie', 'Couture'];
@@ -142,7 +143,26 @@ const WoWCraftingTracker: React.FC = () => {
   };
 
   // Génération du message Discord
-  const generateDiscordMessage = (character: Character): string => {
+  // Fonctions pour expand/collapse
+  const toggleAllCategories = (profession: string, categories: string[]) => {
+    const isCurrentlyAllExpanded = allExpanded[profession] || false;
+    const newState = !isCurrentlyAllExpanded;
+    
+    setAllExpanded(prev => ({
+      ...prev,
+      [profession]: newState
+    }));
+    
+    const updates: { [key: string]: boolean } = {};
+    categories.forEach(category => {
+      updates[`${profession}-${category}`] = newState;
+    });
+    
+    setExpandedCategories(prev => ({
+      ...prev,
+      ...updates
+    }));
+  };
     const totalRecipes = Object.values(character.crafts || {}).reduce((total, recipes) => total + recipes.length, 0);
     const professions = [character.profession1, character.profession2].filter(Boolean);
     
@@ -162,7 +182,7 @@ const WoWCraftingTracker: React.FC = () => {
     return message;
   };
 
-  const categorizeItem = (name: string): string => {
+  const generateDiscordMessage = (character: Character): string => {
     const lower = name.toLowerCase();
     if (lower.includes('arme') || lower.includes('épée') || lower.includes('hache')) return 'Armes';
     if (lower.includes('bottes') || lower.includes('chaussures')) return 'Bottes';
@@ -177,7 +197,7 @@ const WoWCraftingTracker: React.FC = () => {
     return 'Autres';
   };
 
-  // API calls simplifiées
+  const categorizeItem = (name: string): string => {
   const saveCharacter = async (character: Character): Promise<string | null> => {
     try {
       const shareId = generateShareId();
@@ -627,8 +647,30 @@ const WoWCraftingTracker: React.FC = () => {
               
               {Object.keys(categories).length > 0 ? (
                 <div className="p-6">
+                  {/* Bouton Expand/Collapse All */}
+                  {Object.keys(categories).length > 1 && (
+                    <div className="mb-4 flex justify-end">
+                      <button
+                        onClick={() => toggleAllCategories(profession, Object.keys(categories))}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
+                      >
+                        {allExpanded[profession] ? (
+                          <>
+                            <ChevronDown className="w-4 h-4 mr-2" />
+                            Tout replier
+                          </>
+                        ) : (
+                          <>
+                            <ChevronRight className="w-4 h-4 mr-2" />
+                            Tout déplier
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
                   {Object.entries(categories).map(([category, items]) => {
-                    const isExpanded = expandedCategories[`${profession}-${category}`] !== false;
+                    const isExpanded = expandedCategories[`${profession}-${category}`] || false;
                     
                     return (
                       <div key={category} className="mb-4">
@@ -681,7 +723,7 @@ const WoWCraftingTracker: React.FC = () => {
   const HomeView = () => (
     <div className="max-w-6xl mx-auto text-center">
       <div className="bg-gray-800 rounded-lg p-12 border border-yellow-600 mb-8">
-        <h1 className="text-5xl font-bold text-yellow-400 mb-4">WoW Crafting Tracker by Ostie</h1>
+        <h1 className="text-5xl font-bold text-yellow-400 mb-4">WoW Crafting Tracker</h1>
         <p className="text-xl text-gray-300 mb-8">Partagez vos métiers World of Warcraft</p>
         
         <div className="bg-blue-900 border border-blue-600 rounded-lg p-6 mb-8 text-left">
