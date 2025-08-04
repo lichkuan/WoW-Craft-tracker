@@ -681,7 +681,7 @@ const WoWCraftingTracker: React.FC = () => {
   const HomeView = () => (
     <div className="max-w-6xl mx-auto text-center">
       <div className="bg-gray-800 rounded-lg p-12 border border-yellow-600 mb-8">
-        <h1 className="text-5xl font-bold text-yellow-400 mb-4">WoW Crafting Tracker</h1>
+        <h1 className="text-5xl font-bold text-yellow-400 mb-4">WoW Crafting Tracker by Ostie</h1>
         <p className="text-xl text-gray-300 mb-8">Partagez vos métiers World of Warcraft</p>
         
         <div className="bg-blue-900 border border-blue-600 rounded-lg p-6 mb-8 text-left">
