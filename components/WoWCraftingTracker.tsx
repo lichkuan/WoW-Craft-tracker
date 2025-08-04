@@ -88,6 +88,27 @@ const WoWCraftingTracker: React.FC = () => {
     return 'text-gray-400';
   };
 
+  // Fonctions pour expand/collapse
+  const toggleAllCategories = (profession: string, categories: string[]) => {
+    const isCurrentlyAllExpanded = allExpanded[profession] || false;
+    const newState = !isCurrentlyAllExpanded;
+    
+    setAllExpanded(prev => ({
+      ...prev,
+      [profession]: newState
+    }));
+    
+    const updates: { [key: string]: boolean } = {};
+    categories.forEach(category => {
+      updates[`${profession}-${category}`] = newState;
+    });
+    
+    setExpandedCategories(prev => ({
+      ...prev,
+      ...updates
+    }));
+  };
+
   // Extraction du niveau de métier depuis le texte markdown
   const extractProfessionLevel = (text: string, profession: string): number => {
     const lines = text.split('\n');
@@ -163,7 +184,7 @@ const WoWCraftingTracker: React.FC = () => {
     return message;
   };
 
-  const generateDiscordMessage = (character: Character): string => {
+  const categorizeItem = (name: string): string => {
     const lower = name.toLowerCase();
     if (lower.includes('arme') || lower.includes('épée') || lower.includes('hache')) return 'Armes';
     if (lower.includes('bottes') || lower.includes('chaussures')) return 'Bottes';
@@ -178,7 +199,7 @@ const WoWCraftingTracker: React.FC = () => {
     return 'Autres';
   };
 
-  const categorizeItem = (name: string): string => {
+  // API calls
   const saveCharacter = async (character: Character): Promise<string | null> => {
     try {
       const shareId = generateShareId();
@@ -322,7 +343,6 @@ const WoWCraftingTracker: React.FC = () => {
     const saved = localStorage.getItem('wowCharacters');
     if (saved) {
       const parsedCharacters = JSON.parse(saved);
-      // Migration pour ajouter professionLevels aux anciens personnages
       const migratedCharacters = parsedCharacters.map((char: any) => ({
         ...char,
         professionLevels: char.professionLevels || {}
