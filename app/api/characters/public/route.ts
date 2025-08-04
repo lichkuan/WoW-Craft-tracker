@@ -109,11 +109,11 @@ export async function GET() {
     // Deuxième passe : construire la liste publique avec SEULEMENT les permanents
     const publicCharacters = [];
     
-    for (const [identifier, { key, data: character, ttl }] of charactersMap) {
+    charactersMap.forEach(({ key, data: character, ttl }, identifier) => {
       // FILTRER : Afficher seulement les personnages permanents
       if (ttl !== -1) {
         console.log(`⏭️ Ignore ${character.name} (non permanent, TTL: ${ttl})`);
-        continue;
+        return;
       }
 
       // Calculer les statistiques des crafts
@@ -145,7 +145,7 @@ export async function GET() {
       const totalRecipes = Object.values(craftCounts).reduce((a, b) => a + b, 0);
       console.log(`✅ Personnage PERMANENT ajouté: ${publicCharacter.name} avec ${totalRecipes} recettes`);
       publicCharacters.push(publicCharacter);
-    }
+    });
 
     // Trier par nom
     publicCharacters.sort((a, b) => a.name.localeCompare(b.name));
