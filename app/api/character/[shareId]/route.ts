@@ -1,7 +1,7 @@
+// app/api/character/[shareId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from 'redis';
 
-// Créer le client Redis
 const redis = createClient({ url: process.env.REDIS_URL });
 
 export async function GET(
@@ -12,33 +12,20 @@ export async function GET(
     const { shareId } = params;
     
     if (!shareId) {
-      return NextResponse.json(
-        { error: 'ID de partage manquant' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'ID manquant' }, { status: 400 });
     }
 
-    // Connecter à Redis si pas encore connecté
-    if (!redis.isReady) {
-      await redis.connect();
-    }
+    if (!redis.isReady) await redis.connect();
 
-    const characterData = await redis.get(`character:${shareId}`);
+    const data = await redis.get(`character:${shareId}`);
     
-    if (!characterData) {
-      return NextResponse.json(
-        { error: 'Personnage non trouvé' },
-        { status: 404 }
-      );
+    if (!data) {
+      return NextResponse.json({ error: 'Personnage non trouvé' }, { status: 404 });
     }
 
-    const character = JSON.parse(characterData);
-    return NextResponse.json(character);
+    return NextResponse.json(JSON.parse(data));
   } catch (error) {
-    console.error('Erreur lors de la récupération:', error);
-    return NextResponse.json(
-      { error: 'Erreur serveur' },
-      { status: 500 }
-    );
+    console.error('Erreur récupération:', error);
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
