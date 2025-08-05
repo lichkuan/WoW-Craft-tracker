@@ -1288,12 +1288,12 @@ const WoWCraftingTracker: React.FC = () => {
           </div>
         )}
       </div>
-
-            {/* Section Recettes Rares */}
-      	    <RareRecipesSection />
-      </div>  {/* ← ferme le <div className="max-w-6xl ..."> */}
+      {/* Section Recettes Rares */}
+      <RareRecipesSection />
+    </div>
   );
 };
+
 
 
       <div className="bg-gray-800 rounded-lg p-8 border border-yellow-600">
