@@ -30,8 +30,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Sauvegarder le nouveau personnage
+    // CORRECTION : Sauvegarder le personnage SANS expiration pour qu'il apparaisse dans la liste publique
     await redis.set(`character:${shareId}`, JSON.stringify(character));
+    console.log(`✅ Personnage sauvé SANS expiration: ${character.name} (${shareId})`);
     
     return NextResponse.json({ success: true, shareId });
   } catch (error) {
