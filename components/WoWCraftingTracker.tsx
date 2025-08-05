@@ -1,4 +1,717 @@
-'use client'
+<span className="ml-3 px-2 py-1 bg-gray-600 rounded text-sm text-gray-300">
+                    {recipes.length} recette{recipes.length > 1 ? 's' : ''}
+                  </span>
+                </h3>
+              </div>
+              
+              <div className="p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {recipes.map(recipe => (
+                    <div 
+                      key={recipe.id} 
+                      className={`p-4 rounded-lg border-2 ${getRarityColor(recipe.crafters.length)} hover:scale-105 transition-transform`}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center mb-2">
+                            <span className={`px-2 py-1 rounded text-xs font-bold ${getRarityTextColor(recipe.crafters.length)} bg-gray-800`}>
+                              {getRarityLabel(recipe.crafters.length)}
+                            </span>
+                          </div>
+                          <h4 className="font-semibold text-white text-sm leading-tight mb-2">
+                            {recipe.name}
+                          </h4>
+                        </div>
+                        <a
+                          href={recipe.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-3 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex-shrink-0"
+                        >
+                          Wowhead
+                        </a>
+                      </div>
+                      
+                      <div className="border-t border-gray-600 pt-3">
+                        <div className="text-xs text-gray-400 mb-2">
+                          Faisable par {recipe.crafters.length} crafteur{recipe.crafters.length > 1 ? 's' : ''} :
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {recipe.crafters.map(crafter => (
+                            <span 
+                              key={crafter}
+                              className="px-2 py-1 bg-yellow-600 text-black text-xs rounded font-medium"
+                            >
+                              {crafter}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bouton de rechargement */}
+        <div className="mt-6 text-center">
+          <button
+            onClick={loadRareRecipes}
+            disabled={rareRecipesLoading}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded text-sm disabled:opacity-50"
+          >
+            {rareRecipesLoading ? 'Analyse...' : '🔄 Actualiser les recettes rares'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Composant CharacterForm avec support édition
+  const CharacterForm = ({ editMode = false, characterToEdit = null }: { 
+    editMode?: boolean; 
+    characterToEdit?: Character | null; 
+  }) => {
+    const [form, setForm] = useState<{
+      name: string;
+      server: string;
+      level: number;
+      faction: 'alliance' | 'horde';
+      race: string;
+      class: string;
+      guild: string;
+      profession1: string;
+      profession2: string;
+    }>({
+      name: characterToEdit?.name || '',
+      server: characterToEdit?.server || 'Gehennas',
+      level: characterToEdit?.level || 90,
+      faction: characterToEdit?.faction || 'horde',
+      race: characterToEdit?.race || '',
+      class: characterToEdit?.class || '',
+      guild: characterToEdit?.guild || 'Raid Tisane et Dodo',
+      profession1: characterToEdit?.profession1 || '',
+      profession2: characterToEdit?.profession2 || ''
+    });
+
+    const handleSubmit = () => {
+      if (!form.name || !form.race || !form.class) return;
+
+      if (editMode && characterToEdit) {
+        updateCharacter(form);
+      } else {
+        createCharacter(form);
+      }
+    };
+
+    return (
+      <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg p-8 border border-yellow-600">
+        <h2 className="text-3xl font-bold text-yellow-400 mb-6 flex items-center">
+          <User className="mr-3" />
+          {editMode ? 'Modifier le personnage' : 'Créer un personnage'}
+        </h2>
+        
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <input
+              type="text"
+              placeholder="Nom"
+              value={form.name}
+              onChange={e => setForm(prev => ({...prev, name: e.target.value}))}
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+            />
+            <input
+              type="text"
+              placeholder="Serveur"
+              value={form.server}
+              onChange={e => setForm(prev => ({...prev, server: e.target.value}))}
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <input
+              type="number"
+              placeholder="Niveau"
+              value={form.level}
+              onChange={e => setForm(prev => ({...prev, level: parseInt(e.target.value) || 90}))}
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+            />
+            <select
+              value={form.faction}
+              onChange={e => setForm(prev => ({...prev, faction: e.target.value as 'alliance' | 'horde', race: ''}))}
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+            >
+              <option value="alliance">🛡️ Alliance</option>
+              <option value="horde">⚔️ Horde</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Guilde"
+              value={form.guild}
+              onChange={e => setForm(prev => ({...prev, guild: e.target.value}))}
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <select
+              value={form.race}
+              onChange={e => setForm(prev => ({...prev, race: e.target.value}))}
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+            >
+              <option value="">Choisir une race</option>
+              {races[form.faction].map(race => (
+                <option key={race} value={race}>{race}</option>
+              ))}
+            </select>
+            <select
+              value={form.class}
+              onChange={e => setForm(prev => ({...prev, class: e.target.value}))}
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+            >
+              <option value="">Choisir une classe</option>
+              {classes.map(cls => (
+                <option key={cls} value={cls}>{cls}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <select
+              value={form.profession1}
+              onChange={e => setForm(prev => ({...prev, profession1: e.target.value}))}
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+            >
+              <option value="">Métier principal 1</option>
+              {professions.map(prof => (
+                <option key={prof} value={prof}>{prof}</option>
+              ))}
+            </select>
+            <select
+              value={form.profession2}
+              onChange={e => setForm(prev => ({...prev, profession2: e.target.value}))}
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+            >
+              <option value="">Métier principal 2</option>
+              {professions.filter(p => p !== form.profession1).map(prof => (
+                <option key={prof} value={prof}>{prof}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex space-x-4">
+            <button
+              onClick={handleSubmit}
+              disabled={!form.name || !form.race || !form.class}
+              className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-3 px-6 rounded disabled:opacity-50"
+            >
+              {editMode ? 'Sauvegarder les modifications' : 'Créer le personnage'}
+            </button>
+            <button
+              onClick={() => {
+                if (editMode) {
+                  setEditingCharacter(null);
+                  setView('character');
+                } else {
+                  setView('home');
+                }
+              }}
+              className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const ImportView = ({ profession }: { profession: string }) => (
+    <div className="max-w-4xl mx-auto bg-gray-800 rounded-lg p-8 border border-yellow-600">
+      <h2 className="text-3xl font-bold text-yellow-400 mb-6">
+        <Upload className="inline mr-3" />
+        Importer - {profession}
+      </h2>
+      
+      <div className="mb-6">
+        <label className="block text-yellow-300 font-semibold mb-2">
+          Liste markdown :
+        </label>
+        <textarea
+          value={importText}
+          onChange={e => setImportText(e.target.value)}
+          className="w-full h-64 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none font-mono text-sm"
+          placeholder="- [Item Name](https://wowhead.com/cata/item=12345)
+- [Autre Item](https://wowhead.com/cata/spell=67890)"
+        />
+        <p className="text-gray-400 text-sm mt-2">
+          ℹ️ Le niveau de métier sera automatiquement détecté depuis votre export
+        </p>
+      </div>
+      
+      <div className="flex space-x-4">
+        <button
+          onClick={() => importCrafts(profession)}
+          disabled={!importText.trim()}
+          className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded disabled:opacity-50"
+        >
+          Importer
+        </button>
+        <button
+          onClick={() => setView('character')}
+          className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded"
+        >
+          Annuler
+        </button>
+      </div>
+    </div>
+  );
+
+  const CharacterView = () => {
+    if (!currentCharacter) return null;
+
+    const professionsArray = [currentCharacter.profession1, currentCharacter.profession2].filter(Boolean);
+    
+    const filteredProfessionData = useMemo(() => {
+      return professionsArray.map(profession => {
+        const crafts = currentCharacter.crafts[profession] || [];
+        const filteredCrafts = crafts.filter(craft => 
+          !searchTerm || craft.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        
+        const categories = filteredCrafts.reduce((acc, craft) => {
+          if (!acc[craft.category]) acc[craft.category] = [];
+          acc[craft.category].push(craft);
+          return acc;
+        }, {} as { [key: string]: CraftItem[] });
+
+        return {
+          profession,
+          crafts,
+          filteredCrafts,
+          categories
+        };
+      });
+    }, [professionsArray, currentCharacter.crafts, searchTerm]);
+    
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-yellow-600">
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-4xl font-bold text-yellow-400 mb-2">{currentCharacter.name}</h1>
+              <div className="text-gray-300 space-y-1">
+                <p>Niveau {currentCharacter.level} {currentCharacter.race} {currentCharacter.class}</p>
+                {currentCharacter.server && <p>Serveur: {currentCharacter.server}</p>}
+                {currentCharacter.guild && <p>Guilde: {currentCharacter.guild}</p>}
+                <p className={currentCharacter.faction === 'alliance' ? 'text-blue-400' : 'text-red-400'}>
+                  {currentCharacter.faction === 'alliance' ? '🛡️ Alliance' : '⚔️ Horde'}
+                </p>
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => {
+                  setEditingCharacter(currentCharacter);
+                  setView('edit');
+                }}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded flex items-center"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Éditer
+              </button>
+              <button
+                onClick={shareCharacter}
+                disabled={loading}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center disabled:opacity-50"
+              >
+                <Share className="w-4 h-4 mr-2" />
+                {loading ? 'Partage...' : 'Partager'}
+              </button>
+              <button
+                onClick={shareToDiscord}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded flex items-center"
+                title="Partager sur Discord"
+              >
+                💬 Discord
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <SearchBar onSearchChange={handleSearchChange} />
+
+        {filteredProfessionData.map(({ profession, crafts, categories }) => (
+          <div key={profession} className="bg-gray-800 rounded-lg border border-yellow-600 mb-6">
+            <div className="p-6 border-b border-gray-700">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-yellow-400">{profession}</h2>
+                  {(currentCharacter.professionLevels?.[profession] || 0) > 0 && (
+                    <p className={`text-sm ${getProfessionLevelColor(currentCharacter.professionLevels[profession])}`}>
+                      {getProfessionLevelIcon(currentCharacter.professionLevels[profession])} Niveau {currentCharacter.professionLevels[profession]} ({getProfessionLevelName(currentCharacter.professionLevels[profession])})
+                    </p>
+                  )}
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setView(`import-${profession}`)}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-black px-4 py-2 rounded flex items-center"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Importer
+                  </button>
+                  {crafts.length > 0 && (
+                    <button
+                      onClick={() => {
+                        if (confirm(`Supprimer toutes les recettes de ${profession} ?`)) {
+                          const updated = {
+                            ...currentCharacter,
+                            professionLevels: {
+                              ...currentCharacter.professionLevels,
+                              [profession]: 0
+                            },
+                            crafts: { ...currentCharacter.crafts, [profession]: [] }
+                          };
+                          setCharacters(chars => chars.map(c => c.id === currentCharacter.id ? updated : c));
+                          setCurrentCharacter(updated);
+                        }
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex items-center"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Supprimer
+                    </button>
+                  )}
+                </div>
+              </div>
+              <p className="text-gray-400 mt-2">{crafts.length} recettes</p>
+            </div>
+            
+            {Object.keys(categories).length > 0 ? (
+              <div className="p-6">
+                {Object.keys(categories).length > 1 && (
+                  <div className="mb-4 flex justify-end">
+                    <button
+                      onClick={() => toggleAllCategories(profession, Object.keys(categories))}
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
+                    >
+                      {allExpanded[profession] ? (
+                        <>
+                          <ChevronDown className="w-4 h-4 mr-2" />
+                          Tout replier
+                        </>
+                      ) : (
+                        <>
+                          <ChevronRight className="w-4 h-4 mr-2" />
+                          Tout déplier
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {Object.entries(categories).map(([category, items]) => {
+                  const isExpanded = expandedCategories[`${profession}-${category}`] || false;
+                  
+                  return (
+                    <div key={category} className="mb-4">
+                      <button
+                        onClick={() => setExpandedCategories(prev => ({
+                          ...prev,
+                          [`${profession}-${category}`]: !isExpanded
+                        }))}
+                        className="w-full flex items-center justify-between bg-gray-600 hover:bg-gray-500 rounded-lg p-3"
+                      >
+                        <span className="text-yellow-300 font-semibold">
+                          {category} ({items.length})
+                        </span>
+                        {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                      </button>
+                      
+                      {isExpanded && (
+                        <div className="mt-2 space-y-2 ml-4">
+                          {items.map(item => (
+                            <div key={item.id} className="bg-gray-700 rounded-lg p-3 flex items-center justify-between">
+                              <span className="text-yellow-300">{item.name}</span>
+                              <a
+                                href={item.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded"
+                              >
+                                Wowhead
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-6 text-center text-gray-500">
+                <p>Aucune recette</p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const HomeView = () => (
+    <div className="max-w-6xl mx-auto text-center">
+      <div className="bg-gray-800 rounded-lg p-12 border border-yellow-600 mb-8">
+        <h1 className="text-5xl font-bold text-yellow-400 mb-4">WoW Crafting Tracker</h1>
+        <p className="text-xl text-gray-300 mb-8">Partagez vos métiers World of Warcraft</p>
+        
+        <div className="bg-blue-900 border border-blue-600 rounded-lg p-6 mb-8 text-left">
+          <h2 className="text-2xl font-bold text-blue-300 mb-4">📋 Instructions</h2>
+          <div className="space-y-4 text-gray-200">
+            <div>
+              <h3 className="text-lg font-semibold text-blue-200 mb-2">1. Installez l'addon :</h3>
+              <a 
+                href="https://www.curseforge.com/wow/addons/simple-trade-skill-exporter" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded"
+              >
+                Simple Trade Skill Exporter
+              </a>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-blue-200 mb-2">2. Dans le jeu :</h3>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Ouvrez votre métier</li>
+                <li>Tapez : <code className="bg-gray-700 px-2 py-1 rounded text-yellow-300">/tsexport markdown</code></li>
+                <li>Copiez avec Ctrl+C</li>
+                <li>Collez dans ce site</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {characters.length === 0 ? (
+          <button
+            onClick={() => setView('create')}
+            className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-4 px-8 rounded-lg text-xl"
+          >
+            Créer mon personnage
+          </button>
+        ) : (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-yellow-400">Mes personnages</h2>
+            <div className="grid gap-4">
+              {characters.map(character => (
+                <div key={character.id} className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-yellow-500">
+                  <div className="flex items-center justify-between">
+                    <div 
+                      className="flex-1 cursor-pointer"
+                      onClick={() => {
+                        setCurrentCharacter(character);
+                        setView('character');
+                      }}
+                    >
+                      <h3 className="text-xl font-bold text-yellow-300">{character.name}</h3>
+                      <p className="text-gray-300">Niveau {character.level} {character.race} {character.class}</p>
+                      <p className="text-gray-400 text-sm">
+                        {character.server} {character.guild && `• ${character.guild}`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => deleteCharacter(character)}
+                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm ml-4"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setView('create')}
+              className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-2 px-6 rounded"
+            >
+              Ajouter un personnage
+            </button>
+          </div>
+        )}
+      </div>
+
+      <RareRecipesSection />
+
+      <div className="bg-gray-800 rounded-lg p-8 border border-yellow-600">
+        <h2 className="text-3xl font-bold text-yellow-400 mb-6">🌟 Communauté</h2>
+        
+        {publicCharacters.length > 0 ? (
+          <>
+            <p className="text-gray-300 mb-6">Découvrez les personnages partagés par la communauté</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {publicCharacters.map(character => (
+                <div 
+                  key={character.shareId}
+                  className={`bg-gray-700 rounded-lg p-6 cursor-pointer hover:bg-gray-600 border-2 ${
+                    character.faction === 'alliance' ? 'border-blue-500' : 'border-red-500'
+                  }`}
+                  onClick={() => window.open(`?share=${character.shareId}`, '_blank')}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-yellow-300">{character.name}</h3>
+                      <p className="text-gray-300 text-sm">
+                        Niveau {character.level} {character.race} {character.class}
+                      </p>
+                    </div>
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                      character.faction === 'alliance' ? 'bg-blue-600 text-blue-100' : 'bg-red-600 text-red-100'
+                    }`}>
+                      {character.faction === 'alliance' ? '🛡️ Alliance' : '⚔️ Horde'}
+                    </span>
+                  </div>
+
+                  <div className="mb-4 space-y-1">
+                    {character.server && (
+                      <p className="text-gray-400 text-sm">📍 {character.server}</p>
+                    )}
+                    {character.guild && (
+                      <p className="text-gray-400 text-sm">⚔️ {character.guild}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-yellow-400 font-semibold text-sm">Métiers principaux :</h4>
+                    
+                    {character.profession1 && (
+                      <div className="flex items-center justify-between bg-gray-600 rounded p-2">
+                        <div className="flex flex-col">
+                          <span className="text-white text-sm font-medium">{character.profession1}</span>
+                          {(character.professionLevels?.[character.profession1] || 0) > 0 && (
+                            <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.profession1])}`}>
+                              {getProfessionLevelIcon(character.professionLevels[character.profession1])} Niveau {character.professionLevels[character.profession1]} ({getProfessionLevelName(character.professionLevels[character.profession1])})
+                            </span>
+                          )}
+                        </div>
+                        <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
+                          {character.craftCounts[character.profession1] || 0}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {character.profession2 && (
+                      <div className="flex items-center justify-between bg-gray-600 rounded p-2">
+                        <div className="flex flex-col">
+                          <span className="text-white text-sm font-medium">{character.profession2}</span>
+                          {(character.professionLevels?.[character.profession2] || 0) > 0 && (
+                            <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.profession2])}`}>
+                              {getProfessionLevelIcon(character.professionLevels[character.profession2])} Niveau {character.professionLevels[character.profession2]} ({getProfessionLevelName(character.professionLevels[character.profession2])})
+                            </span>
+                          )}
+                        </div>
+                        <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
+                          {character.craftCounts[character.profession2] || 0}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-gray-600">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 text-sm">Total des recettes :</span>
+                      <span className="text-yellow-400 font-bold">
+                        {Object.values(character.craftCounts as Record<string, number>).reduce((a: number, b: number) => a + b, 0)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 text-center">
+                    <span className="text-blue-400 text-xs">🔗 Cliquez pour voir le profil complet</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">👥</div>
+            <h3 className="text-2xl font-bold text-yellow-300 mb-4">Aucun personnage partagé</h3>
+            <p className="text-gray-400 mb-6">
+              Soyez le premier à partager vos métiers avec la communauté !<br/>
+              Créez un personnage, ajoutez vos recettes et cliquez sur "Partager".
+            </p>
+            <div className="bg-blue-900 border border-blue-600 rounded-lg p-4 max-w-md mx-auto">
+              <p className="text-blue-200 text-sm">
+                💡 <strong>Astuce :</strong> Les personnages partagés apparaissent ici automatiquement
+                et permettent à la communauté de voir vos métiers !
+              </p>
+            </div>
+          </div>
+        )}
+        
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => {
+              console.log('🔄 Actualisation des personnages publics');
+              loadPublicCharacters();
+            }}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
+          >
+            🔄 Actualiser la liste
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+          <p className="text-xl text-gray-300">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+      <nav className="bg-gray-800 border-b border-yellow-600 p-4">
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
+          <button
+            onClick={() => setView('home')}
+            className="text-2xl font-bold text-yellow-400 hover:text-yellow-300"
+          >
+            WoW Crafting Tracker
+          </button>
+          
+          {currentCharacter && view === 'character' && (
+            <div className="text-yellow-300">
+              {currentCharacter.name} - {currentCharacter.server}
+            </div>
+          )}
+        </div>
+      </nav>
+
+      <main className="container mx-auto px-4 py-8">
+        {view === 'home' && <HomeView />}
+        {view === 'create' && <CharacterForm />}
+        {view === 'edit' && <CharacterForm editMode={true} characterToEdit={editingCharacter} />}
+        {view === 'character' && <CharacterView />}
+        {view.startsWith('import-') && (
+          <ImportView profession={view.replace('import-', '')} />
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default WoWCraftingTracker;'use client'
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ChevronDown, ChevronRight, Upload, User, Share, Search, Trash2, Plus, X, Edit } from 'lucide-react';
@@ -304,7 +1017,6 @@ const WoWCraftingTracker: React.FC = () => {
       
       // Parser le CSV avec une fonction simple
       const lines = csvText.split('\n');
-      const headers = lines[0].split(',');
       const data = lines.slice(1).filter(line => line.trim()).map(line => {
         const values = line.split(',');
         return {
@@ -675,638 +1387,4 @@ const WoWCraftingTracker: React.FC = () => {
                 <h3 className="text-xl font-bold text-yellow-400 flex items-center">
                   <span className="text-2xl mr-3">{professionIcons[profession as keyof typeof professionIcons] || '🔮'}</span>
                   {profession}
-                  <span className="ml-3 px-2 py-1 bg-gray-600 rounded text-sm text-gray-300">
-                    {recipes.length} recette{recipes.length > 1 ? 's' : ''}
-                  </span>
-                </h3>
-              </div>
-              
-              <div className="p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {recipes.map(recipe => (
-                    <div 
-                      key={recipe.id} 
-                      className={`p-4 rounded-lg border-2 ${getRarityColor(recipe.crafters.length)} hover:scale-105 transition-transform`}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center mb-2">
-                            <span className={`px-2 py-1 rounded text-xs font-bold ${getRarityTextColor(recipe.crafters.length)} bg-gray-800`}>
-                              {getRarityLabel(recipe.crafters.length)}
-                            </span>
-                          </div>
-                          <h4 className="font-semibold text-white text-sm leading-tight mb-2">
-                            {recipe.name}
-                          </h4>
-                        </div>
-                        <a
-                          href={recipe.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-3 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex-shrink-0"
-                        >
-                          Wowhead
-                        </a>
-                      </div>
-                      
-                      <div className="border-t border-gray-600 pt-3">
-                        <div className="text-xs text-gray-400 mb-2">
-                          Faisable par {recipe.crafters.length} crafteur{recipe.crafters.length > 1 ? 's' : ''} :
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {recipe.crafters.map(crafter => (
-                            <span 
-                              key={crafter}
-                              className="px-2 py-1 bg-yellow-600 text-black text-xs rounded font-medium"
-                            >
-                              {crafter}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Bouton de rechargement */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={loadRareRecipes}
-            disabled={rareRecipesLoading}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded text-sm disabled:opacity-50"
-          >
-            {rareRecipesLoading ? 'Analyse...' : '🔄 Actualiser les recettes rares'}
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  // Composant CharacterForm avec support édition
-  const CharacterForm = ({ editMode = false, characterToEdit = null }: { 
-    editMode?: boolean; 
-    characterToEdit?: Character | null; 
-  }) => {
-    const [form, setForm] = useState<{
-      name: string;
-      server: string;
-      level: number;
-      faction: 'alliance' | 'horde';
-      race: string;
-      class: string;
-      guild: string;
-      profession1: string;
-      profession2: string;
-    }>({
-      name: characterToEdit?.name || '',
-      server: characterToEdit?.server || 'Gehennas', // DÉFAUT
-      level: characterToEdit?.level || 90,
-      faction: characterToEdit?.faction || 'horde', // DÉFAUT HORDE
-      race: characterToEdit?.race || '',
-      class: characterToEdit?.class || '',
-      guild: characterToEdit?.guild || 'Raid Tisane et Dodo', // DÉFAUT
-      profession1: characterToEdit?.profession1 || '',
-      profession2: characterToEdit?.profession2 || ''
-    });
-
-    const handleSubmit = () => {
-      if (!form.name || !form.race || !form.class) return;
-
-      if (editMode && characterToEdit) {
-        updateCharacter(form);
-      } else {
-        createCharacter(form);
-      }
-    };
-
-    return (
-      <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg p-8 border border-yellow-600">
-        <h2 className="text-3xl font-bold text-yellow-400 mb-6 flex items-center">
-          <User className="mr-3" />
-          {editMode ? 'Modifier le personnage' : 'Créer un personnage'}
-        </h2>
-        
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <input
-              type="text"
-              placeholder="Nom"
-              value={form.name}
-              onChange={e => setForm(prev => ({...prev, name: e.target.value}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-            />
-            <input
-              type="text"
-              placeholder="Serveur"
-              value={form.server}
-              onChange={e => setForm(prev => ({...prev, server: e.target.value}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <input
-              type="number"
-              placeholder="Niveau"
-              value={form.level}
-              onChange={e => setForm(prev => ({...prev, level: parseInt(e.target.value) || 90}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-            />
-            <select
-              value={form.faction}
-              onChange={e => setForm(prev => ({...prev, faction: e.target.value as 'alliance' | 'horde', race: ''}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-            >
-              <option value="alliance">🛡️ Alliance</option>
-              <option value="horde">⚔️ Horde</option>
-            </select>
-            <input
-              type="text"
-              placeholder="Guilde"
-              value={form.guild}
-              onChange={e => setForm(prev => ({...prev, guild: e.target.value}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <select
-              value={form.race}
-              onChange={e => setForm(prev => ({...prev, race: e.target.value}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-            >
-              <option value="">Choisir une race</option>
-              {races[form.faction].map(race => (
-                <option key={race} value={race}>{race}</option>
-              ))}
-            </select>
-            <select
-              value={form.class}
-              onChange={e => setForm(prev => ({...prev, class: e.target.value}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-            >
-              <option value="">Choisir une classe</option>
-              {classes.map(cls => (
-                <option key={cls} value={cls}>{cls}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <select
-              value={form.profession1}
-              onChange={e => setForm(prev => ({...prev, profession1: e.target.value}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-            >
-              <option value="">Métier principal 1</option>
-              {professions.map(prof => (
-                <option key={prof} value={prof}>{prof}</option>
-              ))}
-            </select>
-            <select
-              value={form.profession2}
-              onChange={e => setForm(prev => ({...prev, profession2: e.target.value}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-            >
-              <option value="">Métier principal 2</option>
-              {professions.filter(p => p !== form.profession1).map(prof => (
-                <option key={prof} value={prof}>{prof}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex space-x-4">
-            <button
-              onClick={handleSubmit}
-              disabled={!form.name || !form.race || !form.class}
-              className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-3 px-6 rounded disabled:opacity-50"
-            >
-              {editMode ? 'Sauvegarder les modifications' : 'Créer le personnage'}
-            </button>
-            <button
-              onClick={() => {
-                if (editMode) {
-                  setEditingCharacter(null);
-                  setView('character');
-                } else {
-                  setView('home');
-                }
-              }}
-              className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded"
-            >
-              Annuler
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const ImportView = ({ profession }: { profession: string }) => (
-    <div className="max-w-4xl mx-auto bg-gray-800 rounded-lg p-8 border border-yellow-600">
-      <h2 className="text-3xl font-bold text-yellow-400 mb-6">
-        <Upload className="inline mr-3" />
-        Importer - {profession}
-      </h2>
-      
-      <div className="mb-6">
-        <label className="block text-yellow-300 font-semibold mb-2">
-          Liste markdown :
-        </label>
-        <textarea
-          value={importText}
-          onChange={e => setImportText(e.target.value)}
-          className="w-full h-64 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none font-mono text-sm"
-          placeholder="- [Item Name](https://wowhead.com/cata/item=12345)
-- [Autre Item](https://wowhead.com/cata/spell=67890)"
-        />
-        <p className="text-gray-400 text-sm mt-2">
-          ℹ️ Le niveau de métier sera automatiquement détecté depuis votre export
-        </p>
-      </div>
-      
-      <div className="flex space-x-4">
-        <button
-          onClick={() => importCrafts(profession)}
-          disabled={!importText.trim()}
-          className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded disabled:opacity-50"
-        >
-          Importer
-        </button>
-        <button
-          onClick={() => setView('character')}
-          className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded"
-        >
-          Annuler
-        </button>
-      </div>
-    </div>
-  );
-
-  const CharacterView = () => {
-    if (!currentCharacter) return null;
-
-    const professionsArray = [currentCharacter.profession1, currentCharacter.profession2].filter(Boolean);
-    
-    // Mémoriser le filtrage pour éviter les re-renders
-    const filteredProfessionData = useMemo(() => {
-      return professionsArray.map(profession => {
-        const crafts = currentCharacter.crafts[profession] || [];
-        const filteredCrafts = crafts.filter(craft => 
-          !searchTerm || craft.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        
-        const categories = filteredCrafts.reduce((acc, craft) => {
-          if (!acc[craft.category]) acc[craft.category] = [];
-          acc[craft.category].push(craft);
-          return acc;
-        }, {} as { [key: string]: CraftItem[] });
-
-        return {
-          profession,
-          crafts,
-          filteredCrafts,
-          categories
-        };
-      });
-    }, [professionsArray, currentCharacter.crafts, searchTerm]);
-    
-    return (
-      <div className="max-w-6xl mx-auto">
-        {/* Header avec bouton Éditer */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-yellow-600">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-4xl font-bold text-yellow-400 mb-2">{currentCharacter.name}</h1>
-              <div className="text-gray-300 space-y-1">
-                <p>Niveau {currentCharacter.level} {currentCharacter.race} {currentCharacter.class}</p>
-                {currentCharacter.server && <p>Serveur: {currentCharacter.server}</p>}
-                {currentCharacter.guild && <p>Guilde: {currentCharacter.guild}</p>}
-                <p className={currentCharacter.faction === 'alliance' ? 'text-blue-400' : 'text-red-400'}>
-                  {currentCharacter.faction === 'alliance' ? '🛡️ Alliance' : '⚔️ Horde'}
-                </p>
-              </div>
-            </div>
-            <div className="flex space-x-2">
-              {/* Bouton Éditer */}
-              <button
-                onClick={() => {
-                  setEditingCharacter(currentCharacter);
-                  setView('edit');
-                }}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded flex items-center"
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Éditer
-              </button>
-              <button
-                onClick={shareCharacter}
-                disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center disabled:opacity-50"
-              >
-                <Share className="w-4 h-4 mr-2" />
-                {loading ? 'Partage...' : 'Partager'}
-              </button>
-              <button
-                onClick={shareToDiscord}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded flex items-center"
-                title="Partager sur Discord"
-              >
-                💬 Discord
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Search - Composant isolé */}
-        <SearchBar onSearchChange={handleSearchChange} />
-
-        {/* Professions */}
-        {filteredProfessionData.map(({ profession, crafts, categories }) => (
-          <div key={profession} className="bg-gray-800 rounded-lg border border-yellow-600 mb-6">
-            <div className="p-6 border-b border-gray-700">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-2xl font-bold text-yellow-400">{profession}</h2>
-                  {(currentCharacter.professionLevels?.[profession] || 0) > 0 && (
-                    <p className={`text-sm ${getProfessionLevelColor(currentCharacter.professionLevels[profession])}`}>
-                      {getProfessionLevelIcon(currentCharacter.professionLevels[profession])} Niveau {currentCharacter.professionLevels[profession]} ({getProfessionLevelName(currentCharacter.professionLevels[profession])})
-                    </p>
-                  )}
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => setView(`import-${profession}`)}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-black px-4 py-2 rounded flex items-center"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Importer
-                  </button>
-                  {crafts.length > 0 && (
-                    <button
-                      onClick={() => {
-                        if (confirm(`Supprimer toutes les recettes de ${profession} ?`)) {
-                          const updated = {
-                            ...currentCharacter,
-                            professionLevels: {
-                              ...currentCharacter.professionLevels,
-                              [profession]: 0
-                            },
-                            crafts: { ...currentCharacter.crafts, [profession]: [] }
-                          };
-                          setCharacters(chars => chars.map(c => c.id === currentCharacter.id ? updated : c));
-                          setCurrentCharacter(updated);
-                        }
-                      }}
-                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex items-center"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Supprimer
-                    </button>
-                  )}
-                </div>
-              </div>
-              <p className="text-gray-400 mt-2">{crafts.length} recettes</p>
-            </div>
-            
-            {Object.keys(categories).length > 0 ? (
-              <div className="p-6">
-                {/* Bouton Expand/Collapse All */}
-                {Object.keys(categories).length > 1 && (
-                  <div className="mb-4 flex justify-end">
-                    <button
-                      onClick={() => toggleAllCategories(profession, Object.keys(categories))}
-                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
-                    >
-                      {allExpanded[profession] ? (
-                        <>
-                          <ChevronDown className="w-4 h-4 mr-2" />
-                          Tout replier
-                        </>
-                      ) : (
-                        <>
-                          <ChevronRight className="w-4 h-4 mr-2" />
-                          Tout déplier
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-
-                {Object.entries(categories).map(([category, items]) => {
-                  const isExpanded = expandedCategories[`${profession}-${category}`] || false;
-                  
-                  return (
-                    <div key={category} className="mb-4">
-                      <button
-                        onClick={() => setExpandedCategories(prev => ({
-                          ...prev,
-                          [`${profession}-${category}`]: !isExpanded
-                        }))}
-                        className="w-full flex items-center justify-between bg-gray-600 hover:bg-gray-500 rounded-lg p-3"
-                      >
-                        <span className="text-yellow-300 font-semibold">
-                          {category} ({items.length})
-                        </span>
-                        {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                      </button>
-                      
-                      {isExpanded && (
-                        <div className="mt-2 space-y-2 ml-4">
-                          {items.map(item => (
-                            <div key={item.id} className="bg-gray-700 rounded-lg p-3 flex items-center justify-between">
-                              <span className="text-yellow-300">{item.name}</span>
-                              <a
-                                href={item.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded"
-                              >
-                                Wowhead
-                              </a>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="p-6 text-center text-gray-500">
-                <p>Aucune recette</p>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const HomeView = () => (
-    <div className="max-w-6xl mx-auto text-center">
-      <div className="bg-gray-800 rounded-lg p-12 border border-yellow-600 mb-8">
-        <h1 className="text-5xl font-bold text-yellow-400 mb-4">WoW Crafting Tracker</h1>
-        <p className="text-xl text-gray-300 mb-8">Partagez vos métiers World of Warcraft</p>
-        
-        <div className="bg-blue-900 border border-blue-600 rounded-lg p-6 mb-8 text-left">
-          <h2 className="text-2xl font-bold text-blue-300 mb-4">📋 Instructions</h2>
-          <div className="space-y-4 text-gray-200">
-            <div>
-              <h3 className="text-lg font-semibold text-blue-200 mb-2">1. Installez l'addon :</h3>
-              <a 
-                href="https://www.curseforge.com/wow/addons/simple-trade-skill-exporter" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded"
-              >
-                Simple Trade Skill Exporter
-              </a>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-blue-200 mb-2">2. Dans le jeu :</h3>
-              <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Ouvrez votre métier</li>
-                <li>Tapez : <code className="bg-gray-700 px-2 py-1 rounded text-yellow-300">/tsexport markdown</code></li>
-                <li>Copiez avec Ctrl+C</li>
-                <li>Collez dans ce site</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {characters.length === 0 ? (
-          <button
-            onClick={() => setView('create')}
-            className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-4 px-8 rounded-lg text-xl"
-          >
-            Créer mon personnage
-          </button>
-        ) : (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-yellow-400">Mes personnages</h2>
-            <div className="grid gap-4">
-              {characters.map(character => (
-                <div key={character.id} className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-yellow-500">
-                  <div className="flex items-center justify-between">
-                    <div 
-                      className="flex-1 cursor-pointer"
-                      onClick={() => {
-                        setCurrentCharacter(character);
-                        setView('character');
-                      }}
-                    >
-                      <h3 className="text-xl font-bold text-yellow-300">{character.name}</h3>
-                      <p className="text-gray-300">Niveau {character.level} {character.race} {character.class}</p>
-                      <p className="text-gray-400 text-sm">
-                        {character.server} {character.guild && `• ${character.guild}`}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => deleteCharacter(character)}
-                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm ml-4"
-                    >
-                      Supprimer
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={() => setView('create')}
-              className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-2 px-6 rounded"
-            >
-              Ajouter un personnage
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Section Recettes Rares - NOUVEAU */}
-      <RareRecipesSection />
-
-      {/* Personnages publics */}
-      <div className="bg-gray-800 rounded-lg p-8 border border-yellow-600">
-        <h2 className="text-3xl font-bold text-yellow-400 mb-6">🌟 Communauté</h2>
-        
-        {publicCharacters.length > 0 ? (
-          <>
-            <p className="text-gray-300 mb-6">Découvrez les personnages partagés par la communauté</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {publicCharacters.map(character => (
-                <div 
-                  key={character.shareId}
-                  className={`bg-gray-700 rounded-lg p-6 cursor-pointer hover:bg-gray-600 border-2 ${
-                    character.faction === 'alliance' ? 'border-blue-500' : 'border-red-500'
-                  }`}
-                  onClick={() => window.open(`?share=${character.shareId}`, '_blank')}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-xl font-bold text-yellow-300">{character.name}</h3>
-                      <p className="text-gray-300 text-sm">
-                        Niveau {character.level} {character.race} {character.class}
-                      </p>
-                    </div>
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                      character.faction === 'alliance' ? 'bg-blue-600 text-blue-100' : 'bg-red-600 text-red-100'
-                    }`}>
-                      {character.faction === 'alliance' ? '🛡️ Alliance' : '⚔️ Horde'}
-                    </span>
-                  </div>
-
-                  <div className="mb-4 space-y-1">
-                    {character.server && (
-                      <p className="text-gray-400 text-sm">📍 {character.server}</p>
-                    )}
-                    {character.guild && (
-                      <p className="text-gray-400 text-sm">⚔️ {character.guild}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <h4 className="text-yellow-400 font-semibold text-sm">Métiers principaux :</h4>
-                    
-                    {character.profession1 && (
-                      <div className="flex items-center justify-between bg-gray-600 rounded p-2">
-                        <div className="flex flex-col">
-                          <span className="text-white text-sm font-medium">{character.profession1}</span>
-                          {(character.professionLevels?.[character.profession1] || 0) > 0 && (
-                            <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.profession1])}`}>
-                              {getProfessionLevelIcon(character.professionLevels[character.profession1])} Niveau {character.professionLevels[character.profession1]} ({getProfessionLevelName(character.professionLevels[character.profession1])})
-                            </span>
-                          )}
-                        </div>
-                        <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
-                          {character.craftCounts[character.profession1] || 0}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {character.profession2 && (
-                      <div className="flex items-center justify-between bg-gray-600 rounded p-2">
-                        <div className="flex flex-col">
-                          <span className="text-white text-sm font-medium">{character.profession2}</span>
-                          {(character.professionLevels?.[character.profession2] || 0) > 0 && (
-                            <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.profession2])}`}>
-                              {getProfessionLevelIcon(character.professionLevels[character.profession2])} Niveau {character.professionLevels[character.profession2]} ({getProfessionLevelName(character.professionLevels[character.profession2])})
-                            </span>
-                          )}
-                        </div>
-                        <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
-                          {character.craftCounts[character.profession2] || 0}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-gray-600">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-400 text-sm">Total des recettes :</span>
-                      <span className="text-yellow-400 font-bold">
-                        {Object.values(character.craftCounts as Record<string, number>).reduce((a: number, b: number) => a + b, 0)}
-                      </span>
+                  <span className="ml-3 px-2 py-1
