@@ -30,6 +30,27 @@ interface PublicCharacter extends Character {
   craftCounts: { [profession: string]: number };
 }
 
+interface RareRecipe {
+  id: number;
+  name: string;
+  type: string;
+  profession: string;
+  url: string;
+  crafters: string[];
+}
+
+// Mapping des types CSV vers les métiers du jeu
+const RECIPE_TYPE_TO_PROFESSION = {
+  "Formule d'enchantement": "Enchantement",
+  "Dessin de joaillerie": "Joaillerie", 
+  "Patron de couture": "Couture",
+  "Plans de forge": "Forge",
+  "Schéma d'ingénierie": "Ingénierie",
+  "Recette d'alchimie": "Alchimie",
+  "Patron de travail du cuir": "Travail du cuir",
+  "Technique de calligraphie": "Calligraphie"
+};
+
 // Composant SearchBar complètement isolé avec son propre état
 const SearchBar = ({ onSearchChange }: { onSearchChange: (value: string) => void }) => {
   const [localSearchTerm, setLocalSearchTerm] = useState('');
@@ -101,6 +122,8 @@ const WoWCraftingTracker: React.FC = () => {
   const [expandedCategories, setExpandedCategories] = useState<{ [key: string]: boolean }>({});
   const [allExpanded, setAllExpanded] = useState<{ [key: string]: boolean }>({});
   const [loading, setLoading] = useState(false);
+  const [rareRecipes, setRareRecipes] = useState<RareRecipe[]>([]);
+  const [rareRecipesLoading, setRareRecipesLoading] = useState(false);
 
   const professions = ['Alchimie', 'Forge', 'Enchantement', 'Ingénierie', 'Herboristerie', 'Joaillerie', 'Travail du cuir', 'Minage', 'Calligraphie', 'Couture'];
   const races = {
@@ -263,6 +286,86 @@ const WoWCraftingTracker: React.FC = () => {
     if (lower.includes('gemme') || lower.includes('pierre')) return 'Gemmes';
     if (lower.includes('potion') || lower.includes('élixir')) return 'Potions';
     return 'Autres';
+  };
+
+  // Fonction pour charger et traiter les recettes rares
+  const loadRareRecipes = async () => {
+    try {
+      setRareRecipesLoading(true);
+      
+      // Charger le fichier CSV depuis le dossier public
+      const response = await fetch('/Recettes_MoP_90__Liens_Wowhead.csv');
+      if (!response.ok) {
+        console.error('Fichier CSV non trouvé dans /public/');
+        return;
+      }
+      
+      const csvText = await response.text();
+      
+      // Parser le CSV avec une fonction simple
+      const lines = csvText.split('\n');
+      const headers = lines[0].split(',');
+      const data = lines.slice(1).filter(line => line.trim()).map(line => {
+        const values = line.split(',');
+        return {
+          ID: parseInt(values[0]) || 0,
+          Name: values[1]?.replace(/"/g, '') || '',
+          Source: values[2]?.replace(/"/g, '') || '',
+          Type: values[3]?.replace(/"/g, '') || '',
+          URL: values[4]?.replace(/"/g, '') || ''
+        };
+      });
+      
+      // Traiter les données et matcher avec les personnages
+      const processedRecipes: RareRecipe[] = [];
+      
+      data.forEach((row: any) => {
+        const profession = RECIPE_TYPE_TO_PROFESSION[row.Type as keyof typeof RECIPE_TYPE_TO_PROFESSION];
+        if (!profession) return; // Ignorer les types non supportés
+        
+        // Nettoyer le nom de la recette pour le matching
+        const cleanRecipeName = row.Name
+          .replace(/^(Formule|Dessin|Patron|Plans|Schéma|Recette|Technique) : /, '')
+          .toLowerCase()
+          .trim();
+        
+        // Chercher quels personnages ont cette recette
+        const crafters: string[] = [];
+        
+        publicCharacters.forEach(character => {
+          const characterCrafts = character.crafts[profession] || [];
+          const hasRecipe = characterCrafts.some(craft => {
+            const craftName = craft.name.toLowerCase();
+            return craftName.includes(cleanRecipeName) || cleanRecipeName.includes(craftName);
+          });
+          
+          if (hasRecipe) {
+            crafters.push(character.name);
+          }
+        });
+        
+        // Ajouter seulement les recettes qui ont des crafters
+        if (crafters.length > 0) {
+          processedRecipes.push({
+            id: row.ID,
+            name: row.Name,
+            type: row.Type,
+            profession,
+            url: row.URL,
+            crafters
+          });
+        }
+      });
+      
+      // Trier par nombre de crafters (les plus rares en premier)
+      processedRecipes.sort((a, b) => a.crafters.length - b.crafters.length);
+      
+      setRareRecipes(processedRecipes);
+    } catch (error) {
+      console.error('Erreur chargement recettes rares:', error);
+    } finally {
+      setRareRecipesLoading(false);
+    }
   };
 
   // API calls
@@ -459,6 +562,189 @@ const WoWCraftingTracker: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('wowCharacters', JSON.stringify(characters));
   }, [characters]);
+
+  // Charger les recettes rares quand les personnages publics changent
+  useEffect(() => {
+    if (publicCharacters.length > 0) {
+      loadRareRecipes();
+    }
+  }, [publicCharacters]);
+
+  // Composant RareRecipesSection
+  const RareRecipesSection = () => {
+    if (rareRecipesLoading) {
+      return (
+        <div className="bg-gray-800 rounded-lg p-8 border border-purple-600 mb-8">
+          <h2 className="text-3xl font-bold text-purple-400 mb-6">✨ Recettes Rares</h2>
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mr-4"></div>
+            <p className="text-gray-300">Analyse des recettes rares...</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (rareRecipes.length === 0) {
+      return (
+        <div className="bg-gray-800 rounded-lg p-8 border border-purple-600 mb-8">
+          <h2 className="text-3xl font-bold text-purple-400 mb-6">✨ Recettes Rares</h2>
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📜</div>
+            <h3 className="text-2xl font-bold text-purple-300 mb-4">Aucune recette rare détectée</h3>
+            <p className="text-gray-400">
+              Les recettes rares apparaîtront ici quand des personnages<br/>
+              avec des formules, patrons ou plans spéciaux seront partagés.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // Grouper par métier pour un meilleur affichage
+    const recipesByProfession = rareRecipes.reduce((acc, recipe) => {
+      if (!acc[recipe.profession]) acc[recipe.profession] = [];
+      acc[recipe.profession].push(recipe);
+      return acc;
+    }, {} as { [profession: string]: RareRecipe[] });
+
+    // Icônes par métier
+    const professionIcons = {
+      'Enchantement': '✨',
+      'Joaillerie': '💎',
+      'Couture': '🧵',
+      'Forge': '🔨',
+      'Ingénierie': '⚙️',
+      'Alchimie': '🧪',
+      'Travail du cuir': '🦬',
+      'Calligraphie': '📜'
+    };
+
+    // Couleurs par rareté (basé sur nombre de crafters)
+    const getRarityColor = (craftersCount: number) => {
+      if (craftersCount === 1) return 'border-red-500 bg-red-900/20';
+      if (craftersCount === 2) return 'border-purple-500 bg-purple-900/20';
+      if (craftersCount <= 3) return 'border-blue-500 bg-blue-900/20';
+      return 'border-green-500 bg-green-900/20';
+    };
+
+    const getRarityLabel = (craftersCount: number) => {
+      if (craftersCount === 1) return 'LÉGENDAIRE';
+      if (craftersCount === 2) return 'ÉPIQUE';
+      if (craftersCount <= 3) return 'RARE';
+      return 'PEU COMMUN';
+    };
+
+    const getRarityTextColor = (craftersCount: number) => {
+      if (craftersCount === 1) return 'text-red-400';
+      if (craftersCount === 2) return 'text-purple-400';
+      if (craftersCount <= 3) return 'text-blue-400';
+      return 'text-green-400';
+    };
+
+    return (
+      <div className="bg-gray-800 rounded-lg p-8 border border-purple-600 mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-3xl font-bold text-purple-400 mb-2">✨ Recettes Rares</h2>
+            <p className="text-gray-300">
+              Découvrez qui peut crafter les recettes les plus recherchées de MoP Classic
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-purple-300">{rareRecipes.length}</div>
+            <div className="text-sm text-gray-400">recettes disponibles</div>
+          </div>
+        </div>
+
+        {/* Légende des raretés */}
+        <div className="mb-6 p-4 bg-gray-700 rounded-lg">
+          <h3 className="text-sm font-semibold text-gray-300 mb-2">Niveaux de rareté :</h3>
+          <div className="flex flex-wrap gap-4 text-xs">
+            <span className="flex items-center"><div className="w-3 h-3 bg-red-500 rounded mr-2"></div>LÉGENDAIRE (1 crafteur)</span>
+            <span className="flex items-center"><div className="w-3 h-3 bg-purple-500 rounded mr-2"></div>ÉPIQUE (2 crafteurs)</span>
+            <span className="flex items-center"><div className="w-3 h-3 bg-blue-500 rounded mr-2"></div>RARE (3 crafteurs)</span>
+            <span className="flex items-center"><div className="w-3 h-3 bg-green-500 rounded mr-2"></div>PEU COMMUN (4+ crafteurs)</span>
+          </div>
+        </div>
+
+        {/* Affichage par métier */}
+        <div className="space-y-6">
+          {Object.entries(recipesByProfession).map(([profession, recipes]) => (
+            <div key={profession} className="border border-gray-600 rounded-lg overflow-hidden">
+              <div className="bg-gray-700 px-6 py-4 border-b border-gray-600">
+                <h3 className="text-xl font-bold text-yellow-400 flex items-center">
+                  <span className="text-2xl mr-3">{professionIcons[profession as keyof typeof professionIcons] || '🔮'}</span>
+                  {profession}
+                  <span className="ml-3 px-2 py-1 bg-gray-600 rounded text-sm text-gray-300">
+                    {recipes.length} recette{recipes.length > 1 ? 's' : ''}
+                  </span>
+                </h3>
+              </div>
+              
+              <div className="p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {recipes.map(recipe => (
+                    <div 
+                      key={recipe.id} 
+                      className={`p-4 rounded-lg border-2 ${getRarityColor(recipe.crafters.length)} hover:scale-105 transition-transform`}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center mb-2">
+                            <span className={`px-2 py-1 rounded text-xs font-bold ${getRarityTextColor(recipe.crafters.length)} bg-gray-800`}>
+                              {getRarityLabel(recipe.crafters.length)}
+                            </span>
+                          </div>
+                          <h4 className="font-semibold text-white text-sm leading-tight mb-2">
+                            {recipe.name}
+                          </h4>
+                        </div>
+                        <a
+                          href={recipe.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-3 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex-shrink-0"
+                        >
+                          Wowhead
+                        </a>
+                      </div>
+                      
+                      <div className="border-t border-gray-600 pt-3">
+                        <div className="text-xs text-gray-400 mb-2">
+                          Faisable par {recipe.crafters.length} crafteur{recipe.crafters.length > 1 ? 's' : ''} :
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {recipe.crafters.map(crafter => (
+                            <span 
+                              key={crafter}
+                              className="px-2 py-1 bg-yellow-600 text-black text-xs rounded font-medium"
+                            >
+                              {crafter}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bouton de rechargement */}
+        <div className="mt-6 text-center">
+          <button
+            onClick={loadRareRecipes}
+            disabled={rareRecipesLoading}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded text-sm disabled:opacity-50"
+          >
+            {rareRecipesLoading ? 'Analyse...' : '🔄 Actualiser les recettes rares'}
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   // Composant CharacterForm avec support édition
   const CharacterForm = ({ editMode = false, characterToEdit = null }: { 
@@ -706,7 +992,7 @@ const WoWCraftingTracker: React.FC = () => {
               </div>
             </div>
             <div className="flex space-x-2">
-              {/* NOUVEAU: Bouton Éditer */}
+              {/* Bouton Éditer */}
               <button
                 onClick={() => {
                   setEditingCharacter(currentCharacter);
@@ -940,6 +1226,9 @@ const WoWCraftingTracker: React.FC = () => {
         )}
       </div>
 
+      {/* Section Recettes Rares - NOUVEAU */}
+      <RareRecipesSection />
+
       {/* Personnages publics */}
       <div className="bg-gray-800 rounded-lg p-8 border border-yellow-600">
         <h2 className="text-3xl font-bold text-yellow-400 mb-6">🌟 Communauté</h2>
@@ -1021,90 +1310,3 @@ const WoWCraftingTracker: React.FC = () => {
                       <span className="text-yellow-400 font-bold">
                         {Object.values(character.craftCounts as Record<string, number>).reduce((a: number, b: number) => a + b, 0)}
                       </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 text-center">
-                    <span className="text-blue-400 text-xs">🔗 Cliquez pour voir le profil complet</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">👥</div>
-            <h3 className="text-2xl font-bold text-yellow-300 mb-4">Aucun personnage partagé</h3>
-            <p className="text-gray-400 mb-6">
-              Soyez le premier à partager vos métiers avec la communauté !<br/>
-              Créez un personnage, ajoutez vos recettes et cliquez sur "Partager".
-            </p>
-            <div className="bg-blue-900 border border-blue-600 rounded-lg p-4 max-w-md mx-auto">
-              <p className="text-blue-200 text-sm">
-                💡 <strong>Astuce :</strong> Les personnages partagés apparaissent ici automatiquement
-                et permettent à la communauté de voir vos métiers !
-              </p>
-            </div>
-          </div>
-        )}
-        
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => {
-              console.log('🔄 Actualisation des personnages publics');
-              loadPublicCharacters();
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
-          >
-            🔄 Actualiser la liste
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-          <p className="text-xl text-gray-300">Chargement...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
-      <nav className="bg-gray-800 border-b border-yellow-600 p-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <button
-            onClick={() => setView('home')}
-            className="text-2xl font-bold text-yellow-400 hover:text-yellow-300"
-          >
-            WoW Crafting Tracker
-          </button>
-          
-          {currentCharacter && view === 'character' && (
-            <div className="text-yellow-300">
-              {currentCharacter.name} - {currentCharacter.server}
-            </div>
-          )}
-        </div>
-      </nav>
-
-      <main className="container mx-auto px-4 py-8">
-        {view === 'home' && <HomeView />}
-        {view === 'create' && <CharacterForm />}
-        {view === 'edit' && <CharacterForm editMode={true} characterToEdit={editingCharacter} />}
-        {view === 'character' && <CharacterView />}
-        {view.startsWith('import-') && (
-          <ImportView profession={view.replace('import-', '')} />
-        )}
-      </main>
-    </div>
-  );
-};
-
-export default WoWCraftingTracker;
