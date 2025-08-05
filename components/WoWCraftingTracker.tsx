@@ -1210,7 +1210,6 @@ const WoWCraftingTracker: React.FC = () => {
       </div>
     );
   };
-
   const HomeView = () => (
     <div className="max-w-6xl mx-auto text-center">
       <div className="bg-gray-800 rounded-lg p-12 border border-yellow-600 mb-8">
@@ -1290,7 +1289,12 @@ const WoWCraftingTracker: React.FC = () => {
         )}
       </div>
 
-      <RareRecipesSection />
+            {/* Section Recettes Rares */}
+      	    <RareRecipesSection />
+      </div>  {/* ← ferme le <div className="max-w-6xl ..."> */}
+  );
+};
+
 
       <div className="bg-gray-800 rounded-lg p-8 border border-yellow-600">
         <h2 className="text-3xl font-bold text-yellow-400 mb-6">🌟 Communauté</h2>
