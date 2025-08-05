@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ChevronDown, ChevronRight, Upload, User, Share, Search, Trash2, Plus, X, Edit } from 'lucide-react';
+import { ChevronDown, ChevronRight, Upload, User, Share, Search, Trash2, Plus, X, Edit, Filter } from 'lucide-react';
 
 interface Character {
   id: string;
@@ -90,7 +90,7 @@ const SearchBar = ({ onSearchChange }: { onSearchChange: (value: string) => void
           type="text"
           value={localSearchTerm}
           onChange={(e) => handleChange(e.target.value)}
-          placeholder="Rechercher..."
+          placeholder="Rechercher une recette..."
           className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
           autoComplete="off"
         />
@@ -121,6 +121,10 @@ const WoWCraftingTracker: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [rareRecipes, setRareRecipes] = useState<RareRecipe[]>([]);
   const [rareRecipesLoading, setRareRecipesLoading] = useState(false);
+  const [selectedProfessions, setSelectedProfessions] = useState<string[]>([]);
+  const [rareRecipeSearchTerm, setRareRecipeSearchTerm] = useState('');
+  const [allRareRecipesExpanded, setAllRareRecipesExpanded] = useState(false);
+  const [expandedRareProfessions, setExpandedRareProfessions] = useState<{ [profession: string]: boolean }>({});
 
   const professions = ['Alchimie', 'Forge', 'Enchantement', 'Ingénierie', 'Herboristerie', 'Joaillerie', 'Travail du cuir', 'Minage', 'Calligraphie', 'Couture'];
   const races = {
@@ -336,7 +340,8 @@ const WoWCraftingTracker: React.FC = () => {
         }
       });
       
-      processedRecipes.sort((a, b) => a.crafters.length - b.crafters.length);
+      // Tri alphabétique des recettes
+      processedRecipes.sort((a, b) => a.name.localeCompare(b.name));
       setRareRecipes(processedRecipes);
     } catch (error) {
       console.error('Erreur chargement recettes rares:', error);
@@ -501,6 +506,31 @@ const WoWCraftingTracker: React.FC = () => {
     }
   };
 
+  const filteredRareRecipes = useMemo(() => {
+    let filtered = rareRecipes;
+
+    // Filtre par profession sélectionnée
+    if (selectedProfessions.length > 0) {
+      filtered = filtered.filter(recipe => selectedProfessions.includes(recipe.profession));
+    }
+
+    // Filtre par terme de recherche
+    if (rareRecipeSearchTerm) {
+      filtered = filtered.filter(recipe => 
+        recipe.name.toLowerCase().includes(rareRecipeSearchTerm.toLowerCase()) ||
+        recipe.crafters.some(crafter => crafter.toLowerCase().includes(rareRecipeSearchTerm.toLowerCase()))
+      );
+    }
+
+    return filtered;
+  }, [rareRecipes, selectedProfessions, rareRecipeSearchTerm]);
+
+  const availableProfessions = useMemo(() => {
+    const profs = new Set<string>();
+    rareRecipes.forEach(recipe => profs.add(recipe.profession));
+    return Array.from(profs).sort();
+  }, [rareRecipes]);
+
   useEffect(() => {
     const saved = localStorage.getItem('wowCharacters');
     if (saved) {
@@ -527,6 +557,17 @@ const WoWCraftingTracker: React.FC = () => {
       loadRareRecipes();
     }
   }, [publicCharacters]);
+
+  const toggleAllRareRecipes = () => {
+    const newState = !allRareRecipesExpanded;
+    setAllRareRecipesExpanded(newState);
+    
+    const updates: { [profession: string]: boolean } = {};
+    availableProfessions.forEach(profession => {
+      updates[profession] = newState;
+    });
+    setExpandedRareProfessions(updates);
+  };
 
   const RareRecipesSection = () => {
     if (rareRecipesLoading) {
@@ -557,7 +598,7 @@ const WoWCraftingTracker: React.FC = () => {
       );
     }
 
-    const recipesByProfession = rareRecipes.reduce((acc, recipe) => {
+    const recipesByProfession = filteredRareRecipes.reduce((acc, recipe) => {
       if (!acc[recipe.profession]) acc[recipe.profession] = [];
       acc[recipe.profession].push(recipe);
       return acc;
@@ -574,27 +615,6 @@ const WoWCraftingTracker: React.FC = () => {
       'Calligraphie': '📜'
     };
 
-    const getRarityColor = (craftersCount: number) => {
-      if (craftersCount === 1) return 'border-red-500 bg-red-900/20';
-      if (craftersCount === 2) return 'border-purple-500 bg-purple-900/20';
-      if (craftersCount <= 3) return 'border-blue-500 bg-blue-900/20';
-      return 'border-green-500 bg-green-900/20';
-    };
-
-    const getRarityLabel = (craftersCount: number) => {
-      if (craftersCount === 1) return 'LÉGENDAIRE';
-      if (craftersCount === 2) return 'ÉPIQUE';
-      if (craftersCount <= 3) return 'RARE';
-      return 'PEU COMMUN';
-    };
-
-    const getRarityTextColor = (craftersCount: number) => {
-      if (craftersCount === 1) return 'text-red-400';
-      if (craftersCount === 2) return 'text-purple-400';
-      if (craftersCount <= 3) return 'text-blue-400';
-      return 'text-green-400';
-    };
-
     return (
       <div className="bg-gray-800 rounded-lg p-8 border border-purple-600 mb-8">
         <div className="flex items-center justify-between mb-6">
@@ -605,84 +625,169 @@ const WoWCraftingTracker: React.FC = () => {
             </p>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-purple-300">{rareRecipes.length}</div>
+            <div className="text-2xl font-bold text-purple-300">{filteredRareRecipes.length}</div>
             <div className="text-sm text-gray-400">recettes disponibles</div>
           </div>
         </div>
 
-        <div className="mb-6 p-4 bg-gray-700 rounded-lg">
-          <h3 className="text-sm font-semibold text-gray-300 mb-2">Niveaux de rareté :</h3>
-          <div className="flex flex-wrap gap-4 text-xs">
-            <span className="flex items-center"><div className="w-3 h-3 bg-red-500 rounded mr-2"></div>LÉGENDAIRE (1 crafteur)</span>
-            <span className="flex items-center"><div className="w-3 h-3 bg-purple-500 rounded mr-2"></div>ÉPIQUE (2 crafteurs)</span>
-            <span className="flex items-center"><div className="w-3 h-3 bg-blue-500 rounded mr-2"></div>RARE (3 crafteurs)</span>
-            <span className="flex items-center"><div className="w-3 h-3 bg-green-500 rounded mr-2"></div>PEU COMMUN (4+ crafteurs)</span>
+        {/* Contrôles de filtrage et d'expansion */}
+        <div className="mb-6 space-y-4">
+          {/* Barre de recherche pour les recettes rares */}
+          <div className="bg-gray-700 rounded-lg p-4">
+            <div className="flex items-center space-x-4 mb-4">
+              <Search className="w-5 h-5 text-purple-400" />
+              <input
+                type="text"
+                value={rareRecipeSearchTerm}
+                onChange={(e) => setRareRecipeSearchTerm(e.target.value)}
+                placeholder="Rechercher une recette ou un crafteur..."
+                className="flex-1 bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white focus:border-purple-500 focus:outline-none"
+                autoComplete="off"
+              />
+              {rareRecipeSearchTerm && (
+                <button 
+                  onClick={() => setRareRecipeSearchTerm('')} 
+                  className="text-gray-400 hover:text-white"
+                  type="button"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Filtres par profession */}
+          <div className="bg-gray-700 rounded-lg p-4">
+            <div className="flex items-center mb-3">
+              <Filter className="w-5 h-5 text-purple-400 mr-2" />
+              <h3 className="text-lg font-semibold text-purple-300">Filtrer par métier :</h3>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {availableProfessions.map(profession => (
+                <label key={profession} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedProfessions.includes(profession)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedProfessions(prev => [...prev, profession]);
+                      } else {
+                        setSelectedProfessions(prev => prev.filter(p => p !== profession));
+                      }
+                    }}
+                    className="rounded"
+                  />
+                  <span className="text-sm text-gray-300">{profession}</span>
+                </label>
+              ))}
+            </div>
+            {selectedProfessions.length > 0 && (
+              <button
+                onClick={() => setSelectedProfessions([])}
+                className="mt-3 text-sm text-purple-400 hover:text-purple-300"
+              >
+                Effacer tous les filtres
+              </button>
+            )}
+          </div>
+
+          {/* Bouton Tout déplier/replier */}
+          <div className="flex justify-end">
+            <button
+              onClick={toggleAllRareRecipes}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
+            >
+              {allRareRecipesExpanded ? (
+                <>
+                  <ChevronDown className="w-4 h-4 mr-2" />
+                  Tout replier
+                </>
+              ) : (
+                <>
+                  <ChevronRight className="w-4 h-4 mr-2" />
+                  Tout déplier
+                </>
+              )}
+            </button>
           </div>
         </div>
 
-        <div className="space-y-6">
-          {Object.entries(recipesByProfession).map(([profession, recipes]) => (
-            <div key={profession} className="border border-gray-600 rounded-lg overflow-hidden">
-              <div className="bg-gray-700 px-6 py-4 border-b border-gray-600">
-                <h3 className="text-xl font-bold text-yellow-400 flex items-center">
-                  <span className="text-2xl mr-3">{professionIcons[profession as keyof typeof professionIcons] || '🔮'}</span>
-                  {profession}
-                  <span className="ml-3 px-2 py-1 bg-gray-600 rounded text-sm text-gray-300">
-                    {recipes.length} recette{recipes.length > 1 ? 's' : ''}
-                  </span>
-                </h3>
-              </div>
-              
-              <div className="p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {recipes.map(recipe => (
-                    <div 
-                      key={recipe.id} 
-                      className={`p-4 rounded-lg border-2 ${getRarityColor(recipe.crafters.length)} hover:scale-105 transition-transform`}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center mb-2">
-                            <span className={`px-2 py-1 rounded text-xs font-bold ${getRarityTextColor(recipe.crafters.length)} bg-gray-800`}>
-                              {getRarityLabel(recipe.crafters.length)}
-                            </span>
-                          </div>
-                          <h4 className="font-semibold text-white text-sm leading-tight mb-2">
-                            {recipe.name}
-                          </h4>
-                        </div>
-                        <a
-                          href={recipe.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-3 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex-shrink-0"
-                        >
-                          Wowhead
-                        </a>
-                      </div>
-                      
-                      <div className="border-t border-gray-600 pt-3">
-                        <div className="text-xs text-gray-400 mb-2">
-                          Faisable par {recipe.crafters.length} crafteur{recipe.crafters.length > 1 ? 's' : ''} :
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {recipe.crafters.map(crafter => (
-                            <span 
-                              key={crafter}
-                              className="px-2 py-1 bg-yellow-600 text-black text-xs rounded font-medium"
-                            >
-                              {crafter}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+        {Object.keys(recipesByProfession).length > 0 ? (
+          <div className="space-y-6">
+            {Object.entries(recipesByProfession).map(([profession, recipes]) => (
+              <div key={profession} className="border border-gray-600 rounded-lg overflow-hidden">
+                <div 
+                  className="bg-gray-700 px-6 py-4 border-b border-gray-600 cursor-pointer hover:bg-gray-600"
+                  onClick={() => setExpandedRareProfessions(prev => ({
+                    ...prev,
+                    [profession]: !prev[profession]
+                  }))}
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold text-yellow-400 flex items-center">
+                      <span className="text-2xl mr-3">{professionIcons[profession as keyof typeof professionIcons] || '🔮'}</span>
+                      {profession}
+                      <span className="ml-3 px-2 py-1 bg-gray-600 rounded text-sm text-gray-300">
+                        {recipes.length} recette{recipes.length > 1 ? 's' : ''}
+                      </span>
+                    </h3>
+                    {expandedRareProfessions[profession] ? 
+                      <ChevronDown className="w-5 h-5 text-gray-400" /> : 
+                      <ChevronRight className="w-5 h-5 text-gray-400" />
+                    }
+                  </div>
                 </div>
+                
+                {expandedRareProfessions[profession] && (
+                  <div className="p-6">
+                    <div className="space-y-2">
+                      {recipes.map(recipe => (
+                        <div 
+                          key={recipe.id} 
+                          className="flex items-center justify-between p-3 rounded-lg bg-gray-700 hover:bg-gray-600 border border-gray-600"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-white text-sm truncate">
+                              {recipe.name}
+                            </h4>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {recipe.crafters.map(crafter => (
+                                <button
+                                  key={crafter}
+                                  onClick={() => {
+                                    const publicChar = publicCharacters.find(c => c.name === crafter);
+                                    if (publicChar) {
+                                      window.open(`?share=${publicChar.shareId}`, '_blank');
+                                    }
+                                  }}
+                                  className="px-2 py-1 bg-yellow-600 hover:bg-yellow-700 text-black text-xs rounded font-medium cursor-pointer transition-colors"
+                                >
+                                  {crafter}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <a
+                            href={recipe.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-3 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex-shrink-0"
+                          >
+                            Wowhead
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-400">Aucune recette trouvée avec les filtres actuels.</p>
+          </div>
+        )}
 
         <div className="mt-6 text-center">
           <button
@@ -909,6 +1014,9 @@ const WoWCraftingTracker: React.FC = () => {
           !searchTerm || craft.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
         
+        // Tri alphabétique des crafts
+        filteredCrafts.sort((a, b) => a.name.localeCompare(b.name));
+        
         const categories = filteredCrafts.reduce((acc, craft) => {
           if (!acc[craft.category]) acc[craft.category] = [];
           acc[craft.category].push(craft);
@@ -1060,10 +1168,10 @@ const WoWCraftingTracker: React.FC = () => {
                       </button>
                       
                       {isExpanded && (
-                        <div className="mt-2 space-y-2 ml-4">
+                        <div className="mt-2 space-y-1 ml-4">
                           {items.map(item => (
-                            <div key={item.id} className="bg-gray-700 rounded-lg p-3 flex items-center justify-between">
-                              <span className="text-yellow-300">{item.name}</span>
+                            <div key={item.id} className="bg-gray-700 rounded-lg p-2 flex items-center justify-between">
+                              <span className="text-yellow-300 text-sm">{item.name}</span>
                               <a
                                 href={item.url}
                                 target="_blank"
@@ -1182,14 +1290,18 @@ const WoWCraftingTracker: React.FC = () => {
               {publicCharacters.map(character => (
                 <div 
                   key={character.shareId}
-                  className={`bg-gray-700 rounded-lg p-6 cursor-pointer hover:bg-gray-600 border-2 ${
+                  className={`bg-gray-700 rounded-lg p-6 border-2 ${
                     character.faction === 'alliance' ? 'border-blue-500' : 'border-red-500'
                   }`}
-                  onClick={() => window.open(`?share=${character.shareId}`, '_blank')}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="text-xl font-bold text-yellow-300">{character.name}</h3>
+                      <button
+                        onClick={() => window.open(`?share=${character.shareId}`, '_blank')}
+                        className="text-xl font-bold text-yellow-300 hover:text-yellow-400 cursor-pointer"
+                      >
+                        {character.name}
+                      </button>
                       <p className="text-gray-300 text-sm">
                         Niveau {character.level} {character.race} {character.class}
                       </p>
@@ -1224,22 +1336,6 @@ const WoWCraftingTracker: React.FC = () => {
                           )}
                         </div>
                         <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
-                          {character.craftCounts[character.profession1] || 0}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {character.profession2 && (
-                      <div className="flex items-center justify-between bg-gray-600 rounded p-2">
-                        <div className="flex flex-col">
-                          <span className="text-white text-sm font-medium">{character.profession2}</span>
-                          {(character.professionLevels?.[character.profession2] || 0) > 0 && (
-                            <span className={`text-xs ${getProfessionLevelColor(character.professionLevels[character.profession2])}`}>
-                              {getProfessionLevelIcon(character.professionLevels[character.profession2])} Niveau {character.professionLevels[character.profession2]} ({getProfessionLevelName(character.professionLevels[character.profession2])})
-                            </span>
-                          )}
-                        </div>
-                        <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
                           {character.craftCounts[character.profession2] || 0}
                         </span>
                       </div>
@@ -1256,7 +1352,12 @@ const WoWCraftingTracker: React.FC = () => {
                   </div>
 
                   <div className="mt-3 text-center">
-                    <span className="text-blue-400 text-xs">🔗 Cliquez pour voir le profil complet</span>
+                    <button
+                      onClick={() => window.open(`?share=${character.shareId}`, '_blank')}
+                      className="text-blue-400 text-xs hover:text-blue-300"
+                    >
+                      🔗 Voir le profil complet
+                    </button>
                   </div>
                 </div>
               ))}
