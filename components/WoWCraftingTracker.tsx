@@ -797,7 +797,7 @@ const WoWCraftingTracker: React.FC = () => {
     );
   };
 
-  const HomeView = () => (
+const HomeView = () => (
     <div className="max-w-6xl mx-auto text-center">
       <div className="bg-gray-800 rounded-lg p-12 border border-yellow-600 mb-8">
         <h1 className="text-5xl font-bold text-yellow-400 mb-4">WoW Crafting Tracker</h1>
@@ -984,59 +984,16 @@ const WoWCraftingTracker: React.FC = () => {
           </div>
         )}
         
-        <div className="mt-6 text-center space-x-4">
+        {/* CORRECTION : Boutons debug/nettoyer supprimés, gardé seulement Actualiser */}
+        <div className="mt-6 text-center">
           <button
             onClick={() => {
-              console.log('🔄 Actualisation manuelle des personnages publics');
-              console.log('📊 État actuel avant actualisation:', publicCharacters.length, 'personnages');
+              console.log('🔄 Actualisation des personnages publics');
               loadPublicCharacters();
             }}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
           >
             🔄 Actualiser la liste
-          </button>
-          
-          <button
-            onClick={() => {
-              console.log('🧹 Nettoyage et actualisation forcée');
-              // Vider l'état local d'abord
-              setPublicCharacters([]);
-              
-              // Puis nettoyer et recharger
-              fetch('/api/cleanup', { method: 'POST' })
-                .then(() => {
-                  console.log('✅ Nettoyage terminé, rechargement...');
-                  setTimeout(() => loadPublicCharacters(), 500);
-                })
-                .catch(err => {
-                  console.error('❌ Erreur nettoyage:', err);
-                  // Recharger quand même
-                  loadPublicCharacters();
-                });
-            }}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm"
-          >
-            🧹 Nettoyer et actualiser
-          </button>
-          
-          <button
-            onClick={() => {
-              console.log('🔍 Debug état React:');
-              console.log('  - publicCharacters.length:', publicCharacters.length);
-              console.log('  - publicCharacters:', publicCharacters);
-              
-              // Test direct de l'API
-              fetch('/api/characters/public')
-                .then(r => r.json())
-                .then(data => {
-                  console.log('🌐 API directe:', data.length, 'personnages');
-                  console.log('📝 Comparaison: React =', publicCharacters.length, ', API =', data.length);
-                })
-                .catch(err => console.error('❌ Erreur test API:', err));
-            }}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm"
-          >
-            🔍 Debug
           </button>
         </div>
       </div>
