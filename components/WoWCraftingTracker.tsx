@@ -89,36 +89,27 @@ const ThemeSwitcher = () => {
   );
 };
 // Composant SearchBar
-const SearchBar = ({ onSearchChange }: { onSearchChange: (value: string) => void }) => {
-  const [localSearchTerm, setLocalSearchTerm] = useState('');
+const SearchBar = ({
+  searchTerm,
+  onSearchChange,
+}: {
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+}) => {
   const timeoutRef = useRef<NodeJS.Timeout>();
 
   const handleChange = (value: string) => {
-    setLocalSearchTerm(value);
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       onSearchChange(value);
     }, 300);
   };
 
-  const handleClear = () => {
-    setLocalSearchTerm('');
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    onSearchChange('');
-  };
-
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
-
 
   return (
     <div className="mb-6">
@@ -126,15 +117,15 @@ const SearchBar = ({ onSearchChange }: { onSearchChange: (value: string) => void
         <Search className="w-5 h-5 text-yellow-400" />
         <input
           type="text"
-          value={localSearchTerm}
+          value={searchTerm}
           onChange={(e) => handleChange(e.target.value)}
           placeholder="Rechercher une recette..."
           className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
           autoComplete="off"
         />
-        {localSearchTerm && (
-          <button 
-            onClick={handleClear} 
+        {searchTerm && (
+          <button
+            onClick={() => onSearchChange('')}
             className="text-gray-400 hover:text-white"
             type="button"
           >
@@ -1115,7 +1106,7 @@ const WoWCraftingTracker: React.FC = () => {
           </div>
         </div>
 
-        <SearchBar onSearchChange={handleSearchChange} />
+        <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
 
         {filteredProfessionData.map(({ profession, crafts, categories }) => (
           <div key={profession} className="bg-gray-800 rounded-lg border border-yellow-600 mb-6">
