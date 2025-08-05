@@ -51,17 +51,31 @@ const RECIPE_TYPE_TO_PROFESSION = {
   "Technique de calligraphie": "Calligraphie"
 };
 const ThemeSwitcher = () => {
-  // Lis le thème depuis localStorage ou préfère le système
+  const [isDark, setIsDark] = useState(false);
+
+  // Applique le thème au chargement
   useEffect(() => {
     const saved = localStorage.getItem('theme');
-    if (saved) {
-      document.documentElement.classList.toggle('dark', saved === 'dark');
+    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+      setIsDark(true);
+    } else {
+      document.documentElement.classList.remove('dark');
+      setIsDark(false);
     }
   }, []);
 
+  // Change le thème au clic
   const toggleTheme = () => {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    if (document.documentElement.classList.contains('dark')) {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      setIsDark(false);
+    } else {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      setIsDark(true);
+    }
   };
 
   return (
@@ -70,7 +84,7 @@ const ThemeSwitcher = () => {
       className="ml-4 px-3 py-1 rounded bg-gray-700 text-yellow-300 hover:bg-yellow-600 hover:text-black transition"
       title="Changer le thème"
     >
-      🌓 Thème
+      {isDark ? '🌙 Thème sombre' : '🌞 Thème clair'}
     </button>
   );
 };
