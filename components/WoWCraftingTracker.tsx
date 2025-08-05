@@ -50,7 +50,30 @@ const RECIPE_TYPE_TO_PROFESSION = {
   "Patron de travail du cuir": "Travail du cuir",
   "Technique de calligraphie": "Calligraphie"
 };
+const ThemeSwitcher = () => {
+  // Lis le thème depuis localStorage ou préfère le système
+  useEffect(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved) {
+      document.documentElement.classList.toggle('dark', saved === 'dark');
+    }
+  }, []);
 
+  const toggleTheme = () => {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  };
+
+  return (
+    <button
+      onClick={toggleTheme}
+      className="ml-4 px-3 py-1 rounded bg-gray-700 text-yellow-300 hover:bg-yellow-600 hover:text-black transition"
+      title="Changer le thème"
+    >
+      🌓 Thème
+    </button>
+  );
+};
 // Composant SearchBar
 const SearchBar = ({ onSearchChange }: { onSearchChange: (value: string) => void }) => {
   const [localSearchTerm, setLocalSearchTerm] = useState('');
@@ -82,30 +105,7 @@ const SearchBar = ({ onSearchChange }: { onSearchChange: (value: string) => void
     };
   }, []);
 
-const ThemeSwitcher = () => {
-  // Lis le thème depuis localStorage ou préfère le système
-  useEffect(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved) {
-      document.documentElement.classList.toggle('dark', saved === 'dark');
-    }
-  }, []);
 
-  const toggleTheme = () => {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  };
-
-  return (
-    <button
-      onClick={toggleTheme}
-      className="ml-4 px-3 py-1 rounded bg-gray-700 text-yellow-300 hover:bg-yellow-600 hover:text-black transition"
-      title="Changer le thème"
-    >
-      🌓 Thème
-    </button>
-  );
-};
   return (
     <div className="mb-6">
       <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600 flex items-center space-x-4">
