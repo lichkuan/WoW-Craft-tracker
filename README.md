@@ -1,169 +1,370 @@
 # 🎮 WoW Crafting Tracker
 
-Un tracker moderne et élégant pour partager vos métiers et recettes World of Warcraft avec votre guilde et la communauté.
+Un tracker moderne et élégant pour partager vos métiers et recettes **World of Warcraft MoP Classic** avec votre guilde et la communauté.
 
 ![WoW Crafting Tracker](https://img.shields.io/badge/WoW-Crafting%20Tracker-yellow?style=for-the-badge&logo=worldofwarcraft)
 ![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-blue?style=for-the-badge&logo=typescript)
 ![Redis](https://img.shields.io/badge/Redis-Database-red?style=for-the-badge&logo=redis)
 
-## ✨ Fonctionnalités
+## 🚀 Démo en direct
 
-### 🧙‍♂️ **Gestion des personnages**
-- Création de profils détaillés (nom, niveau, race, classe, serveur, guilde)
-- Support complet Alliance/Horde avec thèmes visuels
-- Gestion des métiers principaux avec icônes dédiées
+**🔗 [Accéder au tracker](https://your-app-url.vercel.app)**
+
+*Spécialement conçu pour **Raid Tisane et Dodo** - Serveur Gehennas (Horde) ⚔️*
+
+---
+
+## ✨ Fonctionnalités principales
+
+### 🧙‍♂️ **Gestion complète des personnages**
+- ✅ **Création et édition** de profils détaillés
+- ✅ **Modification facile** après création (bouton Éditer)
+- ✅ Support Alliance/Horde avec thèmes visuels
+- ✅ **Valeurs par défaut** : Gehennas, Horde, Raid Tisane et Dodo
 
 ### 📋 **Import automatique des recettes**
-- **Compatible avec l'addon [Simple Trade Skill Exporter](https://www.curseforge.com/wow/addons/simple-trade-skill-exporter)**
-- Import en un clic via la commande `/tsexport markdown`
-- Conversion automatique des liens Wowhead (Cataclysm → MoP Classic)
-- Catégorisation intelligente des recettes
+- ✅ Compatible avec l'addon **[Simple Trade Skill Exporter](https://www.curseforge.com/wow/addons/simple-trade-skill-exporter)**
+- ✅ Import en un clic via `/tsexport markdown`
+- ✅ **Détection automatique** du niveau de métier
+- ✅ Conversion liens Wowhead (Cataclysm → MoP Classic)
+- ✅ Catégorisation intelligente des recettes
 
-### 🔍 **Interface moderne**
-- Recherche en temps réel dans toutes les recettes
-- Affichage par catégories avec expand/collapse
-- Design responsive et thème WoW authentique
-- Navigation intuitive et fluide
+### 🔍 **Interface moderne et intuitive**
+- ✅ **Recherche en temps réel** dans toutes les recettes
+- ✅ Affichage par catégories expand/collapse
+- ✅ Design responsive WoW authentique
+- ✅ Navigation fluide et rapide
 
-### 🌐 **Partage communautaire**
-- **URLs courtes** : `yoursite.com?share=ABC123`
-- Galerie publique des personnages de la communauté
-- Partage illimité sans restriction de taille
-- Persistance permanente des données
+### 🌐 **Partage communautaire instantané**
+- ✅ **URLs courtes** : `yoursite.com?share=ABC123`
+- ✅ **Galerie publique** des personnages de la communauté
+- ✅ **Apparition instantanée** après partage
+- ✅ **Partage Discord** avec formatage automatique
+- ✅ Persistance permanente des données
 
-### 🛠 **Gestion avancée**
-- Suppression sélective par métier ou personnage complet
-- Nettoyage automatique des doublons (3 jours de grâce)
-- Optimisation automatique de la base de données
-- Interface d'administration simple
+### 🛠 **Outils de gestion avancés**
+- ✅ **Édition complète** des personnages existants
+- ✅ Suppression sélective par métier ou personnage
+- ✅ Nettoyage automatique des doublons
+- ✅ Interface d'administration complète
 
-## 🚀 Déploiement rapide
+---
+
+## 🎯 Métiers supportés
+
+| Métier | Catégories | Niveaux supportés |
+|--------|------------|------------------|
+| 🧪 **Alchimie** | Potions, Élixirs, Transmutations | Apprenti → Zen (1-600) |
+| 🔨 **Forge** | Armes, Armures, Outils | Apprenti → Zen (1-600) |
+| ✨ **Enchantement** | Enchants par slot | Apprenti → Zen (1-600) |
+| ⚙️ **Ingénierie** | Gadgets, Montures, Objets | Apprenti → Zen (1-600) |
+| 🌿 **Herboristerie** | Herbes par zone/niveau | Apprenti → Zen (1-600) |
+| 💎 **Joaillerie** | Gemmes, Bijoux | Apprenti → Zen (1-600) |
+| ✂️ **Travail du cuir** | Armures cuir/mailles | Apprenti → Zen (1-600) |
+| ⛏️ **Minage** | Minerais, Barres | Apprenti → Zen (1-600) |
+| 📜 **Calligraphie** | Glyphes, Techniques | Apprenti → Zen (1-600) |
+| 🎨 **Couture** | Armures tissu, Sacs | Apprenti → Zen (1-600) |
+
+---
+
+## 🚀 Installation et déploiement
 
 ### Prérequis
 - Node.js 18+
-- Compte Vercel
-- Base de données Redis (Vercel/Upstash)
+- Compte Vercel (gratuit)
+- Base Redis (Vercel KV/Upstash)
 
-### Installation
-
-1. **Cloner le projet**
+### 1. Cloner et installer
 ```bash
-git clone https://github.com/username/wow-crafting-tracker.git
+git clone https://github.com/votre-username/wow-crafting-tracker.git
 cd wow-crafting-tracker
+npm install
+```
 
-Installer les dépendances
+### 2. Configuration Redis
+```bash
+# Créer une base Redis sur Vercel
+vercel kv create
 
-bashnpm install
+# Ou utiliser Upstash
+# Récupérer l'URL de connexion
+```
 
-Configuration de la base Redis
-
-bash# Dans Vercel Dashboard > Storage > Create Database > Redis
-# Copier l'URL de connexion
-
-Variables d'environnement
-
-bash# .env.local
+### 3. Variables d'environnement
+```bash
+# .env.local
 REDIS_URL="redis://your-redis-connection-string"
+```
 
-Déployer sur Vercel
+### 4. Déploiement
+```bash
+# Déployer sur Vercel
+npx vercel --prod
 
-bashnpx vercel --prod
-📖 Guide d'utilisation
-Pour les joueurs
+# Ou utiliser l'interface Vercel
+# 1. Connecter le repo GitHub
+# 2. Ajouter la variable REDIS_URL
+# 3. Déployer automatiquement
+```
 
-Installer l'addon requis
+---
 
-Télécharger Simple Trade Skill Exporter
-Installer via votre gestionnaire d'addons
+## 📖 Guide d'utilisation
 
+### Pour les joueurs WoW
 
-Exporter vos recettes
-/tsexport markdown
+#### 1. **Installer l'addon requis**
+- Téléchargez **[Simple Trade Skill Exporter](https://www.curseforge.com/wow/addons/simple-trade-skill-exporter)**
+- Installez via CurseForge/WowUp
 
-Ouvrir votre fenêtre de métier
-Taper la commande
-Copier avec Ctrl+C
+#### 2. **Exporter vos recettes dans le jeu**
+```
+1. Ouvrez votre fenêtre de métier (ex: Forge)
+2. Tapez: /tsexport markdown
+3. Copiez le texte avec Ctrl+C
+4. Fermez la fenêtre et répétez pour l'autre métier
+```
 
+#### 3. **Créer votre profil sur le site**
+```
+1. Cliquez "Créer mon personnage"
+2. Remplissez vos informations (Gehennas/Horde pré-remplis)
+3. Sélectionnez vos 2 métiers principaux
+4. Cliquez "Créer le personnage"
+```
 
-Créer votre profil
+#### 4. **Importer vos recettes**
+```
+1. Cliquez "Importer" sur votre premier métier
+2. Collez votre export avec Ctrl+V
+3. Cliquez "Importer" (le niveau sera détecté automatiquement)
+4. Répétez pour le second métier
+```
 
-Remplir les informations de personnage
-Importer vos recettes par métier
-Partager avec votre guilde !
+#### 5. **Partager avec la guilde**
+```
+- Cliquez "Partager" → Le lien est copié automatiquement
+- Ou cliquez "Discord" → Message formaté copié pour Discord
+- Votre personnage apparaît instantanément dans la galerie publique
+```
 
+#### 6. **Modifier si nécessaire**
+```
+- Cliquez le bouton violet "Éditer"
+- Modifiez vos informations
+- Cliquez "Sauvegarder les modifications"
+- Vos recettes sont conservées automatiquement
+```
 
+---
 
-Pour les développeurs
-typescript// Structure des données
+## 🆕 Nouveautés v2.1
+
+### 🎯 **Nouvelles fonctionnalités**
+- ✅ **Édition des personnages** : Bouton violet pour modifier facilement
+- ✅ **Valeurs par défaut** : Gehennas/Horde/Raid Tisane et Dodo pré-remplis
+- ✅ **Partage instantané** : Apparition immédiate dans la galerie publique
+- ✅ **Interface simplifiée** : Suppression des boutons debug
+
+### 🔧 **Améliorations techniques**
+- ✅ **Gestion optimisée** des doublons Redis
+- ✅ **API corrigée** pour l'affichage public
+- ✅ **Performance améliorée** du filtrage et recherche
+- ✅ **Conservation des données** lors de l'édition
+
+### 🐛 **Corrections**
+- ✅ **Problème d'affichage** dans la galerie publique résolu
+- ✅ **Synchronisation** entre partage et affichage corrigée
+- ✅ **Filtrage TTL** supprimé pour plus de stabilité
+
+---
+
+## 🛡 Extensions WoW supportées
+
+| Extension | Support | Conversion |
+|-----------|---------|------------|
+| **Cataclysm Classic** | ✅ | Conservation des liens `/cata/` |
+| **MoP Classic** | ✅ | Conversion automatique `/mop-classic/fr/` |
+| **Retail** | 🔄 | À venir |
+| **Autres classiques** | 🔄 | Plannifié |
+
+---
+
+## 🔧 API & Développement
+
+### Endpoints principaux
+```typescript
+// Sauvegarder un personnage
+POST /api/character
+Body: { shareId: string, character: Character }
+
+// Récupérer un personnage partagé
+GET /api/character/[shareId]
+
+// Liste publique des personnages
+GET /api/characters/public
+
+// Supprimer un personnage
+POST /api/character/delete
+Body: { characterName: string, characterServer: string }
+
+// Administration (protégée)
+GET /api/admin
+DELETE /api/admin
+```
+
+### Structure des données
+```typescript
 interface Character {
   id: string;
   name: string;
-  faction: 'alliance' | 'horde';
+  server: string;
+  level: number;
   race: string;
   class: string;
-  level: number;
-  server: string;
   guild: string;
-  primaryProfession1: string;
-  primaryProfession2: string;
+  faction: 'alliance' | 'horde';
+  profession1: string;
+  profession2: string;
+  professionLevels: { [profession: string]: number };
   crafts: { [profession: string]: CraftItem[] };
 }
-🛡 Extensions WoW supportées
+```
 
-✅ Cataclysm Classic (liens /cata/ conservés)
-✅ Mists of Pandaria Classic (conversion automatique vers /mop-classic/fr/)
-🔄 Support d'autres extensions à venir
+---
 
-🎯 Métiers supportés
-MétierIcôneCatégorisationAlchimie🧪Potions, Élixirs, TransmutationsForge🔨Armes, Armures, OutilsEnchantement✨Enchants par slot d'équipementIngénierie⚙️Gadgets, Montures, ObjetsHerboristerie🌿Herbes par zone/niveauJoaillerie💎Gemmes, Bijoux, AccessoiresTravail du cuir✂️Armures cuir/maillesMinage⛏️Minerais, BarresCalligraphie📜Glyphes, TechniquesDépeçage⚡Cuirs, ÉcaillesCouture🎨Armures tissu, Sacs
-🔧 API Reference
-Partager un personnage
-typescriptPOST /api/character
-{
-  "shareId": "ABC123",
-  "character": Character
-}
-Récupérer un personnage partagé
-typescriptGET /api/character/[shareId]
-Liste publique
-typescriptGET /api/characters/public
-Supprimer un personnage
-typescriptPOST /api/character/delete
-{
-  "characterName": "string",
-  "characterServer": "string"
-}
-🤝 Contribuer
+## 🤝 Contribuer
 
-Fork le projet
-Créer une branche feature (git checkout -b feature/amazing-feature)
-Commit vos changements (git commit -m 'Add amazing feature')
-Push sur la branche (git push origin feature/amazing-feature)
-Ouvrir une Pull Request
+### Développement local
+```bash
+# Installer les dépendances
+npm install
 
-📜 Roadmap
+# Lancer en développement
+npm run dev
 
- Support multi-langues (EN/FR/DE/ES)
- Export PDF des recettes
- Statistiques de guilde
- Intégration API Battle.net
- Mode sombre/clair
- Notifications Discord webhook
- Cache intelligent des données Wowhead
+# Builder pour production
+npm run build
 
-🐛 Problèmes connus
+# Linter le code
+npm run lint
+```
 
-Import limité aux formats markdown de l'addon recommandé
-Base Redis limitée (optimisation en cours)
-Pas de synchronisation temps réel entre utilisateurs
+### Pull Requests
+1. Fork le projet
+2. Créer une branche feature (`git checkout -b feature/nouvelle-fonctionnalite`)
+3. Commiter les changements (`git commit -m 'Ajout nouvelle fonctionnalité'`)
+4. Push sur la branche (`git push origin feature/nouvelle-fonctionnalite`)
+5. Ouvrir une Pull Request
 
-📄 Licence
-Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails.
-🙏 Remerciements
+### Issues et suggestions
+- 🐛 **Bugs** : Utilisez le template "Bug Report"
+- 💡 **Suggestions** : Utilisez le template "Feature Request"
+- ❓ **Questions** : Utilisez les Discussions GitHub
 
-Blizzard Entertainment pour World of Warcraft
-Wowhead pour leur base de données exceptionnelle
-Simple Trade Skill Exporter pour l'addon parfait
-Vercel pour l'hébergement et la base Redis
-La communauté WoW pour les tests et retours
+---
+
+## 📜 Roadmap
+
+### 🎯 **Prochaines versions**
+- [ ] **v2.2** : Support multi-langues (EN/FR/DE/ES)
+- [ ] **v2.3** : Export PDF des recettes
+- [ ] **v2.4** : Statistiques de guilde avancées
+- [ ] **v2.5** : Intégration API Battle.net
+
+### 🔮 **Vision long terme**
+- [ ] Mode sombre/clair
+- [ ] Notifications Discord webhook
+- [ ] Cache intelligent Wowhead
+- [ ] Import/Export de profils complets
+- [ ] Application mobile
+- [ ] Support d'autres MMO
+
+---
+
+## 🏆 Spécialement conçu pour
+
+### **Raid Tisane et Dodo** ☕
+**Serveur Gehennas (Horde) ⚔️**
+
+*"Parce que même les plus grands raiders ont besoin de bonnes tisanes pour craft !"*
+
+**Membres de la guilde ?** Le site est pré-configuré avec vos informations :
+- ⚔️ **Faction** : Horde (par défaut)
+- 🏰 **Serveur** : Gehennas (pré-rempli)
+- 🛡️ **Guilde** : Raid Tisane et Dodo (pré-rempli)
+
+---
+
+## 🐛 Problèmes connus
+
+### Limitations actuelles
+- **Import** limité aux formats markdown de l'addon recommandé
+- **Synchronisation** pas de temps réel entre utilisateurs
+- **Requêtes Redis** limitations selon le plan choisi
+
+### Solutions de contournement
+- Utiliser uniquement l'addon **Simple Trade Skill Exporter**
+- Cliquer "Actualiser la liste" pour voir les nouveaux personnages
+- Prévoir une base Redis adaptée au trafic
+
+---
+
+## 📄 Licence
+
+Ce projet est sous licence **MIT**. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+
+### Utilisation libre
+- ✅ Utilisation commerciale
+- ✅ Modification du code
+- ✅ Distribution
+- ✅ Usage privé
+
+### Obligations
+- 📄 Inclure la licence et le copyright
+- 📄 Documenter les modifications majeures
+
+---
+
+## 🙏 Remerciements
+
+### Outils et services
+- **[Blizzard Entertainment](https://www.blizzard.com/)** - World of Warcraft
+- **[Wowhead](https://www.wowhead.com/)** - Base de données exceptionnelle
+- **[Simple Trade Skill Exporter](https://www.curseforge.com/wow/addons/simple-trade-skill-exporter)** - L'addon parfait
+- **[Vercel](https://vercel.com/)** - Hébergement et base Redis
+- **[Next.js](https://nextjs.org/)** - Framework React
+- **[Tailwind CSS](https://tailwindcss.com/)** - Styling moderne
+
+### Communauté
+- **Raid Tisane et Dodo** - L'inspiration et les tests ☕
+- **Serveur Gehennas** - La communauté Horde active ⚔️
+- **Contributeurs GitHub** - Améliorations et corrections
+- **Joueurs testeurs** - Retours et suggestions
+
+---
+
+## 📞 Support et contact
+
+### Support technique
+- 📧 **Email** : support@your-domain.com
+- 💬 **Discord** : [Serveur de la guilde](https://discord.gg/your-invite)
+- 🐛 **Issues GitHub** : [Signaler un problème](https://github.com/your-username/wow-crafting-tracker/issues)
+
+### Communauté
+- 🏰 **Guilde WoW** : Raid Tisane et Dodo (Gehennas-Horde)
+- 💬 **Chat en jeu** : `/guild` ou `/whisper VotreNom`
+
+---
+
+<div align="center">
+
+**⚔️ Fait avec ❤️ pour la communauté WoW MoP Classic ⚔️**
+
+**🍵 Powered by Raid Tisane et Dodo 🍵**
+
+[![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/)
+[![GitHub](https://img.shields.io/badge/Source-GitHub-black?style=for-the-badge&logo=github)](https://github.com/your-username/wow-crafting-tracker)
+
+</div>
