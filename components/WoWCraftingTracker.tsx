@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ChevronDown, ChevronRight, Upload, User, Share, Search, Trash2, Plus, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Upload, User, Share, Search, Trash2, Plus, X, Edit } from 'lucide-react';
 
 interface Character {
   id: string;
@@ -91,9 +91,10 @@ const SearchBar = ({ onSearchChange }: { onSearchChange: (value: string) => void
 };
 
 const WoWCraftingTracker: React.FC = () => {
-  const [view, setView] = useState<'home' | 'create' | 'character' | string>('home');
+  const [view, setView] = useState<'home' | 'create' | 'character' | 'edit' | string>('home');
   const [characters, setCharacters] = useState<Character[]>([]);
   const [currentCharacter, setCurrentCharacter] = useState<Character | null>(null);
+  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [publicCharacters, setPublicCharacters] = useState<PublicCharacter[]>([]);
   const [importText, setImportText] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -367,6 +368,23 @@ const WoWCraftingTracker: React.FC = () => {
     setView('character');
   };
 
+  const updateCharacter = (updatedData: any) => {
+    if (!editingCharacter) return;
+    
+    const updatedCharacter: Character = {
+      ...editingCharacter,
+      ...updatedData,
+      // Garder les craft et niveaux existants
+      professionLevels: editingCharacter.professionLevels,
+      crafts: editingCharacter.crafts
+    };
+    
+    setCharacters(chars => chars.map(c => c.id === editingCharacter.id ? updatedCharacter : c));
+    setCurrentCharacter(updatedCharacter);
+    setEditingCharacter(null);
+    setView('character');
+  };
+
   const importCrafts = (profession: string) => {
     if (!importText.trim() || !currentCharacter) return;
     
@@ -442,8 +460,11 @@ const WoWCraftingTracker: React.FC = () => {
     localStorage.setItem('wowCharacters', JSON.stringify(characters));
   }, [characters]);
 
-  // Composants
-  const CharacterForm = () => {
+  // Composant CharacterForm avec support édition
+  const CharacterForm = ({ editMode = false, characterToEdit = null }: { 
+    editMode?: boolean; 
+    characterToEdit?: Character | null; 
+  }) => {
     const [form, setForm] = useState<{
       name: string;
       server: string;
@@ -455,15 +476,32 @@ const WoWCraftingTracker: React.FC = () => {
       profession1: string;
       profession2: string;
     }>({
-      name: '', server: '', level: 90, faction: 'alliance',
-      race: '', class: '', guild: '', profession1: '', profession2: ''
+      name: characterToEdit?.name || '',
+      server: characterToEdit?.server || 'Gehennas', // DÉFAUT
+      level: characterToEdit?.level || 90,
+      faction: characterToEdit?.faction || 'horde', // DÉFAUT HORDE
+      race: characterToEdit?.race || '',
+      class: characterToEdit?.class || '',
+      guild: characterToEdit?.guild || 'Raid Tisane et Dodo', // DÉFAUT
+      profession1: characterToEdit?.profession1 || '',
+      profession2: characterToEdit?.profession2 || ''
     });
+
+    const handleSubmit = () => {
+      if (!form.name || !form.race || !form.class) return;
+
+      if (editMode && characterToEdit) {
+        updateCharacter(form);
+      } else {
+        createCharacter(form);
+      }
+    };
 
     return (
       <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg p-8 border border-yellow-600">
         <h2 className="text-3xl font-bold text-yellow-400 mb-6 flex items-center">
           <User className="mr-3" />
-          Créer un personnage
+          {editMode ? 'Modifier le personnage' : 'Créer un personnage'}
         </h2>
         
         <div className="space-y-4">
@@ -502,7 +540,7 @@ const WoWCraftingTracker: React.FC = () => {
             </select>
             <input
               type="text"
-              placeholder="Guilde (optionnel)"
+              placeholder="Guilde"
               value={form.guild}
               onChange={e => setForm(prev => ({...prev, guild: e.target.value}))}
               className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
@@ -555,13 +593,28 @@ const WoWCraftingTracker: React.FC = () => {
             </select>
           </div>
 
-          <button
-            onClick={() => form.name && form.race && form.class && createCharacter(form)}
-            disabled={!form.name || !form.race || !form.class}
-            className="w-full bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-3 px-6 rounded disabled:opacity-50"
-          >
-            Créer le personnage
-          </button>
+          <div className="flex space-x-4">
+            <button
+              onClick={handleSubmit}
+              disabled={!form.name || !form.race || !form.class}
+              className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-3 px-6 rounded disabled:opacity-50"
+            >
+              {editMode ? 'Sauvegarder les modifications' : 'Créer le personnage'}
+            </button>
+            <button
+              onClick={() => {
+                if (editMode) {
+                  setEditingCharacter(null);
+                  setView('character');
+                } else {
+                  setView('home');
+                }
+              }}
+              className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded"
+            >
+              Annuler
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -638,7 +691,7 @@ const WoWCraftingTracker: React.FC = () => {
     
     return (
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
+        {/* Header avec bouton Éditer */}
         <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-yellow-600">
           <div className="flex justify-between items-start">
             <div>
@@ -653,6 +706,17 @@ const WoWCraftingTracker: React.FC = () => {
               </div>
             </div>
             <div className="flex space-x-2">
+              {/* NOUVEAU: Bouton Éditer */}
+              <button
+                onClick={() => {
+                  setEditingCharacter(currentCharacter);
+                  setView('edit');
+                }}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded flex items-center"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Éditer
+              </button>
               <button
                 onClick={shareCharacter}
                 disabled={loading}
@@ -797,7 +861,7 @@ const WoWCraftingTracker: React.FC = () => {
     );
   };
 
-const HomeView = () => (
+  const HomeView = () => (
     <div className="max-w-6xl mx-auto text-center">
       <div className="bg-gray-800 rounded-lg p-12 border border-yellow-600 mb-8">
         <h1 className="text-5xl font-bold text-yellow-400 mb-4">WoW Crafting Tracker</h1>
@@ -984,7 +1048,6 @@ const HomeView = () => (
           </div>
         )}
         
-        {/* CORRECTION : Boutons debug/nettoyer supprimés, gardé seulement Actualiser */}
         <div className="mt-6 text-center">
           <button
             onClick={() => {
@@ -1034,6 +1097,7 @@ const HomeView = () => (
       <main className="container mx-auto px-4 py-8">
         {view === 'home' && <HomeView />}
         {view === 'create' && <CharacterForm />}
+        {view === 'edit' && <CharacterForm editMode={true} characterToEdit={editingCharacter} />}
         {view === 'character' && <CharacterView />}
         {view.startsWith('import-') && (
           <ImportView profession={view.replace('import-', '')} />
