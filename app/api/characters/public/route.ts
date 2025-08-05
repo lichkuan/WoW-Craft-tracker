@@ -106,15 +106,12 @@ export async function GET() {
       }
     }
 
-    // Deuxième passe : construire la liste publique avec SEULEMENT les permanents
+    // Deuxième passe : construire la liste publique avec TOUS les personnages valides
     const publicCharacters: any[] = [];
     
     charactersMap.forEach(({ key, data: character, ttl }, identifier) => {
-      // FILTRER : Afficher seulement les personnages permanents
-      if (ttl !== -1) {
-        console.log(`⏭️ Ignore ${character.name} (non permanent, TTL: ${ttl})`);
-        return;
-      }
+      // CORRECTION : Ne plus filtrer sur TTL = -1, accepter tous les personnages valides
+      console.log(`✅ Personnage ajouté: ${character.name} (TTL: ${ttl})`);
 
       // Calculer les statistiques des crafts
       const craftCounts: { [key: string]: number } = {};
@@ -143,7 +140,6 @@ export async function GET() {
       };
 
       const totalRecipes = Object.values(craftCounts).reduce((a, b) => a + b, 0);
-      console.log(`✅ Personnage PERMANENT ajouté: ${publicCharacter.name} avec ${totalRecipes} recettes`);
       publicCharacters.push(publicCharacter);
     });
 
@@ -151,7 +147,7 @@ export async function GET() {
     publicCharacters.sort((a, b) => a.name.localeCompare(b.name));
 
     console.log(`📊 Résultat final:`);
-    console.log(`  - ${publicCharacters.length} personnages PERMANENTS affichés`);
+    console.log(`  - ${publicCharacters.length} personnages affichés`);
     console.log(`  - ${expiredCount} personnages expirés supprimés`);
     console.log(`  - ${duplicateCount} doublons traités`);
     console.log(`  - Liste finale:`, publicCharacters.map(p => `${p.name} (${p.shareId})`));
