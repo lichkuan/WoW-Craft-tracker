@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class', // <-- Ici, au niveau racine
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -10,7 +11,6 @@ module.exports = {
   ],
   theme: {
     extend: {
-      // Ajout d'extensions utiles pour votre projet
       colors: {
         'wow-gold': '#FFD700',
         'wow-blue': '#0066CC',
@@ -24,7 +24,6 @@ module.exports = {
     },
   },
   plugins: [],
-  // Assure-toi que les classes sont générées même si pas détectées
   safelist: [
     'text-xs',
     'text-sm', 
