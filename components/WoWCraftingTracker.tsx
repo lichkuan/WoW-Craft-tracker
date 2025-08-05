@@ -299,17 +299,34 @@ const WoWCraftingTracker: React.FC = () => {
   const loadPublicCharacters = async () => {
     try {
       console.log('🔄 Chargement des personnages publics...');
-      const response = await fetch('/api/characters/public');
+      
+      // Forcer un rechargement en ajoutant un timestamp
+      const timestamp = Date.now();
+      const response = await fetch(`/api/characters/public?t=${timestamp}`, {
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
+      
       console.log('📡 Réponse API:', response.status, response.ok);
       
       if (response.ok) {
         const chars = await response.json();
-        console.log('✅ Personnages chargés:', chars.length);
+        console.log('✅ Personnages chargés depuis l\'API:', chars.length);
         console.log('📋 Détails personnages:', chars);
-        setPublicCharacters(chars);
+        
+        // Forcer la mise à jour de l'état
+        setPublicCharacters([]);
+        setTimeout(() => {
+          setPublicCharacters(chars);
+          console.log('🎯 État React mis à jour avec', chars.length, 'personnages');
+        }, 100);
+        
       } else {
         const errorData = await response.text();
-        console.error('❌ Erreur API personnages publics:', errorData);
+        console.error('❌ Erreur API personnages publics:', response.status, errorData);
       }
     } catch (error) {
       console.error('❌ Erreur chargement public:', error);
@@ -967,15 +984,59 @@ const WoWCraftingTracker: React.FC = () => {
           </div>
         )}
         
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center space-x-4">
           <button
             onClick={() => {
               console.log('🔄 Actualisation manuelle des personnages publics');
+              console.log('📊 État actuel avant actualisation:', publicCharacters.length, 'personnages');
               loadPublicCharacters();
             }}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
           >
             🔄 Actualiser la liste
+          </button>
+          
+          <button
+            onClick={() => {
+              console.log('🧹 Nettoyage et actualisation forcée');
+              // Vider l'état local d'abord
+              setPublicCharacters([]);
+              
+              // Puis nettoyer et recharger
+              fetch('/api/cleanup', { method: 'POST' })
+                .then(() => {
+                  console.log('✅ Nettoyage terminé, rechargement...');
+                  setTimeout(() => loadPublicCharacters(), 500);
+                })
+                .catch(err => {
+                  console.error('❌ Erreur nettoyage:', err);
+                  // Recharger quand même
+                  loadPublicCharacters();
+                });
+            }}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm"
+          >
+            🧹 Nettoyer et actualiser
+          </button>
+          
+          <button
+            onClick={() => {
+              console.log('🔍 Debug état React:');
+              console.log('  - publicCharacters.length:', publicCharacters.length);
+              console.log('  - publicCharacters:', publicCharacters);
+              
+              // Test direct de l'API
+              fetch('/api/characters/public')
+                .then(r => r.json())
+                .then(data => {
+                  console.log('🌐 API directe:', data.length, 'personnages');
+                  console.log('📝 Comparaison: React =', publicCharacters.length, ', API =', data.length);
+                })
+                .catch(err => console.error('❌ Erreur test API:', err));
+            }}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm"
+          >
+            🔍 Debug
           </button>
         </div>
       </div>
