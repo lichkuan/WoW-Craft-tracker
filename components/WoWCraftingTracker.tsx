@@ -81,7 +81,6 @@ const SearchBar = ({ onSearchChange }: { onSearchChange: (value: string) => void
       }
     };
   }, []);
-import { useEffect } from 'react';
 
 const ThemeSwitcher = () => {
   // Lis le thème depuis localStorage ou préfère le système
