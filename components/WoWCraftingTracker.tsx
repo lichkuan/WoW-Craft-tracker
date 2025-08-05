@@ -682,7 +682,6 @@ const WoWCraftingTracker: React.FC = () => {
               </div>
             </div>
           ))}
-))}
         </div>
 
         <div className="mt-6 text-center">
