@@ -1211,7 +1211,7 @@ const WoWCraftingTracker: React.FC = () => {
     );
   };
 
-	const HomeView = () => (
+	function HomeView() { return (
 	  <div className="max-w-6xl mx-auto text-center">
 	    <div className="bg-gray-800 rounded-lg px-6 py-8 border border-yellow-600 mb-4">
 	      <h1 className="text-5xl font-bold text-yellow-400 mb-4">WoW Crafting Tracker</h1>
@@ -1353,6 +1353,7 @@ const WoWCraftingTracker: React.FC = () => {
 		  </button>
 		</div>
 	      </div>
+
 
       <RareRecipesSection />
 
