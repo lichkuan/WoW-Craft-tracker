@@ -34,6 +34,7 @@ interface RareRecipe {
   id: number;
   name: string;
   type: string;
+  source: string;
   profession: string;
   url: string;
   crafters: string[];
@@ -333,6 +334,7 @@ const WoWCraftingTracker: React.FC = () => {
             id: row.ID,
             name: row.Name,
             type: row.Type,
+            source: row.Source,
             profession,
             url: row.URL,
             crafters
@@ -518,6 +520,8 @@ const WoWCraftingTracker: React.FC = () => {
     if (rareRecipeSearchTerm) {
       filtered = filtered.filter(recipe => 
         recipe.name.toLowerCase().includes(rareRecipeSearchTerm.toLowerCase()) ||
+        recipe.source.toLowerCase().includes(rareRecipeSearchTerm.toLowerCase()) ||
+        recipe.type.toLowerCase().includes(rareRecipeSearchTerm.toLowerCase()) ||
         recipe.crafters.some(crafter => crafter.toLowerCase().includes(rareRecipeSearchTerm.toLowerCase()))
       );
     }
@@ -640,7 +644,7 @@ const WoWCraftingTracker: React.FC = () => {
                 type="text"
                 value={rareRecipeSearchTerm}
                 onChange={(e) => setRareRecipeSearchTerm(e.target.value)}
-                placeholder="Rechercher une recette ou un crafteur..."
+                placeholder="Rechercher une recette, un type, une source ou un crafteur..."
                 className="flex-1 bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white focus:border-purple-500 focus:outline-none"
                 autoComplete="off"
               />
@@ -744,13 +748,21 @@ const WoWCraftingTracker: React.FC = () => {
                       {recipes.map(recipe => (
                         <div 
                           key={recipe.id} 
-                          className="flex items-center justify-between p-3 rounded-lg bg-gray-700 hover:bg-gray-600 border border-gray-600"
+                          className="flex items-start justify-between p-3 rounded-lg bg-gray-700 hover:bg-gray-600 border border-gray-600"
                         >
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-white text-sm truncate">
+                            <h4 className="font-medium text-white text-sm leading-tight mb-1">
                               {recipe.name}
                             </h4>
-                            <div className="flex flex-wrap gap-1 mt-1">
+                            <div className="flex flex-wrap gap-1 mb-2 text-xs">
+                              <span className="px-2 py-1 bg-purple-600 text-purple-100 rounded">
+                                {recipe.type}
+                              </span>
+                              <span className="px-2 py-1 bg-blue-600 text-blue-100 rounded">
+                                {recipe.source}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap gap-1">
                               {recipe.crafters.map(crafter => (
                                 <button
                                   key={crafter}
@@ -1356,7 +1368,44 @@ const WoWCraftingTracker: React.FC = () => {
                       onClick={() => window.open(`?share=${character.shareId}`, '_blank')}
                       className="text-blue-400 text-xs hover:text-blue-300"
                     >
-                      🔗 Voir le profil complet
+                      🔗 Voir le profil
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-6">
+            <div className="text-3xl mb-2">👥</div>
+            <h3 className="text-lg font-bold text-yellow-300 mb-2">Aucun personnage partagé</h3>
+            <p className="text-gray-400 text-sm mb-3">
+              Soyez le premier à partager vos métiers avec la communauté !<br/>
+              Créez un personnage, ajoutez vos recettes et cliquez sur "Partager".
+            </p>
+            <div className="bg-blue-900 border border-blue-600 rounded-lg p-2 max-w-md mx-auto">
+              <p className="text-blue-200 text-xs">
+                💡 <strong>Astuce :</strong> Les personnages partagés apparaissent ici automatiquement
+                et permettent à la communauté de voir vos métiers !
+              </p>
+            </div>
+          </div>
+        )}
+        
+        <div className="mt-3 text-center">
+          <button
+            onClick={loadPublicCharacters}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs"
+          >
+            🔄 Actualiser la liste
+          </button>
+        </div>
+      </div>
+
+      {/* Section Recettes Rares */}
+      <RareRecipesSection />
+    </div>
+  ); le profil complet
                     </button>
                   </div>
                 </div>
