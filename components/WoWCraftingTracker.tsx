@@ -312,7 +312,9 @@ const WoWCraftingTracker: React.FC = () => {
   };
 
 const getItemIdFromUrl = (url: string) => {
-  const match = url.match(/item=(\d+)/);
+  // Supprime les espaces avant l'ID
+  const cleanUrl = url.replace(/\s+/g, '');
+  const match = cleanUrl.match(/item=(\d+)/);
   return match ? match[1] : null;
 };
 
