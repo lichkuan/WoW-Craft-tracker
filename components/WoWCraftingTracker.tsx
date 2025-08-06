@@ -36,7 +36,6 @@ interface RareRecipe {
   type: string;
   profession: string;
   url: string;
-  qualite: string; // Ajout
   source: string;  // Ajout
   crafters: string[];
 }
@@ -338,8 +337,7 @@ const loadRareRecipes = async () => {
         Name: values[1]?.replace(/"/g, '') || '',
         Source: values[2]?.replace(/"/g, '') || '',
         Type: values[3]?.replace(/"/g, '') || '',
-        Qualite: values[4]?.replace(/"/g, '') || '',
-        URL: values[5]?.replace(/"/g, '') || '',
+        URL: values[4]?.replace(/"/g, '') || '',
       };
     });
 
@@ -378,7 +376,6 @@ const loadRareRecipes = async () => {
           type: row.Type,
           profession,
           url: row.URL,
-          qualite: row.Qualite,
           source: row.Source,
           crafters
         });
