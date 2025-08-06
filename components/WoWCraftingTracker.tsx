@@ -374,23 +374,13 @@ const loadRareRecipes = async () => {
 
     processedRecipes.sort((a, b) => a.name.localeCompare(b.name));
     setRareRecipes(processedRecipes);
+
   } catch (error) {
     console.error('Erreur chargement recettes rares:', error);
   } finally {
     setRareRecipesLoading(false);
   }
 };
-
-      
-      // Tri alphabétique des recettes
-      processedRecipes.sort((a, b) => a.name.localeCompare(b.name));
-      setRareRecipes(processedRecipes);
-    } catch (error) {
-      console.error('Erreur chargement recettes rares:', error);
-    } finally {
-      setRareRecipesLoading(false);
-    }
-  };
 
   const saveCharacter = async (character: Character): Promise<string | null> => {
     try {
