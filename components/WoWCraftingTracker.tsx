@@ -366,7 +366,6 @@ data.forEach((row: any) => {
 
     processedRecipes.sort((a, b) => a.name.localeCompare(b.name));
     setRareRecipes(processedRecipes);
-}
   } catch (error) {
     console.error('Erreur chargement recettes rares:', error);
   } finally {
