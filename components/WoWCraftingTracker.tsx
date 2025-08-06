@@ -611,52 +611,8 @@ const loadRareRecipes = async () => {
     setExpandedRareProfessions(updates);
   };
 
-  const RareRecipesSection = () => {
-    if (rareRecipesLoading) {
-      return (
-        <div className="bg-gray-800 rounded-lg p-6 border border-purple-600 mb-4">
-          <h2 className="text-3xl font-bold text-purple-400 mb-6">✨ Recettes Rares</h2>
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mr-4"></div>
-            <p className="text-gray-300">Analyse des recettes rares...</p>
-          </div>
-        </div>
-      );
-    }
-
-    if (rareRecipes.length === 0) {
-      return (
-        <div className="bg-gray-800 rounded-lg p-6 border border-purple-600 mb-4">
-          <h2 className="text-3xl font-bold text-purple-400 mb-6">✨ Recettes Rares</h2>
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">📜</div>
-            <h3 className="text-2xl font-bold text-purple-300 mb-4">Aucune recette rare détectée</h3>
-            <p className="text-gray-400">
-              Les recettes rares apparaîtront ici quand des personnages<br/>
-              avec des formules, patrons ou plans spéciaux seront partagés.
-            </p>
-          </div>
-        </div>
-      );
-    }
-
-    const recipesByProfession = filteredRareRecipes.reduce((acc, recipe) => {
-      if (!acc[recipe.profession]) acc[recipe.profession] = [];
-      acc[recipe.profession].push(recipe);
-      return acc;
-    }, {} as { [profession: string]: RareRecipe[] });
-
-    const professionIcons = {
-      'Enchantement': '✨',
-      'Joaillerie': '💎',
-      'Couture': '🧵',
-      'Forge': '🔨',
-      'Ingénierie': '⚙️',
-      'Alchimie': '🧪',
-      'Travail du cuir': '🦬',
-      'Calligraphie': '📜'
-    };
-
+const RareRecipesSection = () => {
+  if (rareRecipesLoading) {
     return (
       <div className="bg-gray-800 rounded-lg p-8 border border-purple-600 mb-8">
         <div className="flex items-center justify-between mb-6">
@@ -671,167 +627,216 @@ const loadRareRecipes = async () => {
             <div className="text-sm text-gray-400">recettes disponibles</div>
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {/* Contrôles de filtrage et d'expansion */}
-        <div className="mb-6 space-y-4">
-          {/* Barre de recherche pour les recettes rares */}
-          <div className="bg-gray-700 rounded-lg p-4">
-            <div className="flex items-center space-x-4 mb-4">
-              <Search className="w-5 h-5 text-purple-400" />
-              <input
-                type="text"
-                value={rareRecipeSearchTerm}
-                onChange={(e) => setRareRecipeSearchTerm(e.target.value)}
-                placeholder="Rechercher une recette ou un crafteur..."
-                className="flex-1 bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white focus:border-purple-500 focus:outline-none"
-                autoComplete="off"
-              />
-              {rareRecipeSearchTerm && (
-                <button 
-                  onClick={() => setRareRecipeSearchTerm('')} 
-                  className="text-gray-400 hover:text-white"
-                  type="button"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Filtres par profession */}
-          <div className="bg-gray-700 rounded-lg p-4">
-            <div className="flex items-center mb-3">
-              <Filter className="w-5 h-5 text-purple-400 mr-2" />
-              <h3 className="text-lg font-semibold text-purple-300">Filtrer par métier :</h3>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {availableProfessions.map(profession => (
-                <label key={profession} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedProfessions.includes(profession)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedProfessions(prev => [...prev, profession]);
-                      } else {
-                        setSelectedProfessions(prev => prev.filter(p => p !== profession));
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span className="text-sm text-gray-300">{profession}</span>
-                </label>
-              ))}
-            </div>
-            {selectedProfessions.length > 0 && (
-              <button
-                onClick={() => setSelectedProfessions([])}
-                className="mt-3 text-sm text-purple-400 hover:text-purple-300"
-              >
-                Effacer tous les filtres
-              </button>
-            )}
-          </div>
-
-          {/* Bouton Tout déplier/replier */}
-          <div className="flex justify-end">
-            <button
-              onClick={toggleAllRareRecipes}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
-            >
-              {allRareRecipesExpanded ? (
-                <>
-                  <ChevronDown className="w-4 h-4 mr-2" />
-                  Tout replier
-                </>
-              ) : (
-                <>
-                  <ChevronRight className="w-4 h-4 mr-2" />
-                  Tout déplier
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {Object.keys(recipesByProfession).length > 0 ? (
-          <div className="space-y-6">
-            {Object.entries(recipesByProfession).map(([profession, recipes]) => (
-              <div key={profession} className="border border-gray-600 rounded-lg overflow-hidden">
-                <div 
-                  className="bg-gray-700 px-6 py-4 border-b border-gray-600 cursor-pointer hover:bg-gray-600"
-                  onClick={() => setExpandedRareProfessions(prev => ({
-                    ...prev,
-                    [profession]: !prev[profession]
-                  }))}
-                >
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-bold text-yellow-400 flex items-center">
-                      <span className="text-2xl mr-3">{professionIcons[profession as keyof typeof professionIcons] || '🔮'}</span>
-                      {profession}
-                      <span className="ml-3 px-2 py-1 bg-gray-600 rounded text-sm text-gray-300">
-                        {recipes.length} recette{recipes.length > 1 ? 's' : ''}
-                      </span>
-                    </h3>
-                    {expandedRareProfessions[profession] ? 
-                      <ChevronDown className="w-5 h-5 text-gray-400" /> : 
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
-                    }
-                  </div>
-                </div>
-                
-                {expandedRareProfessions[profession] && (
-                  <div className="p-6">
-                    <div className="space-y-2">
-                      {recipes.map(recipe => (
-                        <div
-                          key={recipe.id}
-                            className="flex items-center justify-between p-2 rounded-lg border bg-gray-700 border-gray-600 mb-2"  
-                          style={{ minHeight: '48px' }} // Cases moins hautes
-                        >
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-white text-sm truncate">{recipe.name}</h4>
-                            <div className="flex flex-wrap gap-2 mt-1 text-xs">
-                              <span className="text-gray-300">{recipe.source}</span>
-                              <span className="text-gray-400">{recipe.type}</span>
-                              </span>
-                            </div>
-                          </div>
-                          <a
-                            href={recipe.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ml-3 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex-shrink-0"
-                          >
-                            Wowhead
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-400">Aucune recette trouvée avec les filtres actuels.</p>
-          </div>
-        )}
-
-        <div className="mt-6 text-center">
-          <button
-            onClick={loadRareRecipes}
-            disabled={rareRecipesLoading}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded text-sm disabled:opacity-50"
-          >
-            {rareRecipesLoading ? 'Analyse...' : '🔄 Actualiser les recettes rares'}
-          </button>
+  if (rareRecipes.length === 0) {
+    return (
+      <div className="bg-gray-800 rounded-lg p-6 border border-purple-600 mb-4">
+        <h2 className="text-3xl font-bold text-purple-400 mb-6">✨ Recettes Rares</h2>
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">📜</div>
+          <h3 className="text-2xl font-bold text-purple-300 mb-4">Aucune recette rare détectée</h3>
+          <p className="text-gray-400">
+            Les recettes rares apparaîtront ici quand des personnages<br/>
+            avec des formules, patrons ou plans spéciaux seront partagés.
+          </p>
         </div>
       </div>
     );
+  }
+
+  const recipesByProfession = filteredRareRecipes.reduce((acc, recipe) => {
+    if (!acc[recipe.profession]) acc[recipe.profession] = [];
+    acc[recipe.profession].push(recipe);
+    return acc;
+  }, {} as { [profession: string]: RareRecipe[] });
+
+  const professionIcons = {
+    'Enchantement': '✨',
+    'Joaillerie': '💎',
+    'Couture': '🧵',
+    'Forge': '🔨',
+    'Ingénierie': '⚙️',
+    'Alchimie': '🧪',
+    'Travail du cuir': '🦬',
+    'Calligraphie': '📜'
   };
 
+  return (
+    <div className="bg-gray-800 rounded-lg p-8 border border-purple-600 mb-8">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-3xl font-bold text-purple-400 mb-2">✨ Recettes Rares</h2>
+          <p className="text-gray-300">
+            Découvrez qui peut crafter les recettes les plus recherchées de MoP Classic
+          </p>
+        </div>
+        <div className="text-right">
+          <div className="text-2xl font-bold text-purple-300">{filteredRareRecipes.length}</div>
+          <div className="text-sm text-gray-400">recettes disponibles</div>
+        </div>
+      </div>
+
+      {/* Contrôles de filtrage et d'expansion */}
+      <div className="mb-6 space-y-4">
+        {/* Barre de recherche pour les recettes rares */}
+        <div className="bg-gray-700 rounded-lg p-4">
+          <div className="flex items-center space-x-4 mb-4">
+            <Search className="w-5 h-5 text-purple-400" />
+            <input
+              type="text"
+              value={rareRecipeSearchTerm}
+              onChange={(e) => setRareRecipeSearchTerm(e.target.value)}
+              placeholder="Rechercher une recette ou un crafteur..."
+              className="flex-1 bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white focus:border-purple-500 focus:outline-none"
+              autoComplete="off"
+            />
+            {rareRecipeSearchTerm && (
+              <button 
+                onClick={() => setRareRecipeSearchTerm('')} 
+                className="text-gray-400 hover:text-white"
+                type="button"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Filtres par profession */}
+        <div className="bg-gray-700 rounded-lg p-4">
+          <div className="flex items-center mb-3">
+            <Filter className="w-5 h-5 text-purple-400 mr-2" />
+            <h3 className="text-lg font-semibold text-purple-300">Filtrer par métier :</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {availableProfessions.map(profession => (
+              <label key={profession} className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedProfessions.includes(profession)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedProfessions(prev => [...prev, profession]);
+                    } else {
+                      setSelectedProfessions(prev => prev.filter(p => p !== profession));
+                    }
+                  }}
+                  className="rounded"
+                />
+                <span className="text-sm text-gray-300">{profession}</span>
+              </label>
+            ))}
+          </div>
+          {selectedProfessions.length > 0 && (
+            <button
+              onClick={() => setSelectedProfessions([])}
+              className="mt-3 text-sm text-purple-400 hover:text-purple-300"
+            >
+              Effacer tous les filtres
+            </button>
+          )}
+        </div>
+
+        {/* Bouton Tout déplier/replier */}
+        <div className="flex justify-end">
+          <button
+            onClick={toggleAllRareRecipes}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
+          >
+            {allRareRecipesExpanded ? (
+              <>
+                <ChevronDown className="w-4 h-4 mr-2" />
+                Tout replier
+              </>
+            ) : (
+              <>
+                <ChevronRight className="w-4 h-4 mr-2" />
+                Tout déplier
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {Object.keys(recipesByProfession).length > 0 ? (
+        <div className="space-y-6">
+          {Object.entries(recipesByProfession).map(([profession, recipes]) => (
+            <div key={profession} className="border border-gray-600 rounded-lg overflow-hidden">
+              <div 
+                className="bg-gray-700 px-6 py-4 border-b border-gray-600 cursor-pointer hover:bg-gray-600"
+                onClick={() => setExpandedRareProfessions(prev => ({
+                  ...prev,
+                  [profession]: !prev[profession]
+                }))}
+              >
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-yellow-400 flex items-center">
+                    <span className="text-2xl mr-3">{professionIcons[profession as keyof typeof professionIcons] || '🔮'}</span>
+                    {profession}
+                    <span className="ml-3 px-2 py-1 bg-gray-600 rounded text-sm text-gray-300">
+                      {recipes.length} recette{recipes.length > 1 ? 's' : ''}
+                    </span>
+                  </h3>
+                  {expandedRareProfessions[profession] ? 
+                    <ChevronDown className="w-5 h-5 text-gray-400" /> : 
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                  }
+                </div>
+              </div>
+              
+              {expandedRareProfessions[profession] && (
+                <div className="p-6">
+                  <div className="space-y-2">
+                    {recipes.map(recipe => (
+                      <div
+                        key={recipe.id}
+                        className="flex items-center justify-between p-2 rounded-lg border bg-gray-700 border-gray-600 mb-2"  
+                        style={{ minHeight: '48px' }} // Cases moins hautes
+                      >
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-white text-sm truncate">{recipe.name}</h4>
+                          <div className="flex flex-wrap gap-2 mt-1 text-xs">
+                            <span className="text-gray-300">{recipe.source}</span>
+                            <span className="text-gray-400">{recipe.type}</span>
+                          </div>
+                        </div>
+                        <a
+                          href={recipe.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-3 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex-shrink-0"
+                        >
+                          Wowhead
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8">
+          <p className="text-gray-400">Aucune recette trouvée avec les filtres actuels.</p>
+        </div>
+      )}
+
+      <div className="mt-6 text-center">
+        <button
+          onClick={loadRareRecipes}
+          disabled={rareRecipesLoading}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded text-sm disabled:opacity-50"
+        >
+          {rareRecipesLoading ? 'Analyse...' : '🔄 Actualiser les recettes rares'}
+        </button>
+      </div>
+    </div>
+  );
+};
   const CharacterForm = ({ editMode = false, characterToEdit = null }: { 
     editMode?: boolean; 
     characterToEdit?: Character | null; 
