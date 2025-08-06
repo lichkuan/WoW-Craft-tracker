@@ -318,69 +318,51 @@ const getItemIdFromUrl = (url: string) => {
   return match ? match[1] : null;
 };
 
-const loadRareRecipes = async () => {
-  try {
-    setRareRecipesLoading(true);
+const processedRecipes: RareRecipe[] = [];
+const seenIds = new Set<number>();
 
-    const response = await fetch('/Recettes_MoP_90__Liens_Wowhead.csv');
-    if (!response.ok) {
-      console.error('Fichier CSV non trouvé dans /public/');
-      return;
+data.forEach((row: any) => {
+  // Ignore les doublons d'ID
+  if (seenIds.has(row.ID)) return;
+  seenIds.add(row.ID);
+
+  const profession = RECIPE_TYPE_TO_PROFESSION[row.Type as keyof typeof RECIPE_TYPE_TO_PROFESSION];
+  if (!profession) return;
+
+  const cleanRecipeName = row.Name
+    .replace(/^(Formule|Dessin|Patron|Plans|Schéma|Recette|Technique) : /, '')
+    .toLowerCase()
+    .trim();
+
+  const crafters: string[] = [];
+  publicCharacters.forEach(character => {
+    const characterCrafts = character.crafts[profession] || [];
+    const hasRecipe = characterCrafts.some(craft => {
+      // Match par nom
+      const craftName = craft.name.toLowerCase();
+      if (craftName.includes(cleanRecipeName) || cleanRecipeName.includes(craftName)) return true;
+      // Match par ID
+      const recipeId = row.ID?.toString();
+      const craftId = getItemIdFromUrl(craft.url);
+      return recipeId && craftId && recipeId === craftId;
+    });
+    if (hasRecipe) {
+      crafters.push(character.name);
     }
+  });
 
-    const csvText = await response.text();
-    const lines = csvText.split('\n');
-    const data = lines.slice(1).filter(line => line.trim()).map(line => {
-      const values = line.split(',');
-      return {
-        ID: parseInt(values[0]) || 0,
-        Name: values[1]?.replace(/"/g, '') || '',
-        Source: values[2]?.replace(/"/g, '') || '',
-        Type: values[3]?.replace(/"/g, '') || '',
-        URL: values[4]?.replace(/"/g, '') || '',
-      };
+  if (crafters.length > 0) {
+    processedRecipes.push({
+      id: row.ID,
+      name: row.Name,
+      type: row.Type,
+      profession,
+      url: row.URL,
+      source: row.Source,
+      crafters
     });
-
-    const processedRecipes: RareRecipe[] = [];
-
-    data.forEach((row: any) => {
-      const profession = RECIPE_TYPE_TO_PROFESSION[row.Type as keyof typeof RECIPE_TYPE_TO_PROFESSION];
-      if (!profession) return;
-
-      const cleanRecipeName = row.Name
-        .replace(/^(Formule|Dessin|Patron|Plans|Schéma|Recette|Technique) : /, '')
-        .toLowerCase()
-        .trim();
-
-      const crafters: string[] = [];
-      publicCharacters.forEach(character => {
-        const characterCrafts = character.crafts[profession] || [];
-        const hasRecipe = characterCrafts.some(craft => {
-          // Match par nom
-          const craftName = craft.name.toLowerCase();
-          if (craftName.includes(cleanRecipeName) || cleanRecipeName.includes(craftName)) return true;
-          // Match par ID
-          const recipeId = row.ID?.toString();
-          const craftId = getItemIdFromUrl(craft.url);
-          return recipeId && craftId && recipeId === craftId;
-        });
-        if (hasRecipe) {
-          crafters.push(character.name);
-        }
-      });
-
-      if (crafters.length > 0) {
-        processedRecipes.push({
-          id: row.ID,
-          name: row.Name,
-          type: row.Type,
-          profession,
-          url: row.URL,
-          source: row.Source,
-          crafters
-        });
-      }
-    });
+  }
+});
 
     processedRecipes.sort((a, b) => a.name.localeCompare(b.name));
     setRareRecipes(processedRecipes);
