@@ -803,9 +803,11 @@ const RareRecipesSection = () => {
                       >
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-white text-sm truncate">{recipe.name}</h4>
-                          <div className="flex flex-wrap gap-2 mt-1 text-xs">
-                            <span className="text-gray-300">{recipe.source}</span>
-                            <span className="text-gray-400">{recipe.type}</span>
+                          <div className="flex flex-wrap gap-2 mt-1 text-xs items-center">
+                            {recipe.source && recipe.source !== '-' && (
+                              <span className="text-gray-300">{recipe.source}</span>
+                            )}
+                            <span className="text-gray-400 w-full text-center">{recipe.type}</span>
                           </div>
                         </div>
                         <a
