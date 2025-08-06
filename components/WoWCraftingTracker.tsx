@@ -342,8 +342,13 @@ const loadRareRecipes = async () => {
     });
 
     const processedRecipes: RareRecipe[] = [];
+    const seenIds = new Set<number>();
 
     data.forEach((row: any) => {
+      // Ignore les doublons d'ID
+      if (seenIds.has(row.ID)) return;
+      seenIds.add(row.ID);
+
       const profession = RECIPE_TYPE_TO_PROFESSION[row.Type as keyof typeof RECIPE_TYPE_TO_PROFESSION];
       if (!profession) return;
 
