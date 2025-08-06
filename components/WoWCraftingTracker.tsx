@@ -786,10 +786,7 @@ const loadRareRecipes = async () => {
                       {recipes.map(recipe => (
                         <div
                           key={recipe.id}
-                          className={`flex items-center justify-between p-2 rounded-lg border 
-                            ${recipe.qualite === 'Epique' ? 'bg-purple-800 border-purple-600' : 
-                              recipe.qualite === 'Rare' ? 'bg-blue-800 border-blue-600' : 'bg-gray-700 border-gray-600'}
-                            mb-2`}
+                            className="flex items-center justify-between p-2 rounded-lg border bg-gray-700 border-gray-600 mb-2"  
                           style={{ minHeight: '48px' }} // Cases moins hautes
                         >
                           <div className="flex-1 min-w-0">
@@ -797,8 +794,6 @@ const loadRareRecipes = async () => {
                             <div className="flex flex-wrap gap-2 mt-1 text-xs">
                               <span className="text-gray-300">{recipe.source}</span>
                               <span className="text-gray-400">{recipe.type}</span>
-                              <span className={`font-bold ${recipe.qualite === 'Epique' ? 'text-purple-400' : recipe.qualite === 'Rare' ? 'text-blue-400' : 'text-gray-400'}`}>
-                                {recipe.qualite}
                               </span>
                             </div>
                           </div>
