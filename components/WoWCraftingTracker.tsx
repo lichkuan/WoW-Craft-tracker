@@ -47,6 +47,7 @@ const RECIPE_TYPE_TO_PROFESSION = {
   "Dessin de joaillerie": "Joaillerie", 
   "Patron de couture": "Couture",
   "Plans de forge": "Forge",
+  "Armures en plaques": "Forge", // Ajout pour ton CSV
   "Schéma d'ingénierie": "Ingénierie",
   "Recette d'alchimie": "Alchimie",
   "Patron de travail du cuir": "Travail du cuir",
@@ -322,7 +323,7 @@ const loadRareRecipes = async () => {
   try {
     setRareRecipesLoading(true);
 
-    const response = await fetch('/MOP_CSV_RECETTES_RARES.csv');
+    const response = await fetch('/Recettes_MoP_90__Liens_Wowhead.csv');
     if (!response.ok) {
       console.error('Fichier CSV non trouvé dans /public/');
       return;
