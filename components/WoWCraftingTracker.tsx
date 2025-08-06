@@ -363,7 +363,7 @@ data.forEach((row: any) => {
     });
   }
 });
-
+  try {
     processedRecipes.sort((a, b) => a.name.localeCompare(b.name));
     setRareRecipes(processedRecipes);
   } catch (error) {
