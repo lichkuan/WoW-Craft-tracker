@@ -36,6 +36,8 @@ interface RareRecipe {
   type: string;
   profession: string;
   url: string;
+  qualite: string; // Ajout
+  source: string;  // Ajout
   crafters: string[];
 }
 
@@ -309,65 +311,76 @@ const WoWCraftingTracker: React.FC = () => {
     return 'Autres';
   };
 
-  const loadRareRecipes = async () => {
-    try {
-      setRareRecipesLoading(true);
-      
-      const response = await fetch('/Recettes_MoP_90__Liens_Wowhead.csv');
-      if (!response.ok) {
-        console.error('Fichier CSV non trouvé dans /public/');
-        return;
-      }
-      
-      const csvText = await response.text();
-      const lines = csvText.split('\n');
-      const data = lines.slice(1).filter(line => line.trim()).map(line => {
-        const values = line.split(',');
-        return {
-          ID: parseInt(values[0]) || 0,
-          Name: values[1]?.replace(/"/g, '') || '',
-          Source: values[2]?.replace(/"/g, '') || '',
-          Type: values[3]?.replace(/"/g, '') || '',
-          URL: values[4]?.replace(/"/g, '') || ''
-        };
-      });
-      
-      const processedRecipes: RareRecipe[] = [];
-      
-      data.forEach((row: any) => {
-        const profession = RECIPE_TYPE_TO_PROFESSION[row.Type as keyof typeof RECIPE_TYPE_TO_PROFESSION];
-        if (!profession) return;
-        
-        const cleanRecipeName = row.Name
-          .replace(/^(Formule|Dessin|Patron|Plans|Schéma|Recette|Technique) : /, '')
-          .toLowerCase()
-          .trim();
-        
-        const crafters: string[] = [];
-        
-        publicCharacters.forEach(character => {
-          const characterCrafts = character.crafts[profession] || [];
-          const hasRecipe = characterCrafts.some(craft => {
-            const craftName = craft.name.toLowerCase();
-            return craftName.includes(cleanRecipeName) || cleanRecipeName.includes(craftName);
-          });
-          
-          if (hasRecipe) {
-            crafters.push(character.name);
-          }
+const loadRareRecipes = async () => {
+  try {
+    setRareRecipesLoading(true);
+
+    const response = await fetch('/MOP_CSV_RECETTES_RARES.csv');
+    if (!response.ok) {
+      console.error('Fichier CSV non trouvé dans /public/');
+      return;
+    }
+
+    const csvText = await response.text();
+    const lines = csvText.split('\n');
+    const data = lines.slice(1).filter(line => line.trim()).map(line => {
+      const values = line.split(',');
+      return {
+        ID: parseInt(values[0]) || 0,
+        Name: values[1]?.replace(/"/g, '') || '',
+        Source: values[2]?.replace(/"/g, '') || '',
+        Type: values[3]?.replace(/"/g, '') || '',
+        URL: values[4]?.replace(/"/g, '') || '',
+        Qualite: values[5]?.replace(/"/g, '') || '', // Nouvelle colonne
+      };
+    });
+
+    const processedRecipes: RareRecipe[] = [];
+
+    data.forEach((row: any) => {
+      const profession = RECIPE_TYPE_TO_PROFESSION[row.Type as keyof typeof RECIPE_TYPE_TO_PROFESSION];
+      if (!profession) return;
+
+      const cleanRecipeName = row.Name
+        .replace(/^(Formule|Dessin|Patron|Plans|Schéma|Recette|Technique) : /, '')
+        .toLowerCase()
+        .trim();
+
+      const crafters: string[] = [];
+      publicCharacters.forEach(character => {
+        const characterCrafts = character.crafts[profession] || [];
+        const hasRecipe = characterCrafts.some(craft => {
+          const craftName = craft.name.toLowerCase();
+          return craftName.includes(cleanRecipeName) || cleanRecipeName.includes(craftName);
         });
-        
-        if (crafters.length > 0) {
-          processedRecipes.push({
-            id: row.ID,
-            name: row.Name,
-            type: row.Type,
-            profession,
-            url: row.URL,
-            crafters
-          });
+        if (hasRecipe) {
+          crafters.push(character.name);
         }
       });
+
+      if (crafters.length > 0) {
+        processedRecipes.push({
+          id: row.ID,
+          name: row.Name,
+          type: row.Type,
+          profession,
+          url: row.URL,
+          qualite: row.Qualite, // Ajout qualité
+          source: row.Source,
+          crafters
+        });
+      }
+    });
+
+    processedRecipes.sort((a, b) => a.name.localeCompare(b.name));
+    setRareRecipes(processedRecipes);
+  } catch (error) {
+    console.error('Erreur chargement recettes rares:', error);
+  } finally {
+    setRareRecipesLoading(false);
+  }
+};
+
       
       // Tri alphabétique des recettes
       processedRecipes.sort((a, b) => a.name.localeCompare(b.name));
@@ -771,29 +784,22 @@ const WoWCraftingTracker: React.FC = () => {
                   <div className="p-6">
                     <div className="space-y-2">
                       {recipes.map(recipe => (
-                        <div 
-                          key={recipe.id} 
-                          className="flex items-center justify-between p-3 rounded-lg bg-gray-700 hover:bg-gray-600 border border-gray-600"
+                        <div
+                          key={recipe.id}
+                          className={`flex items-center justify-between p-2 rounded-lg border 
+                            ${recipe.qualite === 'Epique' ? 'bg-purple-800 border-purple-600' : 
+                              recipe.qualite === 'Rare' ? 'bg-blue-800 border-blue-600' : 'bg-gray-700 border-gray-600'}
+                            mb-2`}
+                          style={{ minHeight: '48px' }} // Cases moins hautes
                         >
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-white text-sm truncate">
-                              {recipe.name}
-                            </h4>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {recipe.crafters.map(crafter => (
-                                <button
-                                  key={crafter}
-                                  onClick={() => {
-                                    const publicChar = publicCharacters.find(c => c.name === crafter);
-                                    if (publicChar) {
-                                      window.open(`?share=${publicChar.shareId}`, '_blank');
-                                    }
-                                  }}
-                                  className="px-2 py-1 bg-yellow-600 hover:bg-yellow-700 text-black text-xs rounded font-medium cursor-pointer transition-colors"
-                                >
-                                  {crafter}
-                                </button>
-                              ))}
+                            <h4 className="font-medium text-white text-sm truncate">{recipe.name}</h4>
+                            <div className="flex flex-wrap gap-2 mt-1 text-xs">
+                              <span className="text-gray-300">{recipe.source}</span>
+                              <span className="text-gray-400">{recipe.type}</span>
+                              <span className={`font-bold ${recipe.qualite === 'Epique' ? 'text-purple-400' : recipe.qualite === 'Rare' ? 'text-blue-400' : 'text-gray-400'}`}>
+                                {recipe.qualite}
+                              </span>
                             </div>
                           </div>
                           <a
