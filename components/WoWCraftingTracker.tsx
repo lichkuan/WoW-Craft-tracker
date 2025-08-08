@@ -800,16 +800,15 @@ const RareRecipesSection = () => {
                     {recipes.map(recipe => (
                       <div
                         key={recipe.id}
-                        className="flex items-center justify-between p-2 rounded-lg border bg-gray-700 border-gray-600 mb-2"  
-                        style={{ minHeight: '48px' }} // Cases moins hautes
+                        className="flex items-start justify-between p-3 md:p-4 rounded-xl border bg-gray-700/70 border-gray-600 hover:border-red-500 transition mb-2"
                       >
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-white text-sm truncate">{recipe.name}</h4>
+                          <a href={recipe.url} target="_blank" rel="noopener noreferrer" className="font-medium text-white text-sm md:text-base truncate hover:underline">{recipe.name}</a>
                           <div className="flex flex-wrap gap-2 mt-1 text-xs items-center">
                             {recipe.source && recipe.source !== '-' && (
-                              <span className="text-gray-300">{recipe.source}</span>
+                              <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-600 text-xs text-gray-200">{recipe.source}</span>
                             )}
-                            <span className="text-gray-400 w-full text-center">{recipe.type}</span>
+                            <span className="px-2 py-0.5 rounded bg-gray-900/70 border border-gray-700 text-xs text-purple-300">{recipe.type}</span>
                           </div>
                         </div>
                         <a
@@ -1215,15 +1214,14 @@ const RareRecipesSection = () => {
                       {isExpanded && (
                         <div className="mt-2 space-y-1 ml-4">
                           {items.map(item => (
-                            <div key={item.id} className="bg-gray-700 rounded-lg p-2 flex items-center justify-between">
-                              <span className="text-red-300 text-sm">{item.name}</span>
+                            <div key={item.id} className="bg-gray-700/70 rounded-xl p-3 md:p-4 flex items-center justify-between border border-gray-600 hover:border-red-500 transition">
+                              <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-red-300 text-sm md:text-base hover:underline truncate">{item.name}</a>
                               <a
                                 href={item.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded"
-                              >
-                                Wowhead
+                                className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded mr-2">Wowhead</a>
+                              <span className="px-2 py-0.5 rounded bg-gray-900/70 border border-gray-700 text-xs text-gray-200">{item.category}</span
                               </a>
                             </div>
                           ))}
@@ -1478,7 +1476,20 @@ const RareRecipesSection = () => {
           <ImportView profession={view.replace('import-', '')} />
         )}
       </main>
-    </div>
+
+        {/* Wowhead Tooltips */}
+        <Script id="wh-config" strategy="afterInteractive">
+          {`
+            var whTooltips = {
+              colorLinks: true,
+              iconizeLinks: true,
+              renameLinks: true,
+              locale: "fr"
+            };
+          `}
+        </Script>
+        <Script src="https://wow.zamimg.com/widgets/power.js" strategy="afterInteractive" />
+        </div>
   );
 };
 
