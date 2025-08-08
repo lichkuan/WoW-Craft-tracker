@@ -455,29 +455,56 @@ const WoWCraftingTracker: React.FC = () => {
     return match ? match[1] : null;
   };
 
+  const getSpellIdFromUrl = (url: string) => {
+    const cleanUrl = url.replace(/\s+/g, "");
+    const match = cleanUrl.match(/spell=(\d+)/);
+    return match ? match[1] : null;
+  };
+
   const loadRareRecipes = async () => {
     try {
       setRareRecipesLoading(true);
 
-      const response = await fetch("/Recettes_MoP_90__Liens_Wowhead.csv");
+      // 🔁 On pointe vers le CSV enrichi qui contient SPELL ID / SPELL URL
+      const response = await fetch(
+        "/Recettes_MoP_90__Liens_Wowhead_ENRICHED.csv"
+      );
       if (!response.ok) {
-        console.error("Fichier CSV non trouvé dans /public/");
+        console.error("Fichier CSV enrichi non trouvé dans /public/");
         return;
       }
 
       const csvText = await response.text();
+
+      // ⚠️ Parsing simple (comme ton code actuel). Si tu as des virgules dans les champs,
+      // on pourra passer à Papaparse côté client, mais je reste cohérent avec ton implémentation.
       const lines = csvText.split("\n");
+      // Enrichi: colonnes attendues =
+      // 0:ID, 1:Name, 2:Source, 3:Type, 4:URL, 5:SPELL ID, 6:SPELL URL, 7:Fetch Status
       const data = lines
         .slice(1)
         .filter((line) => line.trim())
         .map((line) => {
           const values = line.split(",");
+          const ID = parseInt(values[0]) || 0;
+          const Name = (values[1] || "").replace(/"/g, "");
+          const Source = (values[2] || "").replace(/"/g, "");
+          const Type = (values[3] || "").replace(/"/g, "");
+          const URL = (values[4] || "").replace(/"/g, "");
+          const SPELL_ID = (values[5] || "").replace(/"/g, "");
+          const SPELL_URL = (values[6] || "").replace(/"/g, "");
+          // Choix du lien préféré (SPELL d'abord, sinon ITEM)
+          const preferredURL = SPELL_URL || URL;
+
           return {
-            ID: parseInt(values[0]) || 0,
-            Name: values[1]?.replace(/"/g, "") || "",
-            Source: values[2]?.replace(/"/g, "") || "",
-            Type: values[3]?.replace(/"/g, "") || "",
-            URL: values[4]?.replace(/"/g, "") || "",
+            ID,
+            Name,
+            Source,
+            Type,
+            URL: preferredURL, // <- on stocke l'URL préférée pour clic/affichage
+            _rawItemURL: URL, // (au cas où tu veux encore l’item plus tard)
+            _spellId: SPELL_ID, // pour le matching
+            _spellURL: SPELL_URL, // pour info
           };
         });
 
@@ -485,6 +512,7 @@ const WoWCraftingTracker: React.FC = () => {
       const seenIds = new Set<number>();
 
       data.forEach((row: any) => {
+        if (!row || !row.ID) return;
         // Ignore les doublons d'ID
         if (seenIds.has(row.ID)) return;
         seenIds.add(row.ID);
@@ -502,22 +530,38 @@ const WoWCraftingTracker: React.FC = () => {
           .toLowerCase()
           .trim();
 
+        const recipeItemId = String(row.ID || "");
+        const recipeSpellId = String(row._spellId || "");
+
         const crafters: string[] = [];
         publicCharacters.forEach((character) => {
           const characterCrafts = character.crafts[profession] || [];
           const hasRecipe = characterCrafts.some((craft) => {
-            // Match par nom
+            // 1) match par nom (fallback large)
             const craftName = craft.name.toLowerCase();
             if (
               craftName.includes(cleanRecipeName) ||
               cleanRecipeName.includes(craftName)
-            )
+            ) {
               return true;
-            // Match par ID
-            const recipeId = row.ID?.toString();
-            const craftId = getItemIdFromUrl(craft.url);
-            return recipeId && craftId && recipeId === craftId;
+            }
+            // 2) match par ITEM ID (depuis l'URL craft)
+            const craftItemId = getItemIdFromUrl(craft.url);
+            if (craftItemId && recipeItemId && craftItemId === recipeItemId) {
+              return true;
+            }
+            // 3) match par SPELL ID (nouveau)
+            const craftSpellId = getSpellIdFromUrl(craft.url);
+            if (
+              craftSpellId &&
+              recipeSpellId &&
+              craftSpellId === recipeSpellId
+            ) {
+              return true;
+            }
+            return false;
           });
+
           if (hasRecipe) {
             crafters.push(character.name);
           }
@@ -529,7 +573,7 @@ const WoWCraftingTracker: React.FC = () => {
             name: row.Name,
             type: row.Type,
             profession,
-            url: row.URL,
+            url: row.URL, // <- URL préférée (SPELL si dispo, sinon ITEM)
             source: row.Source,
             crafters,
           });
