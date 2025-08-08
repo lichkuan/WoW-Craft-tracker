@@ -1077,7 +1077,7 @@ const RareRecipesSection = () => {
 
     const professionsArray = [currentCharacter.profession1, currentCharacter.profession2].filter(Boolean);
     
-    const filteredProfessionData = useMemo(() => {
+    const filteredProfessionData = useMemo() => {
       return professionsArray.map(profession => {
         const crafts = currentCharacter.crafts[profession] || [];
         const filteredCrafts = crafts.filter(craft => 
@@ -1100,7 +1100,7 @@ const RareRecipesSection = () => {
           categories
         };
       });
-    }, [professionsArray, currentCharacter.crafts, searchTerm]);
+    }, [professionsArray, currentCharacter.crafts, searchTerm];
     
     return (
       <div className="max-w-6xl mx-auto">
