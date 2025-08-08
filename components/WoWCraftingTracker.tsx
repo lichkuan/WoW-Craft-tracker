@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Script from 'next/script';
 import { ChevronDown, ChevronRight, Upload, User, Share, Search, Trash2, Plus, X, Edit, Filter } from 'lucide-react';
-import ReagentsBlock from '@/components/ReagentsBlock';
+import ReagentsBlock from './ReagentsBlock';
 
 interface Character {
   id: string;
