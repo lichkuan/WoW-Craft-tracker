@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Script from 'next/script';
 import { ChevronDown, ChevronRight, Upload, User, Share, Search, Trash2, Plus, X, Edit, Filter } from 'lucide-react';
+import ReagentsBlock from '@/components/ReagentsBlock';
 
 interface Character {
   id: string;
@@ -84,7 +85,7 @@ const ThemeSwitcher = () => {
   return (
     <button
       onClick={toggleTheme}
-      className="ml-4 px-3 py-1 rounded bg-gray-700 text-yellow-300 hover:bg-yellow-600 hover:text-black transition"
+      className="ml-4 px-3 py-1 rounded bg-gray-700 text-red-300 hover:bg-red-700 hover:text-black transition"
       title="Changer le thème"
     >
       {isDark ? '🌙 Thème sombre' : '🌞 Thème clair'}
@@ -116,14 +117,14 @@ const SearchBar = ({
 
   return (
     <div className="mb-6">
-      <div className="bg-gray-800 rounded-lg p-4 border border-yellow-600 flex items-center space-x-4">
-        <Search className="w-5 h-5 text-yellow-400" />
+      <div className="bg-gray-800 rounded-lg p-4 border border-red-700 flex items-center space-x-4">
+        <Search className="w-5 h-5 text-red-400" />
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => handleChange(e.target.value)}
           placeholder="Rechercher une recette..."
-          className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+          className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
           autoComplete="off"
         />
         {searchTerm && (
@@ -194,7 +195,7 @@ const WoWCraftingTracker: React.FC = () => {
   const getProfessionLevelColor = (level: number): string => {
     if (level >= 1 && level <= 60) return 'text-gray-400';
     if (level >= 60 && level <= 140) return 'text-green-400';
-    if (level >= 140 && level <= 205) return 'text-yellow-400';
+    if (level >= 140 && level <= 205) return 'text-red-400';
     if (level >= 205 && level <= 300) return 'text-orange-400';
     if (level >= 300 && level <= 350) return 'text-red-400';
     if (level >= 350 && level <= 425) return 'text-purple-400';
@@ -779,7 +780,7 @@ const RareRecipesSection = () => {
                 }))}
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-yellow-400 flex items-center">
+                  <h3 className="text-xl font-bold text-red-400 flex items-center">
                     <span className="text-2xl mr-3">{professionIcons[profession as keyof typeof professionIcons] || '🔮'}</span>
                     {profession}
                     <span className="ml-3 px-2 py-1 bg-gray-600 rounded text-sm text-gray-300">
@@ -803,7 +804,7 @@ const RareRecipesSection = () => {
                         style={{ minHeight: '48px' }} // Cases moins hautes
                       >
                         <div className="flex-1 min-w-0">
-                          <a href={recipe.url} target="_blank" rel="noopener noreferrer" className="font-medium text-white text-sm truncate hover:underline">{recipe.name}</a>
+                          <h4 className="font-medium text-white text-sm truncate">{recipe.name}</h4>
                           <div className="flex flex-wrap gap-2 mt-1 text-xs items-center">
                             {recipe.source && recipe.source !== '-' && (
                               <span className="text-gray-300">{recipe.source}</span>
@@ -883,8 +884,8 @@ const RareRecipesSection = () => {
     };
 
     return (
-      <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg p-8 border border-yellow-600">
-        <h2 className="text-3xl font-bold text-yellow-400 mb-6 flex items-center">
+      <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg p-8 border border-red-700">
+        <h2 className="text-3xl font-bold text-red-400 mb-6 flex items-center">
           <User className="mr-3" />
           {editMode ? 'Modifier le personnage' : 'Créer un personnage'}
         </h2>
@@ -896,14 +897,14 @@ const RareRecipesSection = () => {
               placeholder="Nom"
               value={form.name}
               onChange={e => setForm(prev => ({...prev, name: e.target.value}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
             />
             <input
               type="text"
               placeholder="Serveur"
               value={form.server}
               onChange={e => setForm(prev => ({...prev, server: e.target.value}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
             />
           </div>
 
@@ -913,12 +914,12 @@ const RareRecipesSection = () => {
               placeholder="Niveau"
               value={form.level}
               onChange={e => setForm(prev => ({...prev, level: parseInt(e.target.value) || 90}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
             />
             <select
               value={form.faction}
               onChange={e => setForm(prev => ({...prev, faction: e.target.value as 'alliance' | 'horde', race: ''}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
             >
               <option value="alliance">🛡️ Alliance</option>
               <option value="horde">⚔️ Horde</option>
@@ -928,7 +929,7 @@ const RareRecipesSection = () => {
               placeholder="Guilde"
               value={form.guild}
               onChange={e => setForm(prev => ({...prev, guild: e.target.value}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
             />
           </div>
 
@@ -936,7 +937,7 @@ const RareRecipesSection = () => {
             <select
               value={form.race}
               onChange={e => setForm(prev => ({...prev, race: e.target.value}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
             >
               <option value="">Choisir une race</option>
               {races[form.faction].map(race => (
@@ -946,7 +947,7 @@ const RareRecipesSection = () => {
             <select
               value={form.class}
               onChange={e => setForm(prev => ({...prev, class: e.target.value}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
             >
               <option value="">Choisir une classe</option>
               {classes.map(cls => (
@@ -959,7 +960,7 @@ const RareRecipesSection = () => {
             <select
               value={form.profession1}
               onChange={e => setForm(prev => ({...prev, profession1: e.target.value}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
             >
               <option value="">Métier principal 1</option>
               {professions.map(prof => (
@@ -969,7 +970,7 @@ const RareRecipesSection = () => {
             <select
               value={form.profession2}
               onChange={e => setForm(prev => ({...prev, profession2: e.target.value}))}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
             >
               <option value="">Métier principal 2</option>
               {professions.filter(p => p !== form.profession1).map(prof => (
@@ -982,7 +983,7 @@ const RareRecipesSection = () => {
             <button
               onClick={handleSubmit}
               disabled={!form.name || !form.race || !form.class}
-              className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-3 px-6 rounded disabled:opacity-50"
+              className="bg-red-700 hover:bg-red-800 text-black font-bold py-3 px-6 rounded disabled:opacity-50"
             >
               {editMode ? 'Sauvegarder les modifications' : 'Créer le personnage'}
             </button>
@@ -1006,20 +1007,20 @@ const RareRecipesSection = () => {
   };
 
   const ImportView = ({ profession }: { profession: string }) => (
-    <div className="max-w-4xl mx-auto bg-gray-800 rounded-lg p-8 border border-yellow-600">
-      <h2 className="text-3xl font-bold text-yellow-400 mb-6">
+    <div className="max-w-4xl mx-auto bg-gray-800 rounded-lg p-8 border border-red-700">
+      <h2 className="text-3xl font-bold text-red-400 mb-6">
         <Upload className="inline mr-3" />
         Importer - {profession}
       </h2>
       
       <div className="mb-6">
-        <label className="block text-yellow-300 font-semibold mb-2">
+        <label className="block text-red-300 font-semibold mb-2">
           Liste markdown :
         </label>
         <textarea
           value={importText}
           onChange={e => setImportText(e.target.value)}
-          className="w-full h-64 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none font-mono text-sm"
+          className="w-full h-64 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none font-mono text-sm"
           placeholder="- [Item Name](https://wowhead.com/cata/item=12345)
 - [Autre Item](https://wowhead.com/cata/spell=67890)"
         />
@@ -1078,10 +1079,10 @@ const RareRecipesSection = () => {
     
     return (
       <div className="max-w-6xl mx-auto">
-        <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-yellow-600">
+        <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-red-700">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-4xl font-bold text-yellow-400 mb-2">{currentCharacter.name}</h1>
+              <h1 className="text-4xl font-bold text-red-400 mb-2">{currentCharacter.name}</h1>
               <div className="text-gray-300 space-y-1">
                 <p>Niveau {currentCharacter.level} {currentCharacter.race} {currentCharacter.class}</p>
                 {currentCharacter.server && <p>Serveur: {currentCharacter.server}</p>}
@@ -1124,11 +1125,11 @@ const RareRecipesSection = () => {
         <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
 
         {filteredProfessionData.map(({ profession, crafts, categories }) => (
-          <div key={profession} className="bg-gray-800 rounded-lg border border-yellow-600 mb-6">
+          <div key={profession} className="bg-gray-800 rounded-lg border border-red-700 mb-6">
             <div className="p-6 border-b border-gray-700">
               <div className="flex justify-between items-center">
                 <div>
-                  <h2 className="text-2xl font-bold text-yellow-400">{profession}</h2>
+                  <h2 className="text-2xl font-bold text-red-400">{profession}</h2>
                   {(currentCharacter.professionLevels?.[profession] || 0) > 0 && (
                     <p className={`text-sm ${getProfessionLevelColor(currentCharacter.professionLevels[profession])}`}>
                       {getProfessionLevelIcon(currentCharacter.professionLevels[profession])} Niveau {currentCharacter.professionLevels[profession]} ({getProfessionLevelName(currentCharacter.professionLevels[profession])})
@@ -1138,7 +1139,7 @@ const RareRecipesSection = () => {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => setView(`import-${profession}`)}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-black px-4 py-2 rounded flex items-center"
+                    className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded flex items-center"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Importer
@@ -1205,7 +1206,7 @@ const RareRecipesSection = () => {
                         }))}
                         className="w-full flex items-center justify-between bg-gray-600 hover:bg-gray-500 rounded-lg p-3"
                       >
-                        <span className="text-yellow-300 font-semibold">
+                        <span className="text-red-300 font-semibold">
                           {category} ({items.length})
                         </span>
                         {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
@@ -1215,7 +1216,7 @@ const RareRecipesSection = () => {
                         <div className="mt-2 space-y-1 ml-4">
                           {items.map(item => (
                             <div key={item.id} className="bg-gray-700 rounded-lg p-2 flex items-center justify-between">
-                              <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-yellow-300 text-sm hover:underline">{item.name}</a>
+                              <span className="text-red-300 text-sm">{item.name}</span>
                               <a
                                 href={item.url}
                                 target="_blank"
@@ -1245,8 +1246,8 @@ const RareRecipesSection = () => {
 
   const HomeView = () => (
     <div className="max-w-6xl mx-auto text-center">
-      <div className="bg-gray-800 rounded-lg px-6 py-8 border border-yellow-600 mb-4">
-        <h1 className="text-5xl font-bold text-yellow-400 mb-4">WoW Crafting Tracker by Ostie</h1>
+      <div className="bg-gray-800 rounded-lg px-6 py-8 border border-red-700 mb-4">
+        <h1 className="text-5xl font-bold text-red-400 mb-4">WoW Crafting Tracker by Ostie</h1>
         <p className="text-xl text-gray-300 mb-8">Partagez vos métiers World of Warcraft</p>
         
         <div className="bg-blue-900 border border-blue-600 rounded-lg p-6 mb-6 text-left grid md:grid-cols-2 gap-6">
@@ -1267,7 +1268,7 @@ const RareRecipesSection = () => {
               <h3 className="text-lg font-semibold text-blue-200 mb-2">2. Dans le jeu :</h3>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>Ouvrez votre métier</li>
-                <li>Tapez : <code className="bg-gray-700 px-2 py-1 rounded text-yellow-300">/tsexport markdown</code></li>
+                <li>Tapez : <code className="bg-gray-700 px-2 py-1 rounded text-red-300">/tsexport markdown</code></li>
                 <li>Copiez avec Ctrl+C</li>
                 <li>Collez dans ce site</li>
               </ul>
@@ -1278,16 +1279,16 @@ const RareRecipesSection = () => {
         {characters.length === 0 ? (
           <button
             onClick={() => setView('create')}
-            className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-4 px-8 rounded-lg text-xl"
+            className="bg-red-700 hover:bg-red-800 text-black font-bold py-4 px-8 rounded-lg text-xl"
           >
             Créer mon personnage
           </button>
         ) : (
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-yellow-400">Mes personnages</h2>
+            <h2 className="text-2xl font-bold text-red-400">Mes personnages</h2>
             <div className="grid gap-4">
               {characters.map(character => (
-                <div key={character.id} className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-yellow-500">
+                <div key={character.id} className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-red-600">
                   <div className="flex items-center justify-between">
                     <div 
                       className="flex-1 cursor-pointer"
@@ -1296,7 +1297,7 @@ const RareRecipesSection = () => {
                         setView('character');
                       }}
                     >
-                      <h3 className="text-xl font-bold text-yellow-300">{character.name}</h3>
+                      <h3 className="text-xl font-bold text-red-300">{character.name}</h3>
                       <p className="text-gray-300">Niveau {character.level} {character.race} {character.class}</p>
                       <p className="text-gray-400 text-sm">
                         {character.server} {character.guild && `• ${character.guild}`}
@@ -1314,7 +1315,7 @@ const RareRecipesSection = () => {
             </div>
             <button
               onClick={() => setView('create')}
-              className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-2 px-6 rounded"
+              className="bg-red-700 hover:bg-red-800 text-black font-bold py-2 px-6 rounded"
             >
               Ajouter un personnage
             </button>
@@ -1324,8 +1325,8 @@ const RareRecipesSection = () => {
 
       <RareRecipesSection />
 
-      <div className="bg-gray-800 rounded-lg p-8 border border-yellow-600">
-        <h2 className="text-3xl font-bold text-yellow-400 mb-6">🌟 Communauté</h2>
+      <div className="bg-gray-800 rounded-lg p-8 border border-red-700">
+        <h2 className="text-3xl font-bold text-red-400 mb-6">🌟 Communauté</h2>
         
         {publicCharacters.length > 0 ? (
           <>
@@ -1342,7 +1343,7 @@ const RareRecipesSection = () => {
                     <div>
                       <button
                         onClick={() => window.open(`?share=${character.shareId}`, '_blank')}
-                        className="text-xl font-bold text-yellow-300 hover:text-yellow-400 cursor-pointer"
+                        className="text-xl font-bold text-red-300 hover:text-red-400 cursor-pointer"
                       >
                         {character.name}
                       </button>
@@ -1367,7 +1368,7 @@ const RareRecipesSection = () => {
                   </div>
 
                   <div className="space-y-3">
-                    <h4 className="text-yellow-400 font-semibold text-sm">Métiers principaux :</h4>
+                    <h4 className="text-red-400 font-semibold text-sm">Métiers principaux :</h4>
                     
                     {[character.profession1, character.profession2].filter(Boolean).map((prof) => (
                       <div key={prof} className="flex items-center justify-between bg-gray-600 rounded p-2">
@@ -1379,7 +1380,7 @@ const RareRecipesSection = () => {
                             </span>
                           )}
                         </div>
-                        <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold">
+                        <span className="bg-red-700 text-black px-2 py-1 rounded text-xs font-bold">
                           {character.craftCounts?.[prof] || 0}
                         </span>
                       </div>
@@ -1389,7 +1390,7 @@ const RareRecipesSection = () => {
                   <div className="mt-4 pt-4 border-t border-gray-600">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-400 text-sm">Total des recettes :</span>
-                      <span className="text-yellow-400 font-bold">
+                      <span className="text-red-400 font-bold">
                         {Object.values(character.craftCounts as Record<string, number>).reduce((a: number, b: number) => a + b, 0)}
                       </span>
                     </div>
@@ -1410,7 +1411,7 @@ const RareRecipesSection = () => {
         ) : (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">👥</div>
-            <h3 className="text-2xl font-bold text-yellow-300 mb-4">Aucun personnage partagé</h3>
+            <h3 className="text-2xl font-bold text-red-300 mb-4">Aucun personnage partagé</h3>
             <p className="text-gray-400 mb-6">
               Soyez le premier à partager vos métiers avec la communauté !<br/>
               Créez un personnage, ajoutez vos recettes et cliquez sur "Partager".
@@ -1448,18 +1449,18 @@ const RareRecipesSection = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
-        <nav className="bg-gray-800 border-b border-yellow-600 p-4">
+    <div className="min-h-screen bg-gradient-to-b from-black via-[#2a0000] to-[#0b0000] text-white">
+        <nav className="bg-gray-800 border-b border-red-700 p-4">
           <div className="max-w-6xl mx-auto flex justify-between items-center">
             <button
               onClick={() => setView('home')}
-              className="text-2xl font-bold text-yellow-400 hover:text-yellow-300"
+              className="text-2xl font-bold text-red-400 hover:text-red-300"
             >
               WoW Crafting Tracker
             </button>
             <div className="flex items-center">
               {currentCharacter && view === 'character' && (
-                <div className="text-yellow-300 mr-4">
+                <div className="text-red-300 mr-4">
                   {currentCharacter.name} - {currentCharacter.server}
                 </div>
               )}
@@ -1477,20 +1478,6 @@ const RareRecipesSection = () => {
           <ImportView profession={view.replace('import-', '')} />
         )}
       </main>
-
-      {/* Wowhead Tooltips config */}
-      <Script id="wh-config" strategy="afterInteractive">
-        {`
-          var whTooltips = {
-            colorLinks: true,
-            iconizeLinks: true,
-            renameLinks: true,
-            locale: "fr"
-          };
-        `}
-      </Script>
-      {/* Wowhead widget */}
-      <Script src="https://wow.zamimg.com/widgets/power.js" strategy="afterInteractive" />
     </div>
   );
 };
