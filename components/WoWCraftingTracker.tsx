@@ -198,7 +198,7 @@ const WoWCraftingTracker: React.FC = () => {
     if (level >= 140 && level <= 205) return 'text-red-400';
     if (level >= 205 && level <= 300) return 'text-orange-400';
     if (level >= 300 && level <= 350) return 'text-red-400';
-    if (level >= 350 && level <= 425) return 'text-purple-400';
+    if (level >= 350 && level <= 425) return 'text-[#C09A1A]';
     if (level >= 425 && level <= 500) return 'text-blue-400';
     if (level >= 500 && level <= 600) return 'text-pink-400';
     return 'text-gray-400';
@@ -621,16 +621,16 @@ const loadRareRecipes = async () => {
 const RareRecipesSection = () => {
   if (rareRecipesLoading) {
     return (
-      <div className="bg-gray-800 rounded-lg p-8 border border-purple-600 mb-8">
+      <div className="bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-3xl font-bold text-purple-400 mb-2">✨ Recettes Rares</h2>
+            <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-2">✨ Recettes Rares</h2>
             <p className="text-gray-300">
               Découvrez qui peut crafter les recettes les plus recherchées de MoP Classic
             </p>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-purple-300">{filteredRareRecipes.length}</div>
+            <div className="text-2xl font-bold text-[#d8b55c]">{filteredRareRecipes.length}</div>
             <div className="text-sm text-gray-400">recettes disponibles</div>
           </div>
         </div>
@@ -640,11 +640,11 @@ const RareRecipesSection = () => {
 
   if (rareRecipes.length === 0) {
     return (
-      <div className="bg-gray-800 rounded-lg p-6 border border-purple-600 mb-4">
-        <h2 className="text-3xl font-bold text-purple-400 mb-6">✨ Recettes Rares</h2>
+      <div className="bg-gray-800 rounded-lg p-6 border border-red-700 mb-4">
+        <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6">✨ Recettes Rares</h2>
         <div className="text-center py-12">
           <div className="text-6xl mb-4">📜</div>
-          <h3 className="text-2xl font-bold text-purple-300 mb-4">Aucune recette rare détectée</h3>
+          <h3 className="text-2xl font-bold text-[#d8b55c] mb-4">Aucune recette rare détectée</h3>
           <p className="text-gray-400">
             Les recettes rares apparaîtront ici quand des personnages<br/>
             avec des formules, patrons ou plans spéciaux seront partagés.
@@ -672,16 +672,16 @@ const RareRecipesSection = () => {
   };
 
   return (
-    <div className="bg-gray-800 rounded-lg p-8 border border-purple-600 mb-8">
+    <div className="bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md mb-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-3xl font-bold text-purple-400 mb-2">✨ Recettes Rares</h2>
+          <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-2">✨ Recettes Rares</h2>
           <p className="text-gray-300">
             Découvrez qui peut crafter les recettes les plus recherchées de MoP Classic
           </p>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-bold text-purple-300">{filteredRareRecipes.length}</div>
+          <div className="text-2xl font-bold text-[#d8b55c]">{filteredRareRecipes.length}</div>
           <div className="text-sm text-gray-400">recettes disponibles</div>
         </div>
       </div>
@@ -691,7 +691,7 @@ const RareRecipesSection = () => {
         {/* Barre de recherche pour les recettes rares */}
         <div className="bg-gray-700 rounded-lg p-4">
           <div className="flex items-center space-x-4 mb-4">
-            <Search className="w-5 h-5 text-purple-400" />
+            <Search className="w-5 h-5 text-[#C09A1A]" />
             <input
               type="text"
               value={rareRecipeSearchTerm}
@@ -715,8 +715,8 @@ const RareRecipesSection = () => {
         {/* Filtres par profession */}
         <div className="bg-gray-700 rounded-lg p-4">
           <div className="flex items-center mb-3">
-            <Filter className="w-5 h-5 text-purple-400 mr-2" />
-            <h3 className="text-lg font-semibold text-purple-300">Filtrer par métier :</h3>
+            <Filter className="w-5 h-5 text-[#C09A1A] mr-2" />
+            <h3 className="text-lg font-semibold text-[#d8b55c]">Filtrer par métier :</h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {availableProfessions.map(profession => (
@@ -740,7 +740,7 @@ const RareRecipesSection = () => {
           {selectedProfessions.length > 0 && (
             <button
               onClick={() => setSelectedProfessions([])}
-              className="mt-3 text-sm text-purple-400 hover:text-purple-300"
+              className="mt-3 text-sm text-[#C09A1A] hover:text-[#d8b55c]"
             >
               Effacer tous les filtres
             </button>
@@ -751,7 +751,7 @@ const RareRecipesSection = () => {
         <div className="flex justify-end">
           <button
             onClick={toggleAllRareRecipes}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
+            className="bg-red-700 hover:bg-red-800 border border-[#C09A1A]/30 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
           >
             {allRareRecipesExpanded ? (
               <>
@@ -800,7 +800,7 @@ const RareRecipesSection = () => {
                     {recipes.map(recipe => (
                       <div
                         key={recipe.id}
-                        className="flex items-start justify-between p-3 md:p-4 rounded-xl border bg-gray-700/70 border-gray-600 hover:border-red-500 transition mb-2"
+                        className="flex items-start justify-between p-3 md:p-4 rounded-xl border bg-gray-700/70 border-gray-600 hover:border-red-500 transition mb-2 shadow-sm"
                       >
                         <div className="flex-1 min-w-0">
                           <a href={recipe.url} target="_blank" rel="noopener noreferrer" className="font-medium text-white text-sm md:text-base truncate hover:underline">{recipe.name}</a>
@@ -808,7 +808,7 @@ const RareRecipesSection = () => {
                             {recipe.source && recipe.source !== '-' && (
                               <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-600 text-xs text-gray-200">{recipe.source}</span>
                             )}
-                            <span className="px-2 py-0.5 rounded bg-gray-900/70 border border-gray-700 text-xs text-purple-300">{recipe.type}</span>
+                            <span className="px-2 py-0.5 rounded bg-gray-900/70 border border-gray-700 text-xs text-[#d8b55c]">{recipe.type}</span>
                           </div>
                         </div>
                         <a
@@ -837,7 +837,7 @@ const RareRecipesSection = () => {
         <button
           onClick={loadRareRecipes}
           disabled={rareRecipesLoading}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded text-sm disabled:opacity-50"
+          className="bg-red-700 hover:bg-red-800 border border-[#C09A1A]/30 text-white px-6 py-2 rounded text-sm disabled:opacity-50"
         >
           {rareRecipesLoading ? 'Analyse...' : '🔄 Actualiser les recettes rares'}
         </button>
@@ -883,8 +883,8 @@ const RareRecipesSection = () => {
     };
 
     return (
-      <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg p-8 border border-red-700">
-        <h2 className="text-3xl font-bold text-red-400 mb-6 flex items-center">
+      <div className="max-w-2xl mx-auto bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md">
+        <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6 flex items-center">
           <User className="mr-3" />
           {editMode ? 'Modifier le personnage' : 'Créer un personnage'}
         </h2>
@@ -1006,8 +1006,8 @@ const RareRecipesSection = () => {
   };
 
   const ImportView = ({ profession }: { profession: string }) => (
-    <div className="max-w-4xl mx-auto bg-gray-800 rounded-lg p-8 border border-red-700">
-      <h2 className="text-3xl font-bold text-red-400 mb-6">
+    <div className="max-w-4xl mx-auto bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md">
+      <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6">
         <Upload className="inline mr-3" />
         Importer - {profession}
       </h2>
@@ -1078,10 +1078,10 @@ const RareRecipesSection = () => {
     
     return (
       <div className="max-w-6xl mx-auto">
-        <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-red-700">
+        <div className="bg-gray-800 rounded-2xl p-6 mb-6 border border-red-700 shadow-md hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)] transition">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-4xl font-bold text-red-400 mb-2">{currentCharacter.name}</h1>
+              <h1 className="text-4xl font-extrabold text-[#C09A1A] drop-shadow-sm mb-2 transition-colors duration-200 hover:text-yellow-300">{currentCharacter.name}</h1>
               <div className="text-gray-300 space-y-1">
                 <p>Niveau {currentCharacter.level} {currentCharacter.race} {currentCharacter.class}</p>
                 {currentCharacter.server && <p>Serveur: {currentCharacter.server}</p>}
@@ -1097,7 +1097,7 @@ const RareRecipesSection = () => {
                   setEditingCharacter(currentCharacter);
                   setView('edit');
                 }}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded flex items-center"
+                className="bg-red-700 hover:bg-red-800 border border-[#C09A1A]/30 text-white px-4 py-2 rounded flex items-center"
               >
                 <Edit className="w-4 h-4 mr-2" />
                 Éditer
@@ -1124,11 +1124,11 @@ const RareRecipesSection = () => {
         <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
 
         {filteredProfessionData.map(({ profession, crafts, categories }) => (
-          <div key={profession} className="bg-gray-800 rounded-lg border border-red-700 mb-6">
+          <div key={profession} className="bg-gray-800 rounded-2xl border border-red-700 mb-6 shadow-md">
             <div className="p-6 border-b border-gray-700">
               <div className="flex justify-between items-center">
                 <div>
-                  <h2 className="text-2xl font-bold text-red-400">{profession}</h2>
+                  <h2 className="text-2xl font-extrabold text-[#C09A1A] tracking-wide">{profession}</h2>
                   {(currentCharacter.professionLevels?.[profession] || 0) > 0 && (
                     <p className={`text-sm ${getProfessionLevelColor(currentCharacter.professionLevels[profession])}`}>
                       {getProfessionLevelIcon(currentCharacter.professionLevels[profession])} Niveau {currentCharacter.professionLevels[profession]} ({getProfessionLevelName(currentCharacter.professionLevels[profession])})
@@ -1138,7 +1138,7 @@ const RareRecipesSection = () => {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => setView(`import-${profession}`)}
-                    className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded flex items-center"
+                    className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded flex items-center border border-[#C09A1A]/30"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Importer
@@ -1159,7 +1159,7 @@ const RareRecipesSection = () => {
                           setCurrentCharacter(updated);
                         }
                       }}
-                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex items-center"
+                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex items-center border border-[#C09A1A]/20"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
                       Supprimer
@@ -1176,7 +1176,7 @@ const RareRecipesSection = () => {
                   <div className="mb-4 flex justify-end">
                     <button
                       onClick={() => toggleAllCategories(profession, Object.keys(categories))}
-                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
+                      className="bg-red-700 hover:bg-red-800 border border-[#C09A1A]/30 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
                     >
                       {allExpanded[profession] ? (
                         <>
@@ -1203,7 +1203,7 @@ const RareRecipesSection = () => {
                           ...prev,
                           [`${profession}-${category}`]: !isExpanded
                         }))}
-                        className="w-full flex items-center justify-between bg-gray-600 hover:bg-gray-500 rounded-lg p-3"
+                        className="w-full flex items-center justify-between bg-gray-700/70 hover:bg-gray-600 rounded-xl p-3 border border-gray-600 hover:border-red-500 transition"
                       >
                         <span className="text-red-300 font-semibold">
                           {category} ({items.length})
@@ -1221,8 +1221,7 @@ const RareRecipesSection = () => {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded mr-2">Wowhead</a>
-                              <span className="px-2 py-0.5 rounded bg-gray-900/70 border border-gray-700 text-xs text-gray-200">{item.category}</span
-                              </a>
+                              <span className="px-2 py-0.5 rounded bg-gray-900/70 border border-gray-700 text-xs text-gray-200">{item.category}</span>
                             </div>
                           ))}
                         </div>
@@ -1244,7 +1243,7 @@ const RareRecipesSection = () => {
 
   const HomeView = () => (
     <div className="max-w-6xl mx-auto text-center">
-      <div className="bg-gray-800 rounded-lg px-6 py-8 border border-red-700 mb-4">
+      <div className="bg-gray-800 rounded-2xl px-6 py-8 border border-red-700 mb-4 shadow-md">
         <h1 className="text-5xl font-bold text-red-400 mb-4">WoW Crafting Tracker by Ostie</h1>
         <p className="text-xl text-gray-300 mb-8">Partagez vos métiers World of Warcraft</p>
         
@@ -1283,7 +1282,7 @@ const RareRecipesSection = () => {
           </button>
         ) : (
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-red-400">Mes personnages</h2>
+            <h2 className="text-2xl font-extrabold text-[#C09A1A] tracking-wide">Mes personnages</h2>
             <div className="grid gap-4">
               {characters.map(character => (
                 <div key={character.id} className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-red-600">
@@ -1295,7 +1294,7 @@ const RareRecipesSection = () => {
                         setView('character');
                       }}
                     >
-                      <h3 className="text-xl font-bold text-red-300">{character.name}</h3>
+                      <h3 className="text-xl font-semibold text-[#d8b55c]">{character.name}</h3>
                       <p className="text-gray-300">Niveau {character.level} {character.race} {character.class}</p>
                       <p className="text-gray-400 text-sm">
                         {character.server} {character.guild && `• ${character.guild}`}
@@ -1323,8 +1322,8 @@ const RareRecipesSection = () => {
 
       <RareRecipesSection />
 
-      <div className="bg-gray-800 rounded-lg p-8 border border-red-700">
-        <h2 className="text-3xl font-bold text-red-400 mb-6">🌟 Communauté</h2>
+      <div className="bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md">
+        <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6">🌟 Communauté</h2>
         
         {publicCharacters.length > 0 ? (
           <>
@@ -1341,7 +1340,7 @@ const RareRecipesSection = () => {
                     <div>
                       <button
                         onClick={() => window.open(`?share=${character.shareId}`, '_blank')}
-                        className="text-xl font-bold text-red-300 hover:text-red-400 cursor-pointer"
+                        className="text-xl font-semibold text-[#d8b55c] hover:text-red-400 cursor-pointer"
                       >
                         {character.name}
                       </button>
@@ -1447,12 +1446,12 @@ const RareRecipesSection = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-[#2a0000] to-[#0b0000] text-white">
+    <div className="min-h-screen bg-gradient-to-b from-black via-[#210a0a] to-[#0b0000] text-white">
         <nav className="bg-gray-800 border-b border-red-700 p-4">
           <div className="max-w-6xl mx-auto flex justify-between items-center">
             <button
               onClick={() => setView('home')}
-              className="text-2xl font-bold text-red-400 hover:text-red-300"
+              className="text-2xl font-extrabold text-[#C09A1A] tracking-wide hover:text-red-300"
             >
               WoW Crafting Tracker
             </button>
