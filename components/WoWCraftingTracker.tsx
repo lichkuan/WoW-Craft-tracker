@@ -298,20 +298,46 @@ const WoWCraftingTracker: React.FC = () => {
     return message;
   };
 
-  const categorizeItem = (name: string): string => {
-    const lower = name.toLowerCase();
-    if (lower.includes('arme') || lower.includes('épée') || lower.includes('hache')) return 'Armes';
-    if (lower.includes('bottes') || lower.includes('chaussures')) return 'Bottes';
-    if (lower.includes('gants') || lower.includes('gantelets')) return 'Gants';
-    if (lower.includes('casque') || lower.includes('heaume')) return 'Casques';
-    if (lower.includes('plastron') || lower.includes('armure')) return 'Plastrons';
-    if (lower.includes('cape') || lower.includes('manteau')) return 'Capes';
-    if (lower.includes('anneau') || lower.includes('bague')) return 'Anneaux';
-    if (lower.includes('collier') || lower.includes('pendentif')) return 'Colliers';
-    if (lower.includes('gemme') || lower.includes('pierre')) return 'Gemmes';
-    if (lower.includes('potion') || lower.includes('élixir')) return 'Potions';
-    return 'Autres';
-  };
+  
+const categorizeItem = (name: string): string => {
+  const lower = name.toLowerCase();
+
+  // Armes
+  if (/(arme|épée|hache|masse|dague|bâton|arbalète|fusil|carabine|arc|glaive|hast|lance|boumerang)/.test(lower)) return 'Armes';
+
+  // Armures (slots)
+  if (/(tête|heaume|casque)/.test(lower)) return 'Têtes';
+  if (/(épaulière|épaules|spallières)/.test(lower)) return 'Épaules';
+  if (/(torse|plastron|armure|cuirasse|robe|tunique)/.test(lower)) return 'Plastrons';
+  if (/(ceinture|baudrier|ceinturon)/.test(lower)) return 'Ceintures';
+  if (/(jambières|jambes|pantalon|kilt)/.test(lower)) return 'Jambières';
+  if (/(bottes|chaussures|sandales|sabots)/.test(lower)) return 'Bottes';
+  if (/(gants|gantelets|mains|mitaines)/.test(lower)) return 'Gants';
+  if (/(poignets|bracelets|brassards|manchettes)/.test(lower)) return 'Poignets';
+  if (/(cape|manteau|drapé|châle)/.test(lower)) return 'Capes';
+  if (/(bouclier|pavois)/.test(lower)) return 'Boucliers';
+
+  // Bijoux & accessoires
+  if (/(anneau|bague)/.test(lower)) return 'Anneaux';
+  if (/(collier|pendentif|médaillon)/.test(lower)) return 'Colliers';
+  if (/(bijou|breloque|fétiche|trinket)/.test(lower)) return 'Bijoux';
+  if (/(tabard)/.test(lower)) return 'Tabards';
+  if (/(chemise|shirt)/.test(lower)) return 'Chemises';
+
+  // Consommables / composants
+  if (/(potion|élixir|flasque|huile|banquet|nourriture|festin|ragoût|biscuit)/.test(lower)) return 'Consommables';
+  if (/(parchemin|glyphe|glyph)/.test(lower)) return 'Glyphes/Parchemins';
+  if (/(gemme|pierre|métagemme|prisme)/.test(lower)) return 'Gemmes';
+
+  // Divers utiles
+  if (/(monture|mount)/.test(lower)) return 'Montures';
+  if (/(familier|companion|pet)/.test(lower)) return 'Familiers';
+  if (/(sac|besace|sacoche|bag)/.test(lower)) return 'Sacs';
+  if (/(tissu|étoffe|cuir|maille|plaques)/.test(lower)) return 'Matériaux';
+
+  return 'Autres';
+};
+
 
 const getItemIdFromUrl = (url: string) => {
   // Supprime les espaces avant l'ID
@@ -800,7 +826,7 @@ const RareRecipesSection = () => {
                     {recipes.map(recipe => (
                       <div
                         key={recipe.id}
-                        className="flex items-start justify-between p-3 md:p-4 rounded-xl border bg-gray-700/70 border-gray-600 hover:border-red-500 transition mb-2 shadow-sm"
+                        className="group flex items-start justify-between p-3 md:p-4 rounded-xl border bg-gray-700/70 border-gray-600 hover:border-red-500 transition mb-2 shadow-sm transform hover:-translate-y-[1px] hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)]"
                       >
                         <div className="flex-1 min-w-0">
                           <a href={recipe.url} target="_blank" rel="noopener noreferrer" className="font-medium text-white text-sm md:text-base truncate hover:underline">{recipe.name}</a>
@@ -1214,15 +1240,14 @@ const RareRecipesSection = () => {
                       {isExpanded && (
                         <div className="mt-2 space-y-1 ml-4">
                           {items.map(item => (
-                            <div key={item.id} className="bg-gray-700/70 rounded-xl p-3 md:p-4 flex items-center justify-between border border-gray-600 hover:border-red-500 transition">
-                              <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-red-300 text-sm md:text-base hover:underline truncate">{item.name}</a>
-                              <a
-                                href={item.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded mr-2">Wowhead</a>
+                            <div key={item.id} className="group bg-gray-700/70 rounded-xl p-3 md:p-4 flex items-center justify-between border border-gray-600 hover:border-red-500 transition transform hover:-translate-y-[1px] hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)]">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">Wowhead</a>
+                                <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-red-300 text-sm md:text-base hover:underline truncate">{item.name}</a>
+                              </div>
                               <span className="px-2 py-0.5 rounded bg-gray-900/70 border border-gray-700 text-xs text-gray-200">{item.category}</span>
                             </div>
+                              <ReagentsBlock recipeUrl={item.url} />
                           ))}
                         </div>
                       )}
@@ -1247,11 +1272,11 @@ const RareRecipesSection = () => {
         <h1 className="text-5xl font-bold text-red-400 mb-4">WoW Crafting Tracker by Ostie</h1>
         <p className="text-xl text-gray-300 mb-8">Partagez vos métiers World of Warcraft</p>
         
-        <div className="bg-blue-900 border border-blue-600 rounded-lg p-6 mb-6 text-left grid md:grid-cols-2 gap-6">
-          <h2 className="text-2xl font-bold text-blue-300 mb-4">📋 Instructions</h2>
+        <div className="bg-red-900/20 border border-red-700 rounded-2xl p-4 md:p-5 mb-6 text-left grid md:grid-cols-2 gap-4 shadow-sm">
+          <h2 className="text-2xl font-bold text-[#C09A1A] mb-4">📋 Instructions</h2>
           <div className="space-y-4 text-gray-200">
             <div>
-              <h3 className="text-lg font-semibold text-blue-200 mb-2">1. Installez l'addon :</h3>
+              <h3 className="text-lg font-semibold text-[#d8b55c] mb-2">1. Installez l'addon :</h3>
               <a 
                 href="https://www.curseforge.com/wow/addons/simple-trade-skill-exporter" 
                 target="_blank" 
@@ -1262,7 +1287,7 @@ const RareRecipesSection = () => {
               </a>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-blue-200 mb-2">2. Dans le jeu :</h3>
+              <h3 className="text-lg font-semibold text-[#d8b55c] mb-2">2. Dans le jeu :</h3>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>Ouvrez votre métier</li>
                 <li>Tapez : <code className="bg-gray-700 px-2 py-1 rounded text-red-300">/tsexport markdown</code></li>
@@ -1396,7 +1421,7 @@ const RareRecipesSection = () => {
                   <div className="mt-3 text-center">
                     <button
                       onClick={() => window.open(`?share=${character.shareId}`, '_blank')}
-                      className="text-blue-400 text-xs hover:text-blue-300"
+                      className="text-blue-400 text-xs hover:text-[#C09A1A]"
                     >
                       🔗 Voir le profil complet
                     </button>
@@ -1414,7 +1439,7 @@ const RareRecipesSection = () => {
               Créez un personnage, ajoutez vos recettes et cliquez sur "Partager".
             </p>
             <div className="bg-blue-900 border border-blue-600 rounded-lg p-4 max-w-md mx-auto">
-              <p className="text-blue-200 text-sm">
+              <p className="text-[#d8b55c] text-sm">
                 💡 <strong>Astuce :</strong> Les personnages partagés apparaissent ici automatiquement
                 et permettent à la communauté de voir vos métiers !
               </p>
