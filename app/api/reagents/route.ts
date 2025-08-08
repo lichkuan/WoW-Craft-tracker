@@ -1,12 +1,9 @@
-// /app/api/reagents/route.ts (Next.js App Router) 
-// or /pages/api/reagents.ts (Pages Router) — see comment at bottom for Pages version
-// Fetches reagents from a Wowhead item/recipe URL by scraping the HTML (non‑officiel).
-// Install: npm i cheerio
-import { NextRequest, NextResponse } from "next/server";
-import * as cheerio from "cheerio";
-
+// app/api/reagents/route.ts
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+import { NextRequest, NextResponse } from "next/server";
+import { parse } from "node-html-parser";
 
 function getParam(req: NextRequest, key: string) {
   const url = new URL(req.url);
@@ -25,42 +22,33 @@ async function fetchHtml(url: string) {
   return await res.text();
 }
 
-type Reagent = {
-  id: number;
-  name: string;
-  url: string;
-  count: number;
-};
+type Reagent = { id: number; name: string; url: string; count: number };
 
 function parseReagents(html: string, baseUrl: string): Reagent[] {
-  const $ = cheerio.load(html);
-
+  const root = parse(html);
   const reagents: Reagent[] = [];
 
-  // Strategy 1: Look for the Reagents block list items (generic parsing, FR/EN tolerant)
-  // Matches links like <a href="/mop-classic/fr/item=72104">Acier vivant</a> (6)
-  // and grabs the number in parentheses right after.
-  $("a[href*='item=']").each((_, el) => {
-    const href = $(el).attr("href") || "";
-    const text = $(el).text().trim();
-    const after = $(el).parent().text(); // may contain "(6)"
-
+  // 1) Récupère tous les liens d'items
+  root.querySelectorAll('a[href*="item="]').forEach((a) => {
+    const href = a.getAttribute("href") || "";
+    const text = a.text.trim();
     const idMatch = href.match(/item=(\d+)/);
     if (!idMatch) return;
     const id = Number(idMatch[1]);
 
-    // find a (number) close by
+    // 2) Tente de lire le "(X)" juste après le lien
+    //   - parent innerText peut contenir "Nom (6)"
+    //   - sinon regarde le nœud suivant
+    let after = a.parentNode?.innerText || "";
     let countMatch = after.replace(text, "").match(/\((\d+)\)/);
     if (!countMatch) {
-      // try sibling text
-      const nextText = $(el).next().text();
-      countMatch = nextText.match(/\((\d+)\)/);
+      const next = a.nextSibling?.text || "";
+      countMatch = next.match(/\((\d+)\)/);
     }
     const count = countMatch ? Number(countMatch[1]) : 1;
 
-    // Keep only unique items & prefer biggest count seen
-    const existing = reagents.find(r => r.id === id);
     const fullUrl = href.startsWith("http") ? href : new URL(href, baseUrl).toString();
+    const existing = reagents.find((r) => r.id === id);
     if (existing) {
       existing.count = Math.max(existing.count, count);
     } else {
@@ -68,21 +56,20 @@ function parseReagents(html: string, baseUrl: string): Reagent[] {
     }
   });
 
-  // Heuristic filter: many links on the page are unrelated; keep those near a Reagents/Composants header
-  // Keep items that appear in blocks with titles containing Reagents/Composants/Ingredients.
+  // 3) Ne garder que ce qui est proche d’un titre Reagents/Composants/Ingredients (heuristique)
   const titles = ["reagents", "composants", "ingrédients", "ingredients"];
-  if (reagents.length > 0) {
-    const filtered = reagents.filter(r => {
-      const link = $(`a[href*='item=${r.id}']`).first();
-      const section = link.closest("div,section,li");
-      const heading = section.prevAll("h2,h3,h4").first().text().toLowerCase();
-      return titles.some(t => heading.includes(t));
-    });
-    if (filtered.length > 0) return filtered;
-  }
+  const filtered = reagents.filter((r) => {
+    const selector = `a[href*="item=${r.id}"]`;
+    const first = root.querySelector(selector);
+    if (!first) return false;
+    // remonte quelques niveaux et cherche un heading avant
+    let node = first.parentNode;
+    for (let i = 0; i < 5 && node; i++) node = node.parentNode;
+    const nearbyText = node?.innerText?.toLowerCase() || "";
+    return titles.some((t) => nearbyText.includes(t));
+  });
 
-  // Fallback: return first few unique items found (better than nothing)
-  return reagents.slice(0, 10);
+  return filtered.length > 0 ? filtered : reagents.slice(0, 10);
 }
 
 export async function GET(req: NextRequest) {
@@ -94,9 +81,7 @@ export async function GET(req: NextRequest) {
   }
 
   const base = "https://www.wowhead.com/";
-  const url = urlParam
-    ? urlParam
-    : `${base}mop-classic/fr/item=${encodeURIComponent(idParam!)}`;
+  const url = urlParam ? urlParam : `${base}mop-classic/fr/item=${encodeURIComponent(idParam!)}`;
 
   try {
     const html = await fetchHtml(url);
@@ -106,21 +91,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: e.message ?? "failed" }, { status: 500 });
   }
 }
-
-/* ----- Pages Router version (drop into /pages/api/reagents.ts) -----
-import type { NextApiRequest, NextApiResponse } from "next";
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const urlParam = (req.query.url as string) || "";
-  const idParam = (req.query.id as string) || "";
-  if (!urlParam && !idParam) return res.status(400).json({ error: "Provide ?url or ?id" });
-  const base = "https://www.wowhead.com/";
-  const url = urlParam ? urlParam : `${base}mop-classic/fr/item=${encodeURIComponent(idParam)}`;
-  try {
-    const html = await fetch(url, { headers: { "user-agent": "Mozilla/5.0" } }).then(r => r.text());
-    const reagents = parseReagents(html, url);
-    res.status(200).json({ url, reagents });
-  } catch (e: any) {
-    res.status(500).json({ error: e.message ?? "failed" });
-  }
-}
-*/
