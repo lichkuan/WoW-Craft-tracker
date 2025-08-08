@@ -916,7 +916,7 @@ const RareRecipesSection = () => {
         </h2>
         
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2">
             <input
               type="text"
               placeholder="Nom"
@@ -933,7 +933,7 @@ const RareRecipesSection = () => {
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-2">
             <input
               type="number"
               placeholder="Niveau"
@@ -958,7 +958,7 @@ const RareRecipesSection = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2">
             <select
               value={form.race}
               onChange={e => setForm(prev => ({...prev, race: e.target.value}))}
@@ -981,7 +981,7 @@ const RareRecipesSection = () => {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2">
             <select
               value={form.profession1}
               onChange={e => setForm(prev => ({...prev, profession1: e.target.value}))}
@@ -1045,7 +1045,7 @@ const RareRecipesSection = () => {
         <textarea
           value={importText}
           onChange={e => setImportText(e.target.value)}
-          className="w-full h-64 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none font-mono text-sm"
+          className="w-full h-12 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none font-mono text-sm"
           placeholder="- [Item Name](https://wowhead.com/cata/item=12345)
 - [Autre Item](https://wowhead.com/cata/spell=67890)"
         />
@@ -1272,7 +1272,7 @@ const RareRecipesSection = () => {
         <h1 className="text-5xl font-bold text-red-400 mb-4">WoW Crafting Tracker by Ostie</h1>
         <p className="text-xl text-gray-300 mb-8">Partagez vos métiers World of Warcraft</p>
         
-        <div className="bg-red-900/20 border border-red-700 rounded-2xl p-4 md:p-5 mb-6 text-left grid md:grid-cols-2 gap-4 shadow-sm">
+        <div className="bg-red-900/20 border border-red-700 rounded-2xl p-4 md:p-5 mb-6 text-left grid md:grid-cols-2 gap-2 shadow-sm">
           <h2 className="text-2xl font-bold text-[#C09A1A] mb-4">📋 Instructions</h2>
           <div className="space-y-4 text-gray-200">
             <div>
@@ -1308,7 +1308,7 @@ const RareRecipesSection = () => {
         ) : (
           <div className="space-y-4">
             <h2 className="text-2xl font-extrabold text-[#C09A1A] tracking-wide">Mes personnages</h2>
-            <div className="grid gap-4">
+            <div className="grid gap-2">
               {characters.map(character => (
                 <div key={character.id} className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-red-600">
                   <div className="flex items-center justify-between">
@@ -1353,7 +1353,7 @@ const RareRecipesSection = () => {
         {publicCharacters.length > 0 ? (
           <>
             <p className="text-gray-300 mb-6">Découvrez les personnages partagés par la communauté</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {publicCharacters.map(character => (
                 <div 
                   key={character.shareId}
@@ -1463,7 +1463,7 @@ const RareRecipesSection = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
           <p className="text-xl text-gray-300">Chargement...</p>
         </div>
       </div>
