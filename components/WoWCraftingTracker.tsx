@@ -1786,9 +1786,10 @@ const WoWCraftingTracker: React.FC = () => {
                         Total des recettes :
                       </span>
                       <span className="text-red-400 font-bold">
-                        {Object.values(
-                          character.craftCounts as Record<string, number>
-                        ).reduce((a: number, b: number) => a + b, 0)}
+                        {Object.values(character.craftCounts ?? {}).reduce(
+                          (a: number, b: number) => a + b,
+                          0
+                        )}
                       </span>
                     </div>
                   </div>
