@@ -1215,7 +1215,7 @@ const RareRecipesSection = () => {
                         <div className="mt-2 space-y-1 ml-4">
                           {items.map(item => (
                             <div key={item.id} className="bg-gray-700 rounded-lg p-2 flex items-center justify-between">
-                              <span className="text-yellow-300 text-sm">{item.name}</span>
+                              <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-yellow-300 text-sm hover:underline">{item.name}</a>
                               <a
                                 href={item.url}
                                 target="_blank"
@@ -1478,7 +1478,7 @@ const RareRecipesSection = () => {
         )}
       </main>
 
-      {/* Config Wowhead Tooltips */}
+      {/* Wowhead Tooltips config */}
       <Script id="wh-config" strategy="afterInteractive">
         {`
           var whTooltips = {
@@ -1489,7 +1489,7 @@ const RareRecipesSection = () => {
           };
         `}
       </Script>
-      {/* Widget Wowhead */}
+      {/* Wowhead widget */}
       <Script src="https://wow.zamimg.com/widgets/power.js" strategy="afterInteractive" />
     </div>
   );
