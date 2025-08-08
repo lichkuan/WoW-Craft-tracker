@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import Script from 'next/script';
 import { ChevronDown, ChevronRight, Upload, User, Share, Search, Trash2, Plus, X, Edit, Filter } from 'lucide-react';
 
 interface Character {
@@ -802,7 +803,7 @@ const RareRecipesSection = () => {
                         style={{ minHeight: '48px' }} // Cases moins hautes
                       >
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-white text-sm truncate">{recipe.name}</h4>
+                          <a href={recipe.url} target="_blank" rel="noopener noreferrer" className="font-medium text-white text-sm truncate hover:underline">{recipe.name}</a>
                           <div className="flex flex-wrap gap-2 mt-1 text-xs items-center">
                             {recipe.source && recipe.source !== '-' && (
                               <span className="text-gray-300">{recipe.source}</span>
@@ -1476,6 +1477,20 @@ const RareRecipesSection = () => {
           <ImportView profession={view.replace('import-', '')} />
         )}
       </main>
+
+      {/* Config Wowhead Tooltips */}
+      <Script id="wh-config" strategy="afterInteractive">
+        {`
+          var whTooltips = {
+            colorLinks: true,
+            iconizeLinks: true,
+            renameLinks: true,
+            locale: "fr"
+          };
+        `}
+      </Script>
+      {/* Widget Wowhead */}
+      <Script src="https://wow.zamimg.com/widgets/power.js" strategy="afterInteractive" />
     </div>
   );
 };
