@@ -17,6 +17,7 @@
     "redis": "^4.6.12",
     "tailwindcss": "^3.3.0",
     "cheerio": "^1.0.0-rc.12",
+    "node-html-parser": "^6.1.5",
     "typescript": "^5"
   },
   "scripts": {
