@@ -1,4 +1,3 @@
-// app/api/community/enrich-all/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getRedis } from "../../../../lib/redis";
 import {
@@ -14,7 +13,7 @@ type Craft = {
   url?: string;
   SPELL_ID?: number | string;
   SPELL_URL?: string;
-  spellUrl?: string; // toléré
+  spellUrl?: string;
 };
 
 export const dynamic = "force-dynamic";
@@ -26,11 +25,9 @@ async function enrichArray(
   const out: Craft[] = [];
   for (const r of rows) {
     const ret: Craft = { ...r };
-
     const url = r.url || (r as any).URL || "";
     const spellUrl = r.SPELL_URL || (r as any).spellUrl || "";
 
-    // ITEM -> SPELL
     if (!spellUrl && url) {
       const s = await resolveSpellFromUrlPreferSpell(url);
       if (s && s !== url) {
@@ -39,7 +36,6 @@ async function enrichArray(
         if (m) ret.SPELL_ID = Number(m[1]);
       }
     }
-    // SPELL -> ITEM
     if (!ret.url && (ret.SPELL_URL || spellUrl)) {
       const itemUrl = await resolveItemFromSpellUrl(ret.SPELL_URL || spellUrl!);
       if (itemUrl) ret.url = itemUrl;
@@ -63,17 +59,17 @@ export async function POST(req: NextRequest) {
     .catch(() => ({}));
   const redis = await getRedis();
 
-  // SCAN toutes les clés qui matchent
-  let cursor = "0";
+  // --- BOUCLE SCAN corrigée ---
+  let cursor = 0;
   const keys: string[] = [];
   do {
-    const [next, batch] = await redis.scan(cursor, {
+    const { cursor: next, keys: batch } = await redis.scan(cursor, {
       MATCH: pattern,
       COUNT: 200,
     });
     cursor = next;
     keys.push(...batch);
-  } while (cursor !== "0");
+  } while (cursor !== 0);
 
   if (keys.length === 0) {
     return NextResponse.json({
