@@ -1,0 +1,181 @@
+
+--- a/components/WowheadProvider.tsx
++++ b/components/WowheadProvider.tsx
+@@ -0,0 +1,21 @@
++"use client";
++import { useEffect } from "react";
++import Script from "next/script";
++
++export default function WowheadProvider() {
++  useEffect(() => {
++    if (typeof window !== "undefined") {
++      // @ts-ignore
++      window.whTooltips = {
++        colorLinks: true,
++        iconizeLinks: true,
++        renameLinks: true,
++        locale: "fr_fr",
++      };
++    }
++  }, []);
++
++  return (
++    <Script id="wowhead-tooltips" src="https://wow.zamimg.com/widgets/power.js" strategy="afterInteractive" />
++  );
++}
+
+--- a/components/WowheadLink.tsx
++++ b/components/WowheadLink.tsx
+@@ -0,0 +1,24 @@
++import React from "react";
++
++export function WowheadLink({
++  type,
++  id,
++  slug,
++  children,
++  className,
++}: {
++  type: "item" | "spell";
++  id: number | string;
++  slug?: string;
++  className?: string;
++  children: React.ReactNode;
++}) {
++  const base = "https://www.wowhead.com/mop-classic/fr";
++  const s = slug ? `/${slug}` : "";
++  const href = `${base}/${type}=${id}${s}`;
++  return (
++    <a href={href} target="_blank" rel="noreferrer" className={className}>
++      {children}
++    </a>
++  );
++}
+
+--- a/lib/wowhead.ts
++++ b/lib/wowhead.ts
+@@ -0,0 +1,17 @@
++export async function resolveSpellFromItemUrl(url: string): Promise<number | null> {
++  try {
++    const res = await fetch(url, { redirect: "follow", cache: "no-store" });
++    const finalUrl = res.url || "";
++    const m = finalUrl.match(/\/spell=(\d+)/);
++    if (m) return Number(m[1]);
++    const text = await res.text();
++    const m2 = text.match(/\/spell=(\d+)/);
++    return m2 ? Number(m2[1]) : null;
++  } catch {
++    return null;
++  }
++}
++
++export function itemTeachesAnchor(url: string) {
++  return url.replace(/(#.*)?$/, "#teaches-recipe");
++}
+
+--- a/app/api/enrich-spell/route.ts
++++ b/app/api/enrich-spell/route.ts
+@@ -0,0 +1,25 @@
++import { NextRequest, NextResponse } from "next/server";
++import { resolveSpellFromItemUrl, itemTeachesAnchor } from "@/lib/wowhead";
++
++export async function POST(req: NextRequest) {
++  const { url } = await req.json();
++  if (!url || typeof url !== "string") {
++    return NextResponse.json({ error: "Missing url" }, { status: 400 });
++  }
++
++  if (url.includes("/item=")) {
++    const trial = itemTeachesAnchor(url);
++    let spellId = await resolveSpellFromItemUrl(trial);
++    let method = "redirect-anchor";
++    if (!spellId) {
++      spellId = await resolveSpellFromItemUrl(url);
++      method = "body-scan";
++    }
++    if (spellId) {
++      const spellUrl = url.replace(/\/item=\d+.*/, `/spell=${spellId}`);
++      return NextResponse.json({ spellId, spellUrl, method });
++    }
++  }
++
++  return NextResponse.json({});
++}
+
+--- a/app/api/reagents/route.ts
++++ b/app/api/reagents/route.ts
+@@ -0,0 +1,48 @@
++import { NextRequest, NextResponse } from "next/server";
++
++export async function GET(req: NextRequest) {
++  const url = req.nextUrl.searchParams.get("url") || "";
++  if (!url) return NextResponse.json([], { status: 200 });
++
++  try {
++    const res = await fetch(url, { cache: "no-store" });
++    const html = await res.text();
++
++    const reagBlocks = Array.from(html.matchAll(/<td[^>]*class="iconlarge[^"]*"[^>]*>[\s\S]*?<\/tr>/g));
++    const items: { id: number; name: string; url: string; qty: number }[] = [];
++
++    for (const b of reagBlocks) {
++      const block = b[0];
++      const idm = block.match(/href="[^"]*\/(item|spell)=(\d+)[^"]*"/);
++      const nm = block.match(/>([^<]+)<\/a>/);
++      const qtm = block.match(/<td[^>]*>\s*x?\s*(\d{1,3})\s*<\/td>/);
++      if (idm && nm) {
++        const type = idm[1];
++        const id = Number(idm[2]);
++        const name = nm[1].trim();
++        const qty = qtm ? Number(qtm[1]) : 1;
++        const itemUrl = `https://www.wowhead.com/mop-classic/fr/${type}=${id}`;
++        items.push({ id, name, url: itemUrl, qty });
++      }
++    }
++
++    const blacklist = [/fil/i, /teinture/i, /ficelle/i, /thread/i, /ink/i, /vial/i, /resin/i, /dye/i];
++    let primary = items.filter((it) => it.qty >= 2 && !blacklist.some((r) => r.test(it.name)));
++
++    if (primary.length === 0) {
++      const pool = items.filter((it) => !blacklist.some((r) => r.test(it.name)));
++      primary = pool.sort((a, b) => b.qty - a.qty).slice(0, 2);
++    }
++
++    return NextResponse.json(
++      primary.map((p) => ({
++        id: p.id,
++        name: p.name,
++        url: p.url,
++        quantity: p.qty,
++      }))
++    );
++  } catch {
++    return NextResponse.json([], { status: 200 });
++  }
++}
+
+--- a/app/layout.tsx
++++ b/app/layout.tsx
+@@ -0,0 +1,22 @@
++import './globals.css'
++import type { Metadata } from 'next'
++import { Inter } from 'next/font/google'
++import WowheadProvider from '@/components/WowheadProvider'
++
++const inter = Inter({ subsets: ['latin'] })
++
++export const metadata: Metadata = {
++  title: 'WoW Crafting Tracker',
++  description: 'Mists of Pandaria Classic',
++}
++
++export default function RootLayout({ children }: { children: React.ReactNode }) {
++  return (
++    <html lang="fr">
++      <body className={inter.className}>
++        <WowheadProvider />
++        {children}
++      </body>
++    </html>
++  )
++}

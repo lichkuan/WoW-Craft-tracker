@@ -1,93 +1,48 @@
-// app/api/reagents/route.ts
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 import { NextRequest, NextResponse } from "next/server";
-import { parse } from "node-html-parser";
-
-function getParam(req: NextRequest, key: string) {
-  const url = new URL(req.url);
-  return url.searchParams.get(key);
-}
-
-async function fetchHtml(url: string) {
-  const res = await fetch(url, {
-    headers: {
-      "user-agent": "Mozilla/5.0 (compatible; WoWCraftingTracker/1.0)",
-      "accept-language": "fr,fr-FR;q=0.9,en;q=0.8",
-    },
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(`Wowhead fetch failed: ${res.status}`);
-  return await res.text();
-}
-
-type Reagent = { id: number; name: string; url: string; count: number };
-
-function parseReagents(html: string, baseUrl: string): Reagent[] {
-  const root = parse(html);
-  const reagents: Reagent[] = [];
-
-  // 1) Récupère tous les liens d'items
-  root.querySelectorAll('a[href*="item="]').forEach((a) => {
-    const href = a.getAttribute("href") || "";
-    const text = a.text.trim();
-    const idMatch = href.match(/item=(\d+)/);
-    if (!idMatch) return;
-    const id = Number(idMatch[1]);
-
-    // 2) Tente de lire le "(X)" juste après le lien
-    //   - parent innerText peut contenir "Nom (6)"
-    //   - sinon regarde le nœud suivant
-    let after = a.parentNode?.innerText || "";
-    let countMatch = after.replace(text, "").match(/\((\d+)\)/);
-    if (!countMatch) {
-      const next = a.nextSibling?.text || "";
-      countMatch = next.match(/\((\d+)\)/);
-    }
-    const count = countMatch ? Number(countMatch[1]) : 1;
-
-    const fullUrl = href.startsWith("http") ? href : new URL(href, baseUrl).toString();
-    const existing = reagents.find((r) => r.id === id);
-    if (existing) {
-      existing.count = Math.max(existing.count, count);
-    } else {
-      reagents.push({ id, name: text, url: fullUrl, count });
-    }
-  });
-
-  // 3) Ne garder que ce qui est proche d’un titre Reagents/Composants/Ingredients (heuristique)
-  const titles = ["reagents", "composants", "ingrédients", "ingredients"];
-  const filtered = reagents.filter((r) => {
-    const selector = `a[href*="item=${r.id}"]`;
-    const first = root.querySelector(selector);
-    if (!first) return false;
-    // remonte quelques niveaux et cherche un heading avant
-    let node = first.parentNode;
-    for (let i = 0; i < 5 && node; i++) node = node.parentNode;
-    const nearbyText = node?.innerText?.toLowerCase() || "";
-    return titles.some((t) => nearbyText.includes(t));
-  });
-
-  return filtered.length > 0 ? filtered : reagents.slice(0, 10);
-}
 
 export async function GET(req: NextRequest) {
-  const urlParam = getParam(req, "url");
-  const idParam = getParam(req, "id");
-
-  if (!urlParam && !idParam) {
-    return NextResponse.json({ error: "Provide ?url=WowheadURL or ?id=12345" }, { status: 400 });
-  }
-
-  const base = "https://www.wowhead.com/";
-  const url = urlParam ? urlParam : `${base}mop-classic/fr/item=${encodeURIComponent(idParam!)}`;
+  const url = req.nextUrl.searchParams.get("url") || "";
+  if (!url) return NextResponse.json([], { status: 200 });
 
   try {
-    const html = await fetchHtml(url);
-    const reagents = parseReagents(html, url);
-    return NextResponse.json({ url, reagents });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message ?? "failed" }, { status: 500 });
+    const res = await fetch(url, { cache: "no-store" });
+    const html = await res.text();
+
+    const reagBlocks = Array.from(html.matchAll(/<td[^>]*class="iconlarge[^"]*"[^>]*>[\s\S]*?<\/tr>/g));
+    const items: { id: number; name: string; url: string; qty: number }[] = [];
+
+    for (const b of reagBlocks) {
+      const block = b[0];
+      const idm = block.match(/href="[^"]*\/(item|spell)=(\d+)[^"]*"/);
+      const nm = block.match(/>([^<]+)<\/a>/);
+      const qtm = block.match(/<td[^>]*>\s*x?\s*(\d{1,3})\s*<\/td>/);
+      if (idm && nm) {
+        const type = idm[1];
+        const id = Number(idm[2]);
+        const name = nm[1].trim();
+        const qty = qtm ? Number(qtm[1]) : 1;
+        const itemUrl = `https://www.wowhead.com/mop-classic/fr/${type}=${id}`;
+        items.push({ id, name, url: itemUrl, qty });
+      }
+    }
+
+    const blacklist = [/fil/i, /teinture/i, /ficelle/i, /thread/i, /ink/i, /vial/i, /resin/i, /dye/i];
+    let primary = items.filter((it) => it.qty >= 2 && !blacklist.some((r) => r.test(it.name)));
+
+    if (primary.length === 0) {
+      const pool = items.filter((it) => !blacklist.some((r) => r.test(it.name)));
+      primary = pool.sort((a, b) => b.qty - a.qty).slice(0, 2);
+    }
+
+    return NextResponse.json(
+      primary.map((p) => ({
+        id: p.id,
+        name: p.name,
+        url: p.url,
+        quantity: p.qty,
+      }))
+    );
+  } catch {
+    return NextResponse.json([], { status: 200 });
   }
 }
