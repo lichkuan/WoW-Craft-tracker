@@ -60,7 +60,7 @@ export default function CommunityEnrichPanel({
             value={key}
             onChange={(e) => setKey(e.target.value)}
             className="rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-gray-100"
-            placeholder="community:crafts"
+            placeholder="character:PE2A8V"
           />
         </label>
 
@@ -112,7 +112,7 @@ export default function CommunityEnrichPanel({
         <h4 className="text-sm font-semibold text-amber-300 mb-2">
           Par motif (SCAN Redis)
         </h4>
-        <PatternRunner defaultPattern="community:crafts:*" />
+        <PatternRunner defaultPattern="character:*" />
       </div>
     </div>
   );

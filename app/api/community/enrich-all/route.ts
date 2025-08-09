@@ -1,3 +1,4 @@
+// app/api/community/enrich/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getRedis } from "../../../../lib/redis";
 import {
@@ -13,17 +14,18 @@ type Craft = {
   name?: string;
   source?: string;
   type?: string;
-  url?: string;
-  SPELL_ID?: number;
-  SPELL_URL?: string;
-  spellUrl?: string;
+  url?: string; // item URL
+  SPELL_ID?: number; // optionnel
+  SPELL_URL?: string; // spell URL
+  spellUrl?: string; // alias toléré
 };
 
 type CharacterDoc = {
+  // … autres champs éventuels
   crafts?: Record<string, Craft[]>;
 };
 
-async function enrichOneCraftArray(
+async function enrichCraftArray(
   rows: Craft[]
 ): Promise<{ out: Craft[]; updated: number }> {
   let updated = 0;
@@ -32,6 +34,8 @@ async function enrichOneCraftArray(
     const ret: Craft = { ...r };
     const url = r.url || (r as any).URL || "";
     const spellUrl = r.SPELL_URL || (r as any).spellUrl || "";
+
+    // ITEM -> SPELL
     if (!spellUrl && url) {
       const s = await resolveSpellFromUrlPreferSpell(url);
       if (s && s !== url) {
@@ -40,10 +44,12 @@ async function enrichOneCraftArray(
         if (m) ret.SPELL_ID = Number(m[1]);
       }
     }
+    // SPELL -> ITEM
     if (!ret.url && (ret.SPELL_URL || spellUrl)) {
       const itemUrl = await resolveItemFromSpellUrl(ret.SPELL_URL || spellUrl!);
       if (itemUrl) ret.url = itemUrl;
     }
+
     if (
       ret.SPELL_URL !== (r as any).SPELL_URL ||
       ret.SPELL_ID !== (r as any).SPELL_ID ||
@@ -68,9 +74,10 @@ async function enrichValue(
 
   // A) clé = Craft[]
   if (Array.isArray(parsed)) {
-    const { out, updated } = await enrichOneCraftArray(parsed);
+    const { out, updated } = await enrichCraftArray(parsed);
     return { newValue: JSON.stringify(out), updated, count: out.length };
   }
+
   // B) clé = document personnage avec crafts par métier
   if (
     parsed &&
@@ -78,20 +85,22 @@ async function enrichValue(
     parsed.crafts &&
     typeof parsed.crafts === "object"
   ) {
-    let totalUpdated = 0,
-      totalCount = 0;
+    let totalUpdated = 0;
+    let totalCount = 0;
     const nextCrafts: Record<string, Craft[]> = {};
-    for (const k of Object.keys(parsed.crafts)) {
-      const list = parsed.crafts[k];
-      if (Array.isArray(list)) {
-        const { out, updated } = await enrichOneCraftArray(list);
-        nextCrafts[k] = out;
+
+    for (const prof of Object.keys(parsed.crafts)) {
+      const arr = parsed.crafts[prof];
+      if (Array.isArray(arr)) {
+        const { out, updated } = await enrichCraftArray(arr);
+        nextCrafts[prof] = out;
         totalUpdated += updated;
         totalCount += out.length;
       } else {
-        nextCrafts[k] = list;
+        nextCrafts[prof] = arr;
       }
     }
+
     const nextDoc: CharacterDoc = { ...parsed, crafts: nextCrafts };
     return {
       newValue: JSON.stringify(nextDoc),
@@ -99,56 +108,32 @@ async function enrichValue(
       count: totalCount,
     };
   }
+
+  // Autre format → on ne touche pas
   return { newValue: raw, updated: 0, count: 0 };
 }
 
 export async function POST(req: NextRequest) {
-  const { pattern = "*", dryRun = true } = await req.json().catch(() => ({}));
+  const body = await req.json().catch(() => ({}));
+  const key = (body?.key ||
+    process.env.COMMUNITY_REDIS_KEY ||
+    "character:UNKNOWN") as string;
+  const dry = Boolean(body?.dryRun);
+
   const redis = await getRedis();
-
-  let cursor = 0;
-  const keys: string[] = [];
-  do {
-    const { cursor: next, keys: batch } = await redis.scan(cursor, {
-      MATCH: pattern,
-      COUNT: 200,
-    });
-    cursor = next;
-    keys.push(...batch);
-  } while (cursor !== 0);
-
-  if (keys.length === 0) {
+  const raw = await redis.get(key);
+  if (!raw)
     return NextResponse.json({
-      pattern,
-      keys: [],
-      totalUpdated: 0,
+      key,
       count: 0,
-      dryRun,
+      updated: 0,
+      message: "Key not found or empty.",
     });
+
+  const { newValue, updated, count } = await enrichValue(raw);
+  if (!dry && updated > 0) {
+    await redis.set(key, newValue);
   }
 
-  let totalUpdated = 0,
-    totalCount = 0;
-  const results: Array<{ key: string; count: number; updated: number }> = [];
-
-  for (const key of keys) {
-    const raw = await redis.get(key);
-    if (!raw) {
-      results.push({ key, count: 0, updated: 0 });
-      continue;
-    }
-    const { newValue, updated, count } = await enrichValue(raw);
-    totalUpdated += updated;
-    totalCount += count;
-    results.push({ key, count, updated });
-    if (!dryRun && updated > 0) await redis.set(key, newValue);
-  }
-
-  return NextResponse.json({
-    pattern,
-    keys: results,
-    totalUpdated,
-    count: totalCount,
-    dryRun,
-  });
+  return NextResponse.json({ key, count, updated, dryRun: dry });
 }
