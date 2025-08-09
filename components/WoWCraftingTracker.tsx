@@ -1078,7 +1078,7 @@ const WoWCraftingTracker: React.FC = () => {
                                   </div>
                                 )}
                               {/* Composants requis */}
-                              <ReagentsBlock recipeUrl={recipe.url} />
+                              <ReagentsBlock recipeUrl={recipe.url} spellUrl={recipe.spellUrl} />
                             </div>
                             <a
                               href={recipe.url}
@@ -1612,7 +1612,7 @@ const WoWCraftingTracker: React.FC = () => {
                                   {item.category}
                                 </span>
                               </div>
-                              <ReagentsBlock recipeUrl={item.url} />
+                              <ReagentsBlock recipeUrl={item.url} spellUrl={item.spellUrl} />
                             </div>
                           ))}
                         </div>

@@ -1,93 +1,59 @@
 "use client";
+import useSWR from "swr";
+import { useEffect, useState } from "react";
 
-import React, { useState, useEffect } from "react";
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-interface Reagent {
-  id: number;
-  name: string;
-  url: string;
-  count: number;
-}
+/**
+ * ReagentsBlock v2
+ * - Préfère l'URL du SPELL si dispo (meilleur taux de réussite).
+ * - Si seule une URL ITEM est fournie, essaye d'enrichir pour obtenir le SPELL.
+ */
+export default function ReagentsBlock({
+  recipeUrl,
+  spellUrl,
+}: { recipeUrl?: string; spellUrl?: string }) {
+  const [resolvedUrl, setResolvedUrl] = useState<string | undefined>(spellUrl || recipeUrl);
 
-interface Props {
-  recipeUrl?: string;
-  recipeId?: number;
-}
-
-const ReagentsBlock: React.FC<Props> = ({ recipeUrl, recipeId }) => {
-  const [reagents, setReagents] = useState<Reagent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(false);
-
+  // Si on n'a qu'une URL ITEM, tente d'obtenir le SPELL côté serveur (une seule fois)
   useEffect(() => {
-    const fetchReagents = async () => {
-      setLoading(true);
-      setError(null);
+    let mounted = true;
+    async function enrich() {
+      if (!resolvedUrl || /\/spell=\d+/.test(resolvedUrl)) return;
+      if (!/\/item=\d+/.test(resolvedUrl)) return;
       try {
-        const param = recipeUrl
-          ? `url=${encodeURIComponent(recipeUrl)}`
-          : recipeId
-          ? `id=${recipeId}`
-          : "";
-        if (!param) {
-          setError("Pas d'URL ou d'ID fourni");
-          setLoading(false);
-          return;
+        const res = await fetch("/api/enrich-spell", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: resolvedUrl }),
+        });
+        const json = await res.json();
+        if (mounted && json?.spellUrl) {
+          setResolvedUrl(json.spellUrl);
         }
-        const res = await fetch(`/api/reagents?${param}`);
-        if (!res.ok) throw new Error(`Erreur API (${res.status})`);
-        const data = await res.json();
-        setReagents(data.reagents || []);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchReagents();
-  }, [recipeUrl, recipeId]);
+      } catch {}
+    }
+    enrich();
+    return () => { mounted = false };
+  }, [resolvedUrl]);
 
-  if (loading) {
-    return <p className="text-sm text-gray-400">Chargement des composants...</p>;
-  }
+  const { data } = useSWR(
+    resolvedUrl ? `/api/reagents?url=${encodeURIComponent(resolvedUrl)}` : null,
+    fetcher
+  );
 
-  if (error) {
-    return <p className="text-sm text-red-400">Erreur : {error}</p>;
-  }
-
-  if (!reagents.length) {
-    return <p className="text-sm text-gray-400">Aucun composant trouvé.</p>;
-  }
+  if (!resolvedUrl || !data || data.length === 0) return null;
 
   return (
-    <div className="mt-1">
-      <button
-        onClick={() => setExpanded((e) => !e)}
-        className="text-xs text-red-400 hover:text-red-300 underline"
-      >
-        {expanded ? "Masquer les composants" : "Voir les composants"}
-      </button>
-      {expanded && (
-        <ul className="mt-1 pl-4 list-disc space-y-1">
-          {reagents.map((r) => (
-            <li key={r.id} className="text-sm text-gray-200">
-              <a
-                href={r.url}
-                className="qtooltip text-red-300 hover:text-red-200"
-                data-wh-icon-size="small"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {r.name}
-              </a>{" "}
-              x{r.count}
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="mt-2 text-xs text-gray-300 flex flex-wrap gap-2 items-center">
+      {data.map((r: any) => (
+        <span key={r.id} className="inline-flex items-center gap-1 bg-gray-800/70 border border-gray-700 rounded px-2 py-0.5">
+          <span className="font-mono">{r.quantity}×</span>
+          <a href={r.url} target="_blank" rel="noreferrer" className="hover:underline">
+            {r.name}
+          </a>
+        </span>
+      ))}
     </div>
   );
-};
-
-export default ReagentsBlock;
+}
