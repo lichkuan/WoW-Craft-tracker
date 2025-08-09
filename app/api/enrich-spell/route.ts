@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveSpellFromItemUrl, itemTeachesAnchor } from "@/lib/wowhead";
+import { resolveSpellFromItemUrl, itemTeachesAnchor } from "../../../lib/wowhead";
 
 export async function POST(req: NextRequest) {
   const { url } = await req.json();

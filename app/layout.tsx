@@ -1,7 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import WowheadProvider from '@/components/WowheadProvider'
+import WowheadProvider from '../components/WowheadProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
