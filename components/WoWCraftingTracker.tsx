@@ -41,8 +41,7 @@ interface Character {
 interface CraftItem {
   id: string;
   name: string;
-  url: string;
-  category: string;
+  url: string; spellUrl?: string; category: string;
 }
 
 interface PublicCharacter extends Character {
@@ -1616,7 +1615,7 @@ const WoWCraftingTracker: React.FC = () => {
                               </div>
                               <ReagentsBlock
                                 recipeUrl={item.url}
-                                spellUrl={item.spellUrl}
+                                spellUrl={"spellUrl" in item ? (item as any).spellUrl : undefined}
                               />
                             </div>
                           ))}
