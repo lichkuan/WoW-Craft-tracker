@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import CommunityEnrichPanel from "@/components/CommunityEnrichPanel";
+import CommunityEnrichPanel from "../../components/CommunityEnrichPanel";
 
 interface Character {
   shareId: string;
