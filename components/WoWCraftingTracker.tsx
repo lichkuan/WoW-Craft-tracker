@@ -137,7 +137,7 @@ const SearchBar = ({
   }, []);
 
   return (
-    <div className="mb-4">
+    <div className="mb-6">
       <div className="bg-gray-800 rounded-lg p-4 border border-red-700 flex items-center space-x-4">
         <Search className="w-5 h-5 text-red-400" />
         <input
@@ -829,8 +829,8 @@ const WoWCraftingTracker: React.FC = () => {
   const RareRecipesSection = () => {
     if (rareRecipesLoading) {
       return (
-        <div className="bg-gray-800 rounded-2xl p-5 border border-red-700 shadow-md mb-6">
-          <div className="flex items-center justify-between mb-5">
+        <div className="bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md mb-8">
+          <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-2">
                 ✨ Recettes Rares
@@ -848,34 +848,18 @@ const WoWCraftingTracker: React.FC = () => {
             </div>
           </div>
         </div>
-      
-                            {/* Crafteurs (chips) */}
-                            {recipe.crafters && recipe.crafters.length > 0 && (
-                              <div className="mt-2 flex flex-wrap gap-2">
-                                {recipe.crafters.map((name) => (
-                                  <span
-                                    key={`${recipe.id}-${name}`}
-                                    className="inline-flex items-center rounded-full border border-emerald-700 bg-emerald-900/40 px-2 py-0.5 text-xs text-emerald-100"
-                                  >
-                                    {name}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            {/* Composants requis */}
-                            <ReagentsBlock recipeUrl={recipe.url} />
-);
+      );
     }
 
     if (rareRecipes.length === 0) {
       return (
-        <div className="bg-gray-800 rounded-lg p-5 border border-red-700 mb-3">
-          <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-5">
+        <div className="bg-gray-800 rounded-lg p-6 border border-red-700 mb-4">
+          <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6">
             ✨ Recettes Rares
           </h2>
           <div className="text-center py-12">
-            <div className="text-6xl mb-3">📜</div>
-            <h3 className="text-2xl font-bold text-[#d8b55c] mb-3">
+            <div className="text-6xl mb-4">📜</div>
+            <h3 className="text-2xl font-bold text-[#d8b55c] mb-4">
               Aucune recette rare détectée
             </h3>
             <p className="text-gray-400">
@@ -906,8 +890,8 @@ const WoWCraftingTracker: React.FC = () => {
     };
 
     return (
-      <div className="bg-gray-800 rounded-2xl p-5 border border-red-700 shadow-md mb-6">
-        <div className="flex items-center justify-between mb-5">
+      <div className="bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-2">
               ✨ Recettes Rares
@@ -929,7 +913,7 @@ const WoWCraftingTracker: React.FC = () => {
         <div className="mb-6 space-y-4">
           {/* Barre de recherche pour les recettes rares */}
           <div className="bg-gray-700 rounded-lg p-4">
-            <div className="flex items-center space-x-4 mb-3">
+            <div className="flex items-center space-x-4 mb-4">
               <Search className="w-5 h-5 text-[#C09A1A]" />
               <input
                 type="text"
@@ -1079,21 +1063,23 @@ const WoWCraftingTracker: React.FC = () => {
                                   </span>
                                 )}
                               </div>
-                            {/* Crafteurs (chips) */}
-                            {recipe.crafters && recipe.crafters.length > 0 && (
-                              <div className="mt-2 flex flex-wrap gap-2">
-                                {recipe.crafters.map((name) => (
-                                  <span
-                                    key={`${recipe.id}-${name}`}
-                                    className="inline-flex items-center rounded-full border border-emerald-700 bg-emerald-900/40 px-2 py-0.5 text-xs text-emerald-100"
-                                  >
-                                    {name}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            {/* Composants requis */}
-                            <ReagentsBlock recipeUrl={recipe.url} />
+                              {/* Crafteurs (chips) */}
+                              {recipe.crafters &&
+                                recipe.crafters.length > 0 && (
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    {recipe.crafters.map((name) => (
+                                      <span
+                                        key={`${recipe.id}-${name}`}
+                                        className="inline-flex items-center rounded-full border border-emerald-700 bg-emerald-900/40 px-2 py-0.5 text-xs text-emerald-100"
+                                      >
+                                        {name}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              {/* Composants requis */}
+                              <ReagentsBlock recipeUrl={recipe.url} />
+                            </div>
                             <a
                               href={recipe.url}
                               target="_blank"
@@ -1174,8 +1160,8 @@ const WoWCraftingTracker: React.FC = () => {
     };
 
     return (
-      <div className="max-w-2xl mx-auto bg-gray-800 rounded-2xl p-5 border border-red-700 shadow-md">
-        <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-5 flex items-center">
+      <div className="max-w-2xl mx-auto bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md">
+        <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6 flex items-center">
           <User className="mr-3" />
           {editMode ? "Modifier le personnage" : "Créer un personnage"}
         </h2>
@@ -1334,13 +1320,13 @@ const WoWCraftingTracker: React.FC = () => {
   };
 
   const ImportView = ({ profession }: { profession: string }) => (
-    <div className="max-w-4xl mx-auto bg-gray-800 rounded-2xl p-5 border border-red-700 shadow-md">
-      <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-5">
+    <div className="max-w-4xl mx-auto bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md">
+      <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6">
         <Upload className="inline mr-3" />
         Importer - {profession}
       </h2>
 
-      <div className="mb-4">
+      <div className="mb-6">
         <label className="block text-red-300 font-semibold mb-2">
           Liste markdown :
         </label>
@@ -1412,7 +1398,7 @@ const WoWCraftingTracker: React.FC = () => {
 
     return (
       <div className="max-w-6xl mx-auto">
-        <div className="bg-gray-800 rounded-2xl p-5 mb-5 border border-red-700 shadow-md hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)] transition">
+        <div className="bg-gray-800 rounded-2xl p-6 mb-6 border border-red-700 shadow-md hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)] transition">
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-4xl font-extrabold text-[#C09A1A] drop-shadow-sm mb-2 transition-colors duration-200 hover:text-yellow-300">
@@ -1477,7 +1463,7 @@ const WoWCraftingTracker: React.FC = () => {
         {filteredProfessionData.map(({ profession, crafts, categories }) => (
           <div
             key={profession}
-            className="bg-gray-800 rounded-2xl border border-red-700 mb-5 shadow-md"
+            className="bg-gray-800 rounded-2xl border border-red-700 mb-6 shadow-md"
           >
             <div className="p-6 border-b border-gray-700">
               <div className="flex justify-between items-center">
@@ -1648,16 +1634,16 @@ const WoWCraftingTracker: React.FC = () => {
 
   const HomeView = () => (
     <div className="max-w-6xl mx-auto text-center">
-      <div className="bg-gray-800 rounded-2xl px-5 py-6 border border-red-700 mb-3 shadow-md">
-        <h1 className="text-5xl font-bold text-red-400 mb-3">
+      <div className="bg-gray-800 rounded-2xl px-6 py-8 border border-red-700 mb-4 shadow-md">
+        <h1 className="text-5xl font-bold text-red-400 mb-4">
           WoW Crafting Tracker by Ostie
         </h1>
-        <p className="text-xl text-gray-300 mb-6">
+        <p className="text-xl text-gray-300 mb-8">
           Partagez vos métiers World of Warcraft
         </p>
 
-        <div className="bg-red-900/20 border border-red-700 rounded-2xl p-4 md:p-5 mb-5 text-left grid md:grid-cols-2 gap-2 shadow-sm">
-          <h2 className="text-2xl font-bold text-[#C09A1A] mb-3">
+        <div className="bg-red-900/20 border border-red-700 rounded-2xl p-4 md:p-5 mb-6 text-left grid md:grid-cols-2 gap-2 shadow-sm">
+          <h2 className="text-2xl font-bold text-[#C09A1A] mb-4">
             📋 Instructions
           </h2>
           <div className="space-y-4 text-gray-200">
@@ -1753,27 +1739,27 @@ const WoWCraftingTracker: React.FC = () => {
 
       <RareRecipesSection />
 
-      <div className="bg-gray-800 rounded-2xl p-5 border border-red-700 shadow-md">
-        <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-5">
+      <div className="bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md">
+        <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6">
           🌟 Communauté
         </h2>
 
         {publicCharacters.length > 0 ? (
           <>
-            <p className="text-gray-300 mb-5">
+            <p className="text-gray-300 mb-6">
               Découvrez les personnages partagés par la communauté
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {publicCharacters.map((character) => (
                 <div
                   key={character.shareId}
-                  className={`bg-gray-700 rounded-lg p-5 border-2 ${
+                  className={`bg-gray-700 rounded-lg p-6 border-2 ${
                     character.faction === "alliance"
                       ? "border-blue-500"
                       : "border-red-500"
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-4">
                     <div>
                       <button
                         onClick={() =>
@@ -1884,11 +1870,11 @@ const WoWCraftingTracker: React.FC = () => {
           </>
         ) : (
           <div className="text-center py-12">
-            <div className="text-6xl mb-3">👥</div>
-            <h3 className="text-2xl font-bold text-red-300 mb-3">
+            <div className="text-6xl mb-4">👥</div>
+            <h3 className="text-2xl font-bold text-red-300 mb-4">
               Aucun personnage partagé
             </h3>
-            <p className="text-gray-400 mb-5">
+            <p className="text-gray-400 mb-6">
               Soyez le premier à partager vos métiers avec la communauté !<br />
               Créez un personnage, ajoutez vos recettes et cliquez sur
               "Partager".
@@ -1919,7 +1905,7 @@ const WoWCraftingTracker: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-3"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
           <p className="text-xl text-gray-300">Chargement...</p>
         </div>
       </div>
