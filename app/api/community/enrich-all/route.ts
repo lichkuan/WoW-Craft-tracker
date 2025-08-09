@@ -5,20 +5,25 @@ import {
   resolveItemFromSpellUrl,
 } from "../../../../lib/wowhead2";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 type Craft = {
   id?: string | number;
   name?: string;
   source?: string;
   type?: string;
   url?: string;
-  SPELL_ID?: number | string;
+  SPELL_ID?: number;
   SPELL_URL?: string;
   spellUrl?: string;
 };
 
-export const dynamic = "force-dynamic";
+type CharacterDoc = {
+  crafts?: Record<string, Craft[]>;
+};
 
-async function enrichArray(
+async function enrichOneCraftArray(
   rows: Craft[]
 ): Promise<{ out: Craft[]; updated: number }> {
   let updated = 0;
@@ -27,7 +32,6 @@ async function enrichArray(
     const ret: Craft = { ...r };
     const url = r.url || (r as any).URL || "";
     const spellUrl = r.SPELL_URL || (r as any).spellUrl || "";
-
     if (!spellUrl && url) {
       const s = await resolveSpellFromUrlPreferSpell(url);
       if (s && s !== url) {
@@ -40,7 +44,6 @@ async function enrichArray(
       const itemUrl = await resolveItemFromSpellUrl(ret.SPELL_URL || spellUrl!);
       if (itemUrl) ret.url = itemUrl;
     }
-
     if (
       ret.SPELL_URL !== (r as any).SPELL_URL ||
       ret.SPELL_ID !== (r as any).SPELL_ID ||
@@ -53,13 +56,56 @@ async function enrichArray(
   return { out, updated };
 }
 
+async function enrichValue(
+  raw: string
+): Promise<{ newValue: string; updated: number; count: number }> {
+  let parsed: any;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { newValue: raw, updated: 0, count: 0 };
+  }
+
+  // A) clé = Craft[]
+  if (Array.isArray(parsed)) {
+    const { out, updated } = await enrichOneCraftArray(parsed);
+    return { newValue: JSON.stringify(out), updated, count: out.length };
+  }
+  // B) clé = document personnage avec crafts par métier
+  if (
+    parsed &&
+    typeof parsed === "object" &&
+    parsed.crafts &&
+    typeof parsed.crafts === "object"
+  ) {
+    let totalUpdated = 0,
+      totalCount = 0;
+    const nextCrafts: Record<string, Craft[]> = {};
+    for (const k of Object.keys(parsed.crafts)) {
+      const list = parsed.crafts[k];
+      if (Array.isArray(list)) {
+        const { out, updated } = await enrichOneCraftArray(list);
+        nextCrafts[k] = out;
+        totalUpdated += updated;
+        totalCount += out.length;
+      } else {
+        nextCrafts[k] = list;
+      }
+    }
+    const nextDoc: CharacterDoc = { ...parsed, crafts: nextCrafts };
+    return {
+      newValue: JSON.stringify(nextDoc),
+      updated: totalUpdated,
+      count: totalCount,
+    };
+  }
+  return { newValue: raw, updated: 0, count: 0 };
+}
+
 export async function POST(req: NextRequest) {
-  const { pattern = "community:crafts:*", dryRun = true } = await req
-    .json()
-    .catch(() => ({}));
+  const { pattern = "*", dryRun = true } = await req.json().catch(() => ({}));
   const redis = await getRedis();
 
-  // --- BOUCLE SCAN corrigée ---
   let cursor = 0;
   const keys: string[] = [];
   do {
@@ -81,7 +127,8 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  let totalUpdated = 0;
+  let totalUpdated = 0,
+    totalCount = 0;
   const results: Array<{ key: string; count: number; updated: number }> = [];
 
   for (const key of keys) {
@@ -90,30 +137,18 @@ export async function POST(req: NextRequest) {
       results.push({ key, count: 0, updated: 0 });
       continue;
     }
-
-    let arr: Craft[] = [];
-    try {
-      arr = JSON.parse(raw);
-      if (!Array.isArray(arr)) throw new Error("not array");
-    } catch {
-      results.push({ key, count: 0, updated: 0 });
-      continue;
-    }
-
-    const { out, updated } = await enrichArray(arr);
+    const { newValue, updated, count } = await enrichValue(raw);
     totalUpdated += updated;
-    results.push({ key, count: arr.length, updated });
-
-    if (!dryRun) {
-      await redis.set(key, JSON.stringify(out));
-    }
+    totalCount += count;
+    results.push({ key, count, updated });
+    if (!dryRun && updated > 0) await redis.set(key, newValue);
   }
 
   return NextResponse.json({
     pattern,
     keys: results,
     totalUpdated,
-    count: results.reduce((a, r) => a + r.count, 0),
+    count: totalCount,
     dryRun,
   });
 }
