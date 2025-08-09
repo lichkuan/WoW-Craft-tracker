@@ -55,8 +55,7 @@ interface RareRecipe {
   name: string;
   type: string;
   profession: string;
-  url: string;
-  source: string; // Ajout
+  url: string; spellUrl?: string; source: string; // Ajout
   crafters: string[];
 }
 
