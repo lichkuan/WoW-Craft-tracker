@@ -854,7 +854,7 @@ const WoWCraftingTracker: React.FC = () => {
                               <div className="mt-2 flex flex-wrap gap-2">
                                 {recipe.crafters.map((name) => (
                                   <span
-                                    key={`${'{'}recipe.id{'}'}-${'{'}name{'}'}`}
+                                    key={`${recipe.id}-${name}`}
                                     className="inline-flex items-center rounded-full border border-emerald-700 bg-emerald-900/40 px-2 py-0.5 text-xs text-emerald-100"
                                   >
                                     {name}
