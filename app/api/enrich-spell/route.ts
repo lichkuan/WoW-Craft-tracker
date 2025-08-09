@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
   // 1) item#teaches-recipe
   {
-    const u = `${itemUrlFR}#teaches-recipe";
+    const u = `${itemUrlFR}#teaches-recipe`;
     const sid = await followForSpellId(u);
     if (sid) return NextResponse.json({ spellId: sid, spellUrl: `${base}/spell=${sid}`, method: "anchor" });
   }
