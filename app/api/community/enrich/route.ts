@@ -1,5 +1,3 @@
-mkdir -p app/api/community/enrich
-cat > app/api/community/enrich/route.ts <<'EOF'
 import { NextRequest, NextResponse } from "next/server";
 import { getRedis } from "../../../../lib/redis";
 import { resolveSpellFromUrlPreferSpell, resolveItemFromSpellUrl } from "../../../../lib/wowhead2";
@@ -12,7 +10,7 @@ type Craft = {
   url?: string;
   SPELL_ID?: number | string;
   SPELL_URL?: string;
-  spellUrl?: string; // tolerate variations
+  spellUrl?: string; // alias toléré
 };
 
 export const dynamic = "force-dynamic";
@@ -41,7 +39,7 @@ export async function POST(req: NextRequest) {
     const url = r.url || (r as any).URL || "";
     const spellUrl = r.SPELL_URL || (r as any).spellUrl || "";
 
-    // Resolve to SPELL if missing
+    // ITEM -> SPELL
     if (!spellUrl && url) {
       const s = await resolveSpellFromUrlPreferSpell(url);
       if (s && s !== url) {
@@ -51,7 +49,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Resolve ITEM if we have only a SPELL
+    // SPELL -> ITEM (si URL manquante)
     if (!ret.url && (ret.SPELL_URL || spellUrl)) {
       const itemUrl = await resolveItemFromSpellUrl(ret.SPELL_URL || spellUrl!);
       if (itemUrl) ret.url = itemUrl;
@@ -72,5 +70,4 @@ export async function POST(req: NextRequest) {
   }
   return NextResponse.json({ key, count: rows.length, updated, dryRun: dry });
 }
-EOF
 
