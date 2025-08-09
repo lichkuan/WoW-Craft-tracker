@@ -18,9 +18,7 @@ async function followForSpellId(url: string): Promise<number | null> {
     const html = await r.text();
     const m2 = html.match(/\/spell=(\d+)/);
     return m2 ? Number(m2[1]) : null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 export async function POST(req: NextRequest) {
@@ -28,33 +26,25 @@ export async function POST(req: NextRequest) {
   if (!url || typeof url !== "string") {
     return NextResponse.json({ error: "Missing url" }, { status: 400 });
   }
-
-  // Force locale FR MoP
   const base = "https://www.wowhead.com/mop-classic/fr";
   const itemUrlFR = url.replace(/https:\/\/www\.wowhead\.com\/mop-classic\/..\//, base + "/");
 
-  // 1) Essai avec slug + #teaches-recipe
+  // 1) item#teaches-recipe
+  {
+    const u = `${itemUrlFR}#teaches-recipe";
+    const sid = await followForSpellId(u);
+    if (sid) return NextResponse.json({ spellId: sid, spellUrl: `${base}/spell=${sid}`, method: "anchor" });
+  }
+  // 2) item/<slug>#teaches-recipe
   if (name) {
     const u = `${itemUrlFR}/${slugify(name)}#teaches-recipe`;
     const sid = await followForSpellId(u);
-    if (sid) {
-      return NextResponse.json({ spellId: sid, spellUrl: `${base}/spell=${sid}`, method: "redirect-slug" });
-    }
+    if (sid) return NextResponse.json({ spellId: sid, spellUrl: `${base}/spell=${sid}`, method: "slug" });
   }
-  // 2) Essai avec #teaches-recipe
-  {
-    const u = `${itemUrlFR}#teaches-recipe`;
-    const sid = await followForSpellId(u);
-    if (sid) {
-      return NextResponse.json({ spellId: sid, spellUrl: `${base}/spell=${sid}`, method: "redirect-anchor" });
-    }
-  }
-  // 3) Fallback: item brut
+  // 3) fallback: item brut
   {
     const sid = await followForSpellId(itemUrlFR);
-    if (sid) {
-      return NextResponse.json({ spellId: sid, spellUrl: `${base}/spell=${sid}`, method: "body-scan" });
-    }
+    if (sid) return NextResponse.json({ spellId: sid, spellUrl: `${base}/spell=${sid}`, method: "body" });
   }
   return NextResponse.json({});
 }
