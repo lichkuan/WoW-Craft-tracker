@@ -1,3 +1,4 @@
+cat > .gitignore << 'EOF'
 node_modules/
 .next/
 out/
@@ -6,4 +7,4 @@ out/
 npm-debug.log*
 yarn-*.log
 .DS_Store
-
+EOF
