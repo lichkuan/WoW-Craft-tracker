@@ -1,132 +1,125 @@
-// app/api/admin/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from 'redis';
+import { NextRequest, NextResponse } from "next/server";
+import { getRedis } from "../../../lib/redis";
 
-const redis = createClient({ url: process.env.REDIS_URL });
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-export async function GET() {
-  try {
-    if (!redis.isReady) {
-      await redis.connect();
-    }
+type CharacterDoc = {
+  shareId?: string;
+  name?: string;
+  server?: string;
+  level?: number;
+  ttl?: number; // -1 = permanent, >0 = temp, <=0 = expired
+  public?: boolean; // flag de partage
+  crafts?: Record<string, any[]>;
+  [k: string]: any;
+};
 
-    // Récupérer toutes les clés des personnages
-    const keys = await redis.keys('character:*');
-    const characters = [];
-
-    for (const key of keys) {
-      try {
-        const characterData = await redis.get(key);
-        const ttl = await redis.ttl(key);
-        
-        if (characterData) {
-          const character = JSON.parse(characterData);
-          const shareId = key.replace('character:', '');
-          
-          characters.push({
-            shareId,
-            key,
-            name: character.name || 'Inconnu',
-            server: character.server || 'Inconnu',
-            level: character.level || 0,
-            ttl: ttl, // -1 = permanent, >0 = expire dans X secondes
-            status: ttl === -1 ? 'permanent' : ttl > 0 ? `expire dans ${Math.round(ttl/3600)}h` : 'expiré',
-            createdDate: 'Non disponible' // Redis ne stocke pas cette info par défaut
-          });
-        }
-      } catch (error) {
-        console.error(`Erreur lors du traitement de ${key}:`, error);
-      }
-    }
-
-    // Trier par nom
-    characters.sort((a, b) => a.name.localeCompare(b.name));
-
-    return NextResponse.json({
-      total: characters.length,
-      characters,
-      summary: {
-        permanent: characters.filter(c => c.ttl === -1).length,
-        temporary: characters.filter(c => c.ttl > 0).length,
-        expired: characters.filter(c => c.ttl === 0).length
-      }
-    });
-
-  } catch (error) {
-    console.error('Erreur admin:', error);
-    return NextResponse.json({ 
-      error: 'Erreur serveur', 
-      details: error instanceof Error ? error.message : 'Unknown error' 
-    }, { status: 500 });
-  }
+function statusFromTtl(ttl?: number): "permanent" | "temporary" | "expired" {
+  if (ttl === -1) return "permanent";
+  if (typeof ttl === "number" && ttl > 0) return "temporary";
+  return "expired";
 }
 
-export async function DELETE(request: NextRequest) {
-  try {
-    const { action, shareId, confirmCode } = await request.json();
+export async function GET(req: NextRequest) {
+  const redis = await getRedis();
+  const { searchParams } = new URL(req.url);
+  const all = searchParams.get("all") === "1";
+  const pattern = "character:*";
 
-    // Code de sécurité simple
-    if (confirmCode !== 'DELETE_ALL_SHARES_2025') {
-      return NextResponse.json({ error: 'Code de confirmation incorrect' }, { status: 403 });
+  // SCAN toutes les clés character:*
+  let cursor = 0;
+  const keys: string[] = [];
+  do {
+    const { cursor: next, keys: batch } = await redis.scan(cursor, {
+      MATCH: pattern,
+      COUNT: 200,
+    });
+    cursor = next;
+    keys.push(...batch);
+  } while (cursor !== 0);
+
+  const characters: Array<{
+    shareId: string;
+    name: string;
+    server: string;
+    level: number;
+    ttl: number;
+    status: string;
+  }> = [];
+
+  let total = 0,
+    permanent = 0,
+    temporary = 0,
+    expired = 0;
+
+  for (const key of keys) {
+    const raw = await redis.get(key);
+    if (!raw) continue;
+
+    let doc: CharacterDoc;
+    try {
+      doc = JSON.parse(raw);
+    } catch {
+      continue;
     }
 
-    if (!redis.isReady) {
-      await redis.connect();
-    }
+    // Filtrage "public" par défaut, mais GET ?all=1 pour tout lister
+    const isPublic = Boolean(doc.public) || Boolean(doc.shareId);
+    if (!all && !isPublic) continue;
 
-    let deletedCount = 0;
+    const shareId = doc.shareId || key.replace("character:", "");
+    const name = doc.name ?? "(inconnu)";
+    const server = doc.server ?? "";
+    const level = typeof doc.level === "number" ? doc.level : 0;
+    const ttl = typeof doc.ttl === "number" ? doc.ttl : -1;
+    const status = statusFromTtl(ttl);
 
-    if (action === 'delete_one' && shareId) {
-      // Supprimer un seul personnage
-      const deleted = await redis.del(`character:${shareId}`);
-      deletedCount = deleted;
-      
-      return NextResponse.json({ 
-        success: true, 
-        message: `Personnage ${shareId} supprimé`,
-        deletedCount 
-      });
+    total++;
+    if (status === "permanent") permanent++;
+    else if (status === "temporary") temporary++;
+    else expired++;
 
-    } else if (action === 'delete_expired') {
-      // Supprimer tous les personnages expirés
-      const keys = await redis.keys('character:*');
-      
-      for (const key of keys) {
-        const ttl = await redis.ttl(key);
-        if (ttl === 0) { // Expiré
-          await redis.del(key);
-          deletedCount++;
-        }
-      }
-
-      return NextResponse.json({ 
-        success: true, 
-        message: `${deletedCount} personnages expirés supprimés`,
-        deletedCount 
-      });
-
-    } else if (action === 'delete_all') {
-      // DANGER: Supprimer TOUS les personnages
-      const keys = await redis.keys('character:*');
-      if (keys.length > 0) {
-        deletedCount = await redis.del(keys);
-      }
-
-      return NextResponse.json({ 
-        success: true, 
-        message: `TOUS les ${deletedCount} personnages ont été supprimés`,
-        deletedCount 
-      });
-
-    } else {
-      return NextResponse.json({ error: 'Action non valide' }, { status: 400 });
-    }
-
-  } catch (error) {
-    console.error('Erreur lors de la suppression:', error);
-    return NextResponse.json({ 
-      error: 'Erreur serveur', 
-      details: error instanceof Error ? error.message : 'Unknown error' 
-    }, { status: 500 });
+    characters.push({ shareId, name, server, level, ttl, status });
   }
+
+  // Tri optionnel: permanents puis temporaires, nom asc
+  characters.sort((a, b) => {
+    const rank = (s: string) =>
+      s === "permanent" ? 0 : s === "temporary" ? 1 : 2;
+    const r = rank(a.status) - rank(b.status);
+    if (r !== 0) return r;
+    return a.name.localeCompare(b.name, "fr");
+  });
+
+  const summary = { total, permanent, temporary, expired };
+  return NextResponse.json({ characters, summary });
+}
+
+export async function DELETE(req: NextRequest) {
+  const redis = await getRedis();
+  const body = await req.json().catch(() => ({} as any));
+  const { action, shareId, confirmCode } = body as {
+    action?: string;
+    shareId?: string;
+    confirmCode?: string;
+  };
+
+  if (action !== "delete_one" || !shareId) {
+    return NextResponse.json(
+      { success: false, error: "Bad request" },
+      { status: 400 }
+    );
+  }
+  if (confirmCode !== "DELETE_ALL_SHARES_2025") {
+    return NextResponse.json(
+      { success: false, error: "Invalid confirm code" },
+      { status: 403 }
+    );
+  }
+
+  const key = `character:${shareId}`;
+  const existed = await redis.del(key);
+
+  return NextResponse.json({ success: true, removed: existed, key });
 }
