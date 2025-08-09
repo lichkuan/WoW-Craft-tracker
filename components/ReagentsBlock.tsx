@@ -1,52 +1,62 @@
 "use client";
-import useSWR from "swr";
 import { useEffect, useState } from "react";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+type Reagent = { id: number; name: string; url: string; quantity: number };
 
 /**
- * ReagentsBlock v2
- * - Préfère l'URL du SPELL si dispo (meilleur taux de réussite).
- * - Si seule une URL ITEM est fournie, essaye d'enrichir pour obtenir le SPELL.
+ * ReagentsBlock
+ * - Préfère l'URL du SPELL si dispo.
+ * - Si seule une URL ITEM est fournie, tente d'enrichir pour obtenir le SPELL (avec slug du nom).
  */
 export default function ReagentsBlock({
   recipeUrl,
   spellUrl,
-}: { recipeUrl?: string; spellUrl?: string }) {
+  recipeName,
+}: { recipeUrl?: string; spellUrl?: string; recipeName?: string }) {
   const [resolvedUrl, setResolvedUrl] = useState<string | undefined>(spellUrl || recipeUrl);
+  const [data, setData] = useState<Reagent[] | null>(null);
 
-  // Si on n'a qu'une URL ITEM, tente d'obtenir le SPELL côté serveur (une seule fois)
+  // Si on n'a qu'une URL ITEM, tenter d'obtenir le SPELL (une seule fois)
   useEffect(() => {
     let mounted = true;
     async function enrich() {
-      if (!resolvedUrl || /\/spell=\d+/.test(resolvedUrl)) return;
-      if (!/\/item=\d+/.test(resolvedUrl)) return;
+      if (!resolvedUrl || /\/spell=\d+/.test(resolvedUrl) || !/\/item=\d+/.test(resolvedUrl)) return;
       try {
         const res = await fetch("/api/enrich-spell", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: resolvedUrl }),
+          body: JSON.stringify({ url: resolvedUrl, name: recipeName || "" }),
         });
         const json = await res.json();
-        if (mounted && json?.spellUrl) {
-          setResolvedUrl(json.spellUrl);
-        }
+        if (mounted && json?.spellUrl) setResolvedUrl(json.spellUrl);
       } catch {}
     }
     enrich();
     return () => { mounted = false };
-  }, [resolvedUrl]);
+  }, [resolvedUrl, recipeName]);
 
-  const { data } = useSWR(
-    resolvedUrl ? `/api/reagents?url=${encodeURIComponent(resolvedUrl)}` : null,
-    fetcher
-  );
+  // Charger les réactifs (idéalement via SPELL)
+  useEffect(() => {
+    let abort = false;
+    async function load() {
+      if (!resolvedUrl) return;
+      try {
+        const r = await fetch(`/api/reagents?url=${encodeURIComponent(resolvedUrl)}`, { cache: "no-store" });
+        const json = await r.json();
+        if (!abort) setData(Array.isArray(json) ? json : []);
+      } catch {
+        if (!abort) setData([]);
+      }
+    }
+    load();
+    return () => { abort = true };
+  }, [resolvedUrl]);
 
   if (!resolvedUrl || !data || data.length === 0) return null;
 
   return (
     <div className="mt-2 text-xs text-gray-300 flex flex-wrap gap-2 items-center">
-      {data.map((r: any) => (
+      {data.map((r) => (
         <span key={r.id} className="inline-flex items-center gap-1 bg-gray-800/70 border border-gray-700 rounded px-2 py-0.5">
           <span className="font-mono">{r.quantity}×</span>
           <a href={r.url} target="_blank" rel="noreferrer" className="hover:underline">
