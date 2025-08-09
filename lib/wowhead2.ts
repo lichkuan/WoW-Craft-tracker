@@ -33,3 +33,16 @@ export async function resolveSpellFromUrlPreferSpell(url: string): Promise<strin
   }
   return normalized;
 }
+
+export async function resolveItemFromSpellUrl(spellUrl: string): Promise<string | null> {
+  try {
+    const normalized = withMopFr(spellUrl);
+    const res = await fetch(normalized, { redirect: "follow", cache: "no-store" });
+    const html = await res.text();
+    // Heuristic: first /item=ID link on the spell page (often the taught item)
+    const m = html.match(/\/(?:mop-classic\/fr\/)?item=(\d+)/);
+    return m ? `https://www.wowhead.com/mop-classic/fr/item=${m[1]}` : null;
+  } catch {
+    return null;
+  }
+}
