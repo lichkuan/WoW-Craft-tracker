@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import CommunityEnrichPanel from "../../components/CommunityEnrichPanel";
+import CommunityEnrichPanel from "@/components/CommunityEnrichPanel";
 
 interface Character {
   shareId: string;
@@ -26,8 +26,8 @@ export default function AdminPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Charger les données depuis l'API admin existante
-      const response = await fetch("/api/admin");
+      // ?all=1 forcé à chaque requête
+      const response = await fetch(`/api/admin?all=1`, { cache: "no-store" });
       if (response.ok) {
         const data = await response.json();
         setCharacters(data.characters || []);
@@ -134,30 +134,29 @@ export default function AdminPage() {
         {/* Actions */}
         <div className="bg-gray-800 rounded-lg p-6 mb-8">
           <h2 className="text-2xl font-bold text-white mb-4">Actions</h2>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* Colonne gauche : tes boutons */}
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={loadData}
-                disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded disabled:opacity-50"
-              >
-                🔄 Actualiser
-              </button>
-              <button
-                onClick={cleanup}
-                disabled={loading}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:opacity-50"
-              >
-                🧹 Nettoyer
-              </button>
-            </div>
-
-            {/* Colonne droite : panneau d’enrichissement */}
-            <CommunityEnrichPanel defaultKey="community:crafts" />
+          <div className="flex flex-wrap gap-4 items-center">
+            <button
+              onClick={loadData}
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded disabled:opacity-50"
+            >
+              🔄 Actualiser
+            </button>
+            <button
+              onClick={cleanup}
+              disabled={loading}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:opacity-50"
+            >
+              🧹 Nettoyer
+            </button>
           </div>
         </div>
+
+        {/* Panneau d'enrichissement */}
+        <section className="mt-6">
+          <h2 className="text-xl font-semibold mb-3">Actions</h2>
+          <CommunityEnrichPanel defaultKey="community:crafts" />
+        </section>
 
         {/* Liste des personnages */}
         {characters.length > 0 ? (
