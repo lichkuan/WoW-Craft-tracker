@@ -1,5 +1,3 @@
-mkdir -p lib
-cat > lib/redis.ts <<'EOF'
 import { createClient, RedisClientType } from "redis";
 
 let client: RedisClientType | null = null;
@@ -13,5 +11,4 @@ export async function getRedis() {
   await client.connect();
   return client;
 }
-EOF
 
