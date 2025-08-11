@@ -1,5 +1,6 @@
 import './globals.css'
-import type { Metadata, ReactNode } from 'next'
+import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
 import { Inter } from 'next/font/google'
 import WowheadProvider from '../components/WowheadProvider'
 
