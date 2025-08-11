@@ -1,5 +1,5 @@
 import './globals.css'
-import type { Metadata } from 'next'
+import type { Metadata, ReactNode } from 'next'
 import { Inter } from 'next/font/google'
 import WowheadProvider from '../components/WowheadProvider'
 
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: 'Mists of Pandaria Classic',
 }
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="fr">
       <body>
