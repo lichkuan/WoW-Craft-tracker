@@ -5,7 +5,6 @@ import React, {
   useState,
   useEffect,
   useCallback,
-  useRef,
   useMemo,
 } from "react";
 import Script from "next/script";
@@ -21,6 +20,7 @@ import {
   X,
   Edit,
   Filter,
+  HelpCircle,
 } from "lucide-react";
 import ReagentsBlock from "./ReagentsBlock";
 
@@ -76,7 +76,7 @@ const RECIPE_TYPE_TO_PROFESSION: Record<string, string> = {
   "Technique de calligraphie": "Calligraphie",
 };
 
-// Composant SearchBar
+// Composant SearchBar —> MAJ IMMÉDIATE (plus de debounce)
 const SearchBar = ({
   searchTerm,
   onSearchChange,
@@ -84,21 +84,6 @@ const SearchBar = ({
   searchTerm: string;
   onSearchChange: (value: string) => void;
 }) => {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleChange = (value: string) => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      onSearchChange(value);
-    }, 300);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, []);
-
   return (
     <div className="mb-6">
       <div className="bg-gray-800 rounded-lg p-4 border border-red-700 flex items-center space-x-4">
@@ -106,7 +91,7 @@ const SearchBar = ({
         <input
           type="text"
           value={searchTerm}
-          onChange={(e) => handleChange(e.target.value)}
+          onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Rechercher une recette..."
           className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
           autoComplete="off"
@@ -126,6 +111,78 @@ const SearchBar = ({
     </div>
   );
 };
+
+// Panneau latéral d’instructions (slide-over)
+function InstructionsDrawer({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <>
+      {/* Overlay */}
+      <div
+        className={`fixed inset-0 bg-black/50 transition-opacity z-40 ${
+          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={onClose}
+      />
+
+      {/* Drawer */}
+      <aside
+        className={`fixed right-0 top-0 h-full w-full max-w-md bg-gray-900 text-white z-50 transform transition-transform duration-300 ease-out border-l border-gray-700 ${
+          open ? "translate-x-0" : "translate-x-full"
+        }`}
+        aria-hidden={!open}
+        aria-label="Panneau d'instructions"
+      >
+        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+          <h2 className="text-xl font-bold text-yellow-400">📋 Instructions</h2>
+          <button
+            onClick={onClose}
+            className="p-2 rounded hover:bg-gray-800"
+            aria-label="Fermer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4 text-sm leading-6">
+          <ol className="space-y-2 list-decimal list-inside">
+            <li>
+              Installez l&apos;addon :{" "}
+              <a
+                href="https://www.curseforge.com/wow/addons/simple-trade-skill-exporter"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-yellow-300 underline"
+              >
+                Simple Trade Skill Exporter
+              </a>
+            </li>
+            <li>
+              Dans le jeu :
+              <ul className="ml-5 mt-1 list-disc space-y-1">
+                <li>Ouvrez votre métier</li>
+                <li>
+                  Tapez :{" "}
+                  <code className="px-2 py-1 rounded bg-gray-800 text-yellow-300">
+                    /tsexport markdown
+                  </code>
+                </li>
+                <li>Copiez avec Ctrl+C</li>
+                <li>Collez dans ce site après avoir créé votre personnage</li>
+                <li>Cliquez sur PARTAGER (important)</li>
+              </ul>
+            </li>
+          </ol>
+        </div>
+      </aside>
+    </>
+  );
+}
 
 const WoWCraftingTracker: React.FC = () => {
   const [view, setView] = useState<
@@ -158,6 +215,7 @@ const WoWCraftingTracker: React.FC = () => {
   const [expandedRareProfessions, setExpandedRareProfessions] = useState<{
     [profession: string]: boolean;
   }>({});
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const professions = [
     "Alchimie",
@@ -207,7 +265,7 @@ const WoWCraftingTracker: React.FC = () => {
   const generateShareId = () =>
     Math.random().toString(36).substring(2, 8).toUpperCase();
 
-  // ✅ versions tolérantes à `undefined`
+  // Helpers tolérants à undefined
   const getProfessionLevelName = (level?: number): string => {
     if (!level || level <= 0) return "Inconnu";
     if (level <= 60) return "Apprenti";
@@ -321,7 +379,7 @@ const WoWCraftingTracker: React.FC = () => {
 
         const name = match[1] ?? "";
         const rawUrl = match[2] ?? "";
-        if (!rawUrl) return null; // garde TS content + évite un includes() sur undefined
+        if (!rawUrl) return null;
 
         let url = rawUrl;
         if (url.includes("/cata/")) {
@@ -804,7 +862,8 @@ const WoWCraftingTracker: React.FC = () => {
               </h2>
               <p className="text-gray-300">
                 Découvrez qui peut crafter les recettes les plus recherchées de
-                MoP Classic
+                MoP Classic, notamment ceux des diverses réputations et loot de raid.
+                Pour les autres crafts, allez directement dans Communauté
               </p>
             </div>
             <div className="text-right">
@@ -869,7 +928,8 @@ const WoWCraftingTracker: React.FC = () => {
             </h2>
             <p className="text-gray-300">
               Découvrez qui peut crafter les recettes les plus recherchées de
-              MoP Classic
+              MoP Classic, notamment ceux des diverses réputations et loot de raid.
+              Pour les autres crafts, allez directement dans Communauté
             </p>
           </div>
           <div className="text-right">
@@ -1310,7 +1370,6 @@ const WoWCraftingTracker: React.FC = () => {
     );
   };
 
-  
   const HomeView = () => (
     <div className="max-w-6xl mx-auto text-center">
       <div className="bg-gray-800 rounded-2xl px-6 py-8 border border-red-700 mb-4 shadow-md">
@@ -1321,40 +1380,26 @@ const WoWCraftingTracker: React.FC = () => {
           Partagez vos métiers World of Warcraft
         </p>
 
-        <div className="bg-red-900/20 border border-red-700 rounded-2xl p-4 md:p-5 mb-6 text-left grid md:grid-cols-2 gap-2 shadow-sm">
-          <h2 className="text-2xl font-bold text-[#C09A1A] mb-4">
-            📋 Instructions
-          </h2>
-          <div className="space-y-4 text-gray-200">
+        {/* On enlève le bloc 2 colonnes et on invite à ouvrir l'aide */}
+        <div className="bg-gray-700/60 border border-gray-600 rounded-2xl p-4 md:p-5 mb-6 text-left">
+          <div className="flex items-start justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-[#d8b55c] mb-2">
-                1. Installez l&apos;addon :
-              </h3>
-              <a
-                href="https://www.curseforge.com/wow/addons/simple-trade-skill-exporter"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded"
-              >
-                Simple Trade Skill Exporter
-              </a>
+              <h2 className="text-2xl font-bold text-[#C09A1A] mb-2">
+                📋 Besoin d&apos;aide ?
+              </h2>
+              <p className="text-gray-200">
+                Cliquez sur le bouton <strong>Instructions</strong> en haut à droite
+                pour afficher le guide détaillé.
+              </p>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-[#d8b55c] mb-2">
-                2. Dans le jeu :
-              </h3>
-              <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Ouvrez votre métier</li>
-                <li>
-                  Tapez :{" "}
-                  <code className="bg-gray-700 px-2 py-1 rounded text-red-300">
-                    /tsexport markdown
-                  </code>
-                </li>
-                <li>Copiez avec Ctrl+C</li>
-                <li>Collez dans ce site</li>
-              </ul>
-            </div>
+            <button
+              onClick={() => setHelpOpen(true)}
+              className="inline-flex items-center gap-2 bg-gray-900 hover:bg-black text-white rounded px-3 py-2 border border-gray-600"
+              type="button"
+            >
+              <HelpCircle className="w-4 h-4" />
+              Instructions
+            </button>
           </div>
         </div>
 
@@ -1570,7 +1615,8 @@ const WoWCraftingTracker: React.FC = () => {
       </div>
     </div>
   );
-const ImportView = ({ profession }: { profession: string }) => (
+
+  const ImportView = ({ profession }: { profession: string }) => (
     <div className="max-w-4xl mx-auto bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md">
       <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6">
         <Upload className="inline mr-3" />
@@ -1585,7 +1631,8 @@ const ImportView = ({ profession }: { profession: string }) => (
           value={importText}
           onChange={(e) => setImportText(e.target.value)}
           className="w-full h-12 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none font-mono text-sm"
-          placeholder="- [Item Name](https://wowhead.com/cata/item=12345)\n- [Autre Item](https://wowhead.com/cata/spell=67890)"
+          placeholder="- [Item Name](https://wowhead.com/cata/item=12345)
+- [Autre Item](https://wowhead.com/cata/spell=67890)"
           aria-label="Zone d'import markdown"
         />
         <p className="text-gray-400 text-sm mt-2">
@@ -1642,7 +1689,6 @@ const ImportView = ({ profession }: { profession: string }) => (
         },
         {}
       );
-
 
       return {
         profession,
@@ -1851,118 +1897,118 @@ const ImportView = ({ profession }: { profession: string }) => (
                         )}
                       </button>
 
-                      {isExpanded && (
-                        <div className="mt-2 space-y-1 ml-4">
-                          {items.map((item) => (
-                            <div key={item.id}>
-                              <div className="group bg-gray-700/70 rounded-xl p-3 md:p-4 flex items-center justify-between border border-gray-600 hover:border-red-500 transition transform hover:-translate-y-[1px] hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)]">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <a
-                                    href={item.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded"
-                                  >
-                                    Wowhead
-                                  </a>
-                                  <a
-                                    href={item.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-red-300 text-sm md:text-base hover:underline truncate"
-                                  >
-                                    {item.name}
-                                  </a>
+                        {isExpanded && (
+                                                <div className="mt-2 space-y-1 ml-4">
+                                                {items.map((item) => (
+                                                    <div key={item.id}>
+                                                    <div className="group bg-gray-700/70 rounded-xl p-3 md:p-4 flex items-center justify-between border border-gray-600 hover:border-red-500 transition transform hover:-translate-y-[1px] hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)]">
+                                                        <div className="flex items-center gap-2 min-w-0">
+                                                        <a
+                                                            href={item.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded"
+                                                        >
+                                                            Wowhead
+                                                        </a>
+                                                        <a
+                                                            href={item.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-red-300 text-sm md:text-base hover:underline truncate"
+                                                        >
+                                                            {item.name}
+                                                        </a>
+                                                        </div>
+                                                        <span className="px-2 py-0.5 rounded bg-gray-900/70 border border-gray-700 text-xs text-[#d8b55c]">
+                                                        {item.category}
+                                                        </span>
+                                                    </div>
+                                                    <ReagentsBlock
+                                                        recipeUrl={item.url}
+                                                        spellUrl={item.spellUrl}
+                                                        recipeName={item.name}
+                                                    />
+                                                    </div>
+                                                ))}
+                                                </div>
+                                            )}
+                                            </div>
+                                        );
+                                        })}
+                                    </div>
+                                    ) : (
+                                    <div className="p-6 text-center text-gray-500">
+                                        <p>Aucune recette</p>
+                                    </div>
+                                    )}
                                 </div>
-                                <span className="px-2 py-0.5 rounded bg-gray-900/70 border border-gray-700 text-xs text-[#d8b55c]">
-                                  {item.category}
-                                </span>
-                              </div>
-                              <ReagentsBlock
-                                recipeUrl={item.url}
-                                spellUrl={item.spellUrl}
-                                recipeName={item.name}
-                              />
+                                ))}
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="p-6 text-center text-gray-500">
-                <p>Aucune recette</p>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  };
+                            );
+                        };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-          <p className="text-xl text-gray-300">Chargement...</p>
-        </div>
-      </div>
-    );
-  }
+                        if (loading) {
+                            return (
+                            <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
+                                <div className="text-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+                                <p className="text-xl text-gray-300">Chargement...</p>
+                                </div>
+                            </div>
+                            );
+                        }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-[#210a0a] to-[#0b0000] text-white">
-      <nav className="bg-gray-800 border-b border-red-700 p-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <button
-            onClick={() => setView("home")}
-            className="text-2xl font-extrabold text-[#C09A1A] tracking-wide hover:text-red-300"
-            type="button"
-          >
-            WoW Crafting Tracker by Ostie
-          </button>
-          <div className="flex items-center">
-            {currentCharacter && view === "character" && (
-              <div className="text-red-300 mr-4">
-                {currentCharacter.name} - {currentCharacter.server}
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
+                        return (
+                            <div className="min-h-screen bg-gradient-to-b from-black via-[#210a0a] to-[#0b0000] text-white">
+                            <nav className="bg-gray-800 border-b border-red-700 p-4">
+                                <div className="max-w-6xl mx-auto flex justify-between items-center">
+                                <button
+                                    onClick={() => setView("home")}
+                                    className="text-2xl font-extrabold text-[#C09A1A] tracking-wide hover:text-red-300"
+                                    type="button"
+                                >
+                                    WoW Crafting Tracker by Ostie
+                                </button>
+                                <div className="flex items-center">
+                                    {currentCharacter && view === "character" && (
+                                    <div className="text-red-300 mr-4">
+                                        {currentCharacter.name} - {currentCharacter.server}
+                                    </div>
+                                    )}
+                                </div>
+                                </div>
+                            </nav>
 
-      <main className="container mx-auto px-4 py-8">
-        {view === "home" && <HomeView />}
-        {view === "create" && <CharacterForm />}
-        {view === "edit" && (
-          <CharacterForm editMode={true} characterToEdit={editingCharacter} />
-        )}
-        {view === "character" && <CharacterView />}
-        {view.startsWith("import-") && (
-          <ImportView profession={view.replace("import-", "")} />
-        )}
-      </main>
+                            <main className="container mx-auto px-4 py-8">
+                                {view === "home" && <HomeView />}
+                                {view === "create" && <CharacterForm />}
+                                {view === "edit" && (
+                                <CharacterForm editMode={true} characterToEdit={editingCharacter} />
+                                )}
+                                {view === "character" && <CharacterView />}
+                                {view.startsWith("import-") && (
+                                <ImportView profession={view.replace("import-", "")} />
+                                )}
+                            </main>
 
-      {/* Wowhead Tooltips */}
-      <Script id="wh-config" strategy="afterInteractive">
-        {`
-            var whTooltips = {
-              colorLinks: true,
-              iconizeLinks: true,
-              renameLinks: true,
-              locale: "fr"
-            };
-          `}
-      </Script>
-      <Script
-        src="https://wow.zamimg.com/widgets/power.js"
-        strategy="afterInteractive"
-      />
-    </div>
-  );
-};
+                            {/* Wowhead Tooltips */}
+                            <Script id="wh-config" strategy="afterInteractive">
+                                {`
+                                    var whTooltips = {
+                                    colorLinks: true,
+                                    iconizeLinks: true,
+                                    renameLinks: true,
+                                    locale: "fr"
+                                    };
+                                `}
+                            </Script>
+                            <Script
+                                src="https://wow.zamimg.com/widgets/power.js"
+                                strategy="afterInteractive"
+                            />
+                            </div>
+                        );
+                        };
 
-export default WoWCraftingTracker;
+                        export default WoWCraftingTracker;
