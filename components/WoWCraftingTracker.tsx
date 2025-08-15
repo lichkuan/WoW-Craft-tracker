@@ -1,8 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
 "use client";
 
-"use client";
-
 import React, {
   useState,
   useEffect,
@@ -79,6 +77,55 @@ const RECIPE_TYPE_TO_PROFESSION: Record<string, string> = {
   "Patron de travail du cuir": "Travail du cuir",
   "Technique de calligraphie": "Calligraphie",
 };
+
+// Barre de recherche pour les recettes rares
+const RareRecipesSearchBar = React.memo(function RareRecipesSearchBar({
+  value,
+  onChange,
+  placeholder = "Rechercher une recette ou un crafteur..."
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  const [local, setLocal] = useState(value);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => { setLocal(value); }, [value]);
+
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => onChange(local), 250);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [local, onChange]);
+
+  return (
+    <div className="bg-gray-700 rounded-lg p-4">
+      <div className="flex items-center gap-4">
+        <Search className="w-5 h-5 text-[#C09A1A]" aria-hidden="true" />
+        <input
+          type="text"
+          value={local}
+          onChange={(e) => setLocal(e.target.value)}
+          placeholder={placeholder}
+          className="flex-1 bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white focus:border-purple-500 focus:outline-none"
+          autoComplete="off"
+          aria-label={placeholder}
+        />
+        {local && (
+          <button
+            type="button"
+            onClick={() => setLocal("")}
+            aria-label="Effacer la recherche"
+            className="text-gray-400 hover:text-white"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+});
 
 // Barre de recherche stable (ne perd plus le focus)
 const SearchBar = React.memo(function SearchBar({
@@ -898,7 +945,7 @@ const WoWCraftingTracker: React.FC = () => {
               <p className="text-gray-300">
                 Découvrez qui peut crafter les recettes les plus recherchées de
                 MoP Classic, notamment ceux des diverses réputations et loot de raid.
-                Pour les autres crafts, allez directement dans Communauté
+                Pour les autres crafts, allez directement dans Communauté sur le personnage souhaité
               </p>
             </div>
             <div className="text-right">
@@ -980,26 +1027,11 @@ const WoWCraftingTracker: React.FC = () => {
           {/* Barre de recherche pour les recettes rares */}
           <div className="bg-gray-700 rounded-lg p-4">
             <div className="flex items-center space-x-4 mb-4">
-              <Search className="w-5 h-5 text-[#C09A1A]" />
-              <input
-                type="text"
+              <RareRecipesSearchBar
                 value={rareRecipeSearchTerm}
-                onChange={(e) => setRareRecipeSearchTerm(e.target.value)}
+                onChange={setRareRecipeSearchTerm}
                 placeholder="Rechercher une recette ou un crafteur..."
-                className="flex-1 bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white focus:border-purple-500 focus:outline-none"
-                autoComplete="off"
-                aria-label="Rechercher une recette rare"
               />
-              {rareRecipeSearchTerm && (
-                <button
-                  onClick={() => setRareRecipeSearchTerm("")}
-                  className="text-gray-400 hover:text-white"
-                  type="button"
-                  aria-label="Effacer la recherche de recettes rares"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
             </div>
           </div>
 

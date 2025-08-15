@@ -22,83 +22,72 @@ async function resolveToSpell(url: string): Promise<string> {
   return base;
 }
 
+/**
+ * Ne récupère QUE les composants de 1er niveau :
+ * - On localise "Composants"
+ * - On prend le PREMIER <ul> qui suit
+ * - On parcourt uniquement ses <li> directs
+ * - On ignore tout <ul> imbriqué (sous-composants)
+ */
 function collectReagentsFromHtml(html: string) {
   type Reag = { id: number; name: string; url: string; qty: number };
+  const out: Reag[] = [];
 
-  const items: Reag[] = [];
-  const chunks = html.split(/Composants/i).slice(1);
+  // 1) Localise la section "Composants"
+  const compIdx = html.search(/Composants/i);
+  if (compIdx === -1) return out;
 
-  for (const ch of chunks) {
-    const block = ch.split(/<h[12][^>]*>|<div class=".*?listview.*?">/i)[0] || ch;
-    const linkRE = /href=\"[^\"]*\/(?:mop-classic\/..\/)?(item|spell)=(\d+)[^\"]*\"[^>]*>([^<]+)<\/a>/g;
-    let m: RegExpExecArray | null;
-    const locals: Reag[] = [];
+  const after = html.slice(compIdx);
 
-    while ((m = linkRE.exec(block))) {
-      const type = (m[1] ?? "item");
-      const id = Number(m[2] ?? "0");
-      const name = (m[3] ?? "").trim();
+  // 2) Récupère UNIQUEMENT le PREMIER <ul> après "Composants"
+  const ulOpenMatch = after.match(/<ul[^>]*>/i);
+  if (!ulOpenMatch) return out;
 
-      const start = typeof m.index === "number" ? m.index : 0;
-      const url = `https://www.wowhead.com/mop-classic/fr/${type}=${id}`;
-      const tail = block.slice(start, start + 200);
+  const ulOpenIdx = after.indexOf(ulOpenMatch[0]) + ulOpenMatch[0].length;
+  const rest = after.slice(ulOpenIdx);
 
-      let qty = 1;
-      const mParen = tail.match(/\((\d{1,3})\)/);
-      const mX = tail.match(/x\s*(\d{1,3})/i);
-      if (mParen && mParen[1]) qty = Number(mParen[1]);
-      else if (mX && mX[1]) qty = Number(mX[1]);
+  // On coupe au premier </ul> (ce UL peut contenir des UL imbriqués,
+  // mais ils seront fermés avant ce </ul> principal)
+  const ulCloseIdx = rest.search(/<\/ul>/i);
+  const ulHtml = ulCloseIdx !== -1 ? rest.slice(0, ulCloseIdx) : rest;
 
-      locals.push({ id, name, url, qty });
-    }
-    if (locals.length) items.push(...locals);
+  // 3) Ne lit que les <li> de CE UL (niveau 1)
+  const liRE = /<li[^>]*>([\s\S]*?)<\/li>/gi;
+  let liMatch: RegExpExecArray | null;
+
+  while ((liMatch = liRE.exec(ulHtml))) {
+    const li = liMatch[1];
+
+    // Lien de l’item au 1er niveau
+    const aMatch = li.match(
+      /href="[^"]*\/(?:mop-classic\/..\/)?(item|spell)=(\d+)[^"]*".*?>([^<]+)<\/a>/i
+    );
+    if (!aMatch) continue;
+
+    const type = aMatch[1];
+    const id = Number(aMatch[2]);
+    const name = (aMatch[3] ?? "").trim();
+    const url = `https://www.wowhead.com/mop-classic/fr/${type}=${id}`;
+
+    // On supprime tout UL imbriqué du LI pour éviter de lire les quantités des sous-niveaux
+    const liTopOnly = li.replace(/<ul[\s\S]*?<\/ul>/gi, "");
+
+    // Quantité : cherche "(3)" sinon "x 3" dans le LI de niveau 1
+    let qty = 1;
+    const mParen = liTopOnly.match(/\((\d{1,3})\)/);
+    const mX = liTopOnly.match(/x\s*(\d{1,3})/i);
+    if (mParen && mParen[1]) qty = Number(mParen[1]);
+    else if (mX && mX[1]) qty = Number(mX[1]);
+
+    out.push({ id, name, url, qty });
   }
 
-  // Fallback si la section "Composants" n'a pas matché
-  if (items.length === 0) {
-    const rowRE = /<tr[^>]*>\s*<td[^>]*class=\"iconlarge[^\"]*\"[\s\S]*?<\/tr>/g;
-    let m: RegExpExecArray | null;
-    while ((m = rowRE.exec(html))) {
-      const row = m[0];
-      const idm = row.match(/href=\"[^\"]*\/(item|spell)=(\d+)[^\"]*\"/);
-      const nm = row.match(/>([^<]+)<\/a>/);
-      const qtm = row.match(/<td[^>]*>\s*(?:x\s*)?(\d{1,3})\s*<\/td>/);
-
-      if (idm && nm) {
-        const type = idm[1];
-        const id = Number(idm[2]);
-        const name = (nm[1] ?? "").trim();
-        const qty = qtm && qtm[1] ? Number(qtm[1]) : 1;
-        const url = `https://www.wowhead.com/mop-classic/fr/${type}=${id}`;
-        items.push({ id, name, url, qty });
-      }
-    }
-  }
-
-  // Dédupe par id en gardant la plus grande quantité observée
+  // 4) Dédupe par id (au cas où)
   const map = new Map<number, Reag>();
-  for (const it of items) {
-    const had = map.get(it.id);
-    if (!had || it.qty > had.qty) map.set(it.id, it);
+  for (const it of out) {
+    if (!map.has(it.id)) map.set(it.id, it);
   }
-  const unique: Reag[] = Array.from(map.values());
-  unique.sort((a, b) => b.qty - a.qty);
-
-  // On retourne 1 à 4 "primaires" : d'abord ceux avec qty>=2, sinon le top 1, puis on complète
-  const primaries: Reag[] = [];
-  const qty2 = unique.filter((x) => x.qty >= 2);
-  primaries.push(...qty2);
-
-  if (primaries.length === 0) {
-    const first = unique[0];
-    if (first) primaries.push(first); // <-- évite unique[0] potentiellement undefined
-  }
-
-  for (const it of unique) {
-    if (primaries.length >= 4) break;
-    if (!primaries.find((p) => p.id === it.id)) primaries.push(it);
-  }
-  return primaries;
+  return Array.from(map.values());
 }
 
 export async function GET(req: NextRequest) {
@@ -109,10 +98,10 @@ export async function GET(req: NextRequest) {
     const spellUrl = await resolveToSpell(url);
     const res = await fetch(spellUrl, { cache: "no-store" });
     const html = await res.text();
-    const primaries = collectReagentsFromHtml(html);
+    const reagents = collectReagentsFromHtml(html);
 
     return NextResponse.json(
-      primaries.map((p) => ({ id: p.id, name: p.name, url: p.url, quantity: p.qty })),
+      reagents.map((p) => ({ id: p.id, name: p.name, url: p.url, quantity: p.qty })),
       { status: 200 }
     );
   } catch {
