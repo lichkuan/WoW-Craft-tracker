@@ -55,8 +55,9 @@ function collectReagentsFromHtml(html: string) {
   const liRE = /<li[^>]*>([\s\S]*?)<\/li>/gi;
   let liMatch: RegExpExecArray | null;
 
-  while ((liMatch = liRE.exec(ulHtml))) {
-    const li = liMatch[1];
+  while ((liMatch = liRE.exec(ulHtml)) !== null) {
+    const li = liMatch[1] ?? "";
+    if (!li) continue;
 
     // Lien de l’item au 1er niveau
     const aMatch = li.match(
