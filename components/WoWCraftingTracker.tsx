@@ -207,39 +207,43 @@ const WoWCraftingTracker: React.FC = () => {
   const generateShareId = () =>
     Math.random().toString(36).substring(2, 8).toUpperCase();
 
-  const getProfessionLevelName = (level: number): string => {
-    if (level >= 1 && level <= 60) return "Apprenti";
-    if (level >= 60 && level <= 140) return "Compagnon";
-    if (level >= 140 && level <= 205) return "Expert";
-    if (level >= 205 && level <= 300) return "Artisan";
-    if (level >= 300 && level <= 350) return "Maître";
-    if (level >= 350 && level <= 425) return "Grand Maître";
-    if (level >= 425 && level <= 500) return "Illustre";
-    if (level >= 500 && level <= 600) return "Zen";
+  // ✅ versions tolérantes à `undefined`
+  const getProfessionLevelName = (level?: number): string => {
+    if (!level || level <= 0) return "Inconnu";
+    if (level <= 60) return "Apprenti";
+    if (level <= 140) return "Compagnon";
+    if (level <= 205) return "Expert";
+    if (level <= 300) return "Artisan";
+    if (level <= 350) return "Maître";
+    if (level <= 425) return "Grand Maître";
+    if (level <= 500) return "Illustre";
+    if (level <= 600) return "Zen";
     return "Inconnu";
   };
 
-  const getProfessionLevelIcon = (level: number): string => {
-    if (level >= 1 && level <= 60) return "⭐";
-    if (level >= 60 && level <= 140) return "⭐⭐";
-    if (level >= 140 && level <= 205) return "⭐⭐⭐";
-    if (level >= 205 && level <= 300) return "🔥";
-    if (level >= 300 && level <= 350) return "💎";
-    if (level >= 350 && level <= 425) return "⚡";
-    if (level >= 425 && level <= 500) return "🌟";
-    if (level >= 500 && level <= 600) return "👑";
+  const getProfessionLevelIcon = (level?: number): string => {
+    if (!level || level <= 0) return "";
+    if (level <= 60) return "⭐";
+    if (level <= 140) return "⭐⭐";
+    if (level <= 205) return "⭐⭐⭐";
+    if (level <= 300) return "🔥";
+    if (level <= 350) return "💎";
+    if (level <= 425) return "⚡";
+    if (level <= 500) return "🌟";
+    if (level <= 600) return "👑";
     return "";
   };
 
-  const getProfessionLevelColor = (level: number): string => {
-    if (level >= 1 && level <= 60) return "text-gray-400";
-    if (level >= 60 && level <= 140) return "text-green-400";
-    if (level >= 140 && level <= 205) return "text-red-400";
-    if (level >= 205 && level <= 300) return "text-orange-400";
-    if (level >= 300 && level <= 350) return "text-red-400";
-    if (level >= 350 && level <= 425) return "text-[#C09A1A]";
-    if (level >= 425 && level <= 500) return "text-blue-400";
-    if (level >= 500 && level <= 600) return "text-pink-400";
+  const getProfessionLevelColor = (level?: number): string => {
+    if (!level || level <= 0) return "text-gray-400";
+    if (level <= 60) return "text-gray-400";
+    if (level <= 140) return "text-green-400";
+    if (level <= 205) return "text-red-400";
+    if (level <= 300) return "text-orange-400";
+    if (level <= 350) return "text-red-400";
+    if (level <= 425) return "text-[#C09A1A]";
+    if (level <= 500) return "text-blue-400";
+    if (level <= 600) return "text-pink-400";
     return "text-gray-400";
   };
 
@@ -1730,18 +1734,18 @@ const ImportView = ({ profession }: { profession: string }) => (
                   <h2 className="text-2xl font-extrabold text-[#C09A1A] tracking-wide">
                     {profession}
                   </h2>
-                  {(currentCharacter.professionLevels?.[profession] || 0) > 0 && (
+                  {(currentCharacter.professionLevels?.[profession] ?? 0) > 0 && (
                     <p
                       className={`text-sm ${getProfessionLevelColor(
-                        currentCharacter.professionLevels[profession]
+                        currentCharacter.professionLevels?.[profession] ?? 0
                       )}`}
                     >
                       {getProfessionLevelIcon(
-                        currentCharacter.professionLevels[profession]
+                        currentCharacter.professionLevels?.[profession] ?? 0
                       )}{" "}
-                      Niveau {currentCharacter.professionLevels[profession]} (
+                      Niveau {currentCharacter.professionLevels?.[profession] ?? 0} (
                       {getProfessionLevelName(
-                        currentCharacter.professionLevels[profession]
+                        currentCharacter.professionLevels?.[profession] ?? 0
                       )}
                       )
                     </p>
