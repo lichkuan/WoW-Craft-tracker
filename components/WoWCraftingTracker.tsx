@@ -1,12 +1,16 @@
 /* eslint-disable react/no-unescaped-entities */
 "use client";
 
+"use client";
+
 import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,     // ⬅️ ajoute/maintiens ceci
   useMemo,
 } from "react";
+
 import Script from "next/script";
 import {
   ChevronDown,
