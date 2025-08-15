@@ -933,27 +933,21 @@ const WoWCraftingTracker: React.FC = () => {
     setExpandedRareProfessions(updates);
   };
 
+// Remplace complètement cette définition
   const RareRecipesSection = () => {
     if (rareRecipesLoading) {
       return (
-        <div className="bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-2">
-                ✨ Recettes Rares
-              </h2>
-              <p className="text-gray-300">
-                Découvrez qui peut crafter les recettes les plus recherchées de
-                MoP Classic, notamment ceux des diverses réputations et loot de raid.
-                Pour les autres crafts, allez directement dans Communauté sur le personnage souhaité
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-[#d8b55c]">
-                {filteredRareRecipes.length}
-              </div>
-              <div className="text-sm text-gray-400">recettes disponibles</div>
-            </div>
+        <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 shadow-md mb-8">
+          <div className="flex flex-col items-start">
+            <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-2">
+              ✨ Recettes rares
+            </h2>
+            <p className="text-gray-300">
+              Découvrez qui peut crafter les recettes les plus recherchées de MoP Classic, notamment ceux des diverses réputations et loot de raid. Pour les autres crafts, allez directement dans Communauté.
+            </p>
+          </div>
+          <div className="mt-4 text-sm text-gray-400">
+            Analyse en cours…
           </div>
         </div>
       );
@@ -961,13 +955,18 @@ const WoWCraftingTracker: React.FC = () => {
 
     if (rareRecipes.length === 0) {
       return (
-        <div className="bg-gray-800 rounded-lg p-6 border border-red-700 mb-4">
-          <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6">
-            ✨ Recettes Rares
-          </h2>
+        <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 shadow-md mb-8">
+          <div className="flex flex-col items-start">
+            <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-2">
+              ✨ Recettes rares
+            </h2>
+            <p className="text-gray-300">
+              Découvrez qui peut crafter les recettes les plus recherchées de MoP Classic, notamment ceux des diverses réputations et loot de raid. Pour les autres crafts, allez directement dans Communauté.
+            </p>
+          </div>
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📜</div>
-            <h3 className="text-2xl font-bold text-[#d8b55c] mb-4">
+            <h3 className="text-2xl font-bold text-[#C09A1A] mb-4">
               Aucune recette rare détectée
             </h3>
             <p className="text-gray-400">
@@ -982,15 +981,13 @@ const WoWCraftingTracker: React.FC = () => {
 
     const recipesByProfession = filteredRareRecipes.reduce<Record<string, RareRecipe[]>>(
       (acc, recipe) => {
-        const key = recipe.profession;
-        const bucket = acc[key] ?? (acc[key] = []);
-        bucket.push(recipe);
+        (acc[recipe.profession] ??= []).push(recipe);
         return acc;
       },
       {}
     );
 
-    const professionIcons: Record<string, string> = {
+    const professionIcons = {
       Enchantement: "✨",
       Joaillerie: "💎",
       Couture: "🧵",
@@ -999,56 +996,60 @@ const WoWCraftingTracker: React.FC = () => {
       Alchimie: "🧪",
       "Travail du cuir": "🦬",
       Calligraphie: "📜",
-    };
+    } as const;
 
     return (
-      <div className="bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-2">
-              ✨ Recettes Rares
-            </h2>
-            <p className="text-gray-300">
-              Découvrez qui peut crafter les recettes les plus recherchées de
-              MoP Classic, notamment ceux des diverses réputations et loot de raid.
-              Pour les autres crafts, allez directement dans Communauté
-            </p>
-          </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-[#d8b55c]">
-              {filteredRareRecipes.length}
-            </div>
-            <div className="text-sm text-gray-400">recettes disponibles</div>
-          </div>
+      <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 shadow-md mb-8">
+        {/* En-tête alignée à gauche + texte demandé */}
+        <div className="flex flex-col items-start mb-6">
+          <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-1">
+            ✨ Recettes rares
+            <span className="ml-3 align-middle text-sm text-gray-400">
+              ({filteredRareRecipes.length})
+            </span>
+          </h2>
+          <p className="text-gray-300">
+            Découvrez qui peut crafter les recettes les plus recherchées de MoP Classic, notamment ceux des diverses réputations et loot de raid. Pour les autres crafts, allez directement dans Communauté.
+          </p>
         </div>
 
-        {/* Contrôles de filtrage et d'expansion */}
+        {/* Contrôles */}
         <div className="mb-6 space-y-4">
-          {/* Barre de recherche pour les recettes rares */}
+          {/* Barre de recherche dédiée aux recettes rares */}
           <div className="bg-gray-700 rounded-lg p-4">
-            <div className="flex items-center space-x-4 mb-4">
-              <RareRecipesSearchBar
+            <div className="flex items-center gap-4">
+              <Search className="w-5 h-5 text-[#C09A1A]" />
+              <input
+                type="text"
                 value={rareRecipeSearchTerm}
-                onChange={setRareRecipeSearchTerm}
-                placeholder="Rechercher une recette ou un crafteur..."
+                onChange={(e) => setRareRecipeSearchTerm(e.target.value)}
+                placeholder="Rechercher une recette ou un crafteur…"
+                className="flex-1 bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
+                autoComplete="off"
               />
+              {rareRecipeSearchTerm && (
+                <button
+                  onClick={() => setRareRecipeSearchTerm("")}
+                  className="text-gray-300 hover:text-white text-sm"
+                  type="button"
+                >
+                  Effacer
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Filtres par profession */}
+          {/* Filtres par métier */}
           <div className="bg-gray-700 rounded-lg p-4">
             <div className="flex items-center mb-3">
               <Filter className="w-5 h-5 text-[#C09A1A] mr-2" />
-              <h3 className="text-lg font-semibold text-[#d8b55c]">
+              <h3 className="text-lg font-semibold text-[#C09A1A]">
                 Filtrer par métier :
               </h3>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {availableProfessions.map((profession) => (
-                <label
-                  key={profession}
-                  className="flex items-center space-x-2 cursor-pointer"
-                >
+                <label key={profession} className="flex items-center gap-2 cursor-pointer text-sm text-gray-200">
                   <input
                     type="checkbox"
                     checked={selectedProfessions.includes(profession)}
@@ -1061,16 +1062,16 @@ const WoWCraftingTracker: React.FC = () => {
                         );
                       }
                     }}
-                    className="rounded"
+                    className="rounded border-gray-500"
                   />
-                  <span className="text-sm text-gray-300">{profession}</span>
+                  <span>{profession}</span>
                 </label>
               ))}
             </div>
             {selectedProfessions.length > 0 && (
               <button
                 onClick={() => setSelectedProfessions([])}
-                className="mt-3 text-sm text-[#C09A1A] hover:text-[#d8b55c]"
+                className="mt-3 text-sm text-[#C09A1A] hover:text-yellow-400"
                 type="button"
               >
                 Effacer tous les filtres
@@ -1082,7 +1083,7 @@ const WoWCraftingTracker: React.FC = () => {
           <div className="flex justify-end">
             <button
               onClick={toggleAllRareRecipes}
-              className="bg-red-700 hover:bg-red-800 border border-[#C09A1A]/30 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
+              className="bg-gray-900 hover:bg-black border border-gray-700 text-white px-4 py-2 rounded flex items-center text-sm"
               type="button"
             >
               {allRareRecipesExpanded ? (
@@ -1100,132 +1101,124 @@ const WoWCraftingTracker: React.FC = () => {
           </div>
         </div>
 
+        {/* Liste groupée par métier */}
         {Object.keys(recipesByProfession).length > 0 ? (
           <div className="space-y-6">
-            {Object.entries(recipesByProfession).map(
-              ([profession, recipes]) => (
+            {Object.entries(recipesByProfession).map(([profession, recipes]) => (
+              <div key={profession} className="border border-gray-600 rounded-lg overflow-hidden">
                 <div
-                  key={profession}
-                  className="border border-gray-600 rounded-lg overflow-hidden"
+                  className="bg-gray-700 px-6 py-4 border-b border-gray-600 cursor-pointer hover:bg-gray-600"
+                  onClick={() =>
+                    setExpandedRareProfessions((prev) => ({
+                      ...prev,
+                      [profession]: !prev[profession],
+                    }))
+                  }
                 >
-                  <div
-                    className="bg-gray-700 px-6 py-4 border-b border-gray-600 cursor-pointer hover:bg-gray-600"
-                    onClick={() =>
-                      setExpandedRareProfessions((prev) => ({
-                        ...prev,
-                        [profession]: !prev[profession],
-                      }))
-                    }
-                  >
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-bold text-red-400 flex items-center">
-                        <span className="text-2xl mr-3">
-                          {professionIcons[
-                            profession as keyof typeof professionIcons
-                          ] || "🔮"}
-                        </span>
-                        {profession}
-                        <span className="ml-3 px-2 py-1 bg-gray-600 rounded text-sm text-gray-300">
-                          {recipes.length} recette
-                          {recipes.length > 1 ? "s" : ""}
-                        </span>
-                      </h3>
-                      {expandedRareProfessions[profession] ? (
-                        <ChevronDown className="w-5 h-5 text-gray-400" />
-                      ) : (
-                        <ChevronRight className="w-5 h-5 text-gray-400" />
-                      )}
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold text-[#C09A1A] flex items-center">
+                      <span className="text-2xl mr-3">
+                        {professionIcons[profession as keyof typeof professionIcons] || "🔮"}
+                      </span>
+                      {profession}
+                      <span className="ml-3 px-2 py-0.5 bg-gray-800 border border-gray-600 rounded text-xs text-gray-200">
+                        {recipes.length} recette{recipes.length > 1 ? "s" : ""}
+                      </span>
+                    </h3>
+                    {expandedRareProfessions[profession] ? (
+                      <ChevronDown className="w-5 h-5 text-gray-300" />
+                    ) : (
+                      <ChevronRight className="w-5 h-5 text-gray-300" />
+                    )}
                   </div>
+                </div>
 
-                  {expandedRareProfessions[profession] && (
-                    <div className="p-6">
-                      <div className="space-y-2">
-                        {recipes.map((recipe) => (
-                          <div
-                            key={recipe.id}
-                            className="group flex items-start justify-between p-3 md:p-4 rounded-xl border bg-gray-700/70 border-gray-600 hover:border-red-500 transition mb-2 shadow-sm transform hover:-translate-y-[1px] hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)]"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <a
-                                href={recipe.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-medium text-white text-sm md:text-base truncate hover:underline"
-                              >
-                                {recipe.name}
-                              </a>
-                              <div className="flex flex-wrap gap-2 mt-1 text-xs items-center">
-                                <span className="px-2 py-0.5 rounded bg-gray-900/70 border border-gray-700 text-xs text-[#d8b55c]">
-                                  {recipe.type}
-                                </span>
-                                {recipe.source && recipe.source !== "-" && (
-                                  <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-600 text-xs text-gray-200">
-                                    {recipe.source}
-                                  </span>
-                                )}
-                              </div>
-                              {/* Crafteurs (chips) */}
-                              {recipe.crafters &&
-                                recipe.crafters.length > 0 && (
-                                  <div className="mt-2 flex flex-wrap gap-2">
-                                    {recipe.crafters.map((name) => (
-                                      <span
-                                        key={`${recipe.id}-${name}`}
-                                        className="inline-flex items-center rounded-full border border-emerald-700 bg-emerald-900/40 px-2 py-0.5 text-xs text-emerald-100"
-                                      >
-                                        {name}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                              {/* Composants requis */}
-                              <ReagentsBlock
-                                recipeUrl={recipe.url}
-                                spellUrl={recipe.spellUrl}
-                                recipeName={recipe.name}
-                              />
-                            </div>
+                {expandedRareProfessions[profession] && (
+                  <div className="p-6">
+                    <div className="space-y-2">
+                      {recipes.map((recipe) => (
+                        <div
+                          key={recipe.id}
+                          className="group flex items-start justify-between p-4 rounded-xl border bg-gray-700/70 border-gray-600 hover:border-[#C09A1A] transition mb-2"
+                        >
+                          <div className="flex-1 min-w-0">
                             <a
                               href={recipe.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="ml-3 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex-shrink-0"
+                              className="font-medium text-white text-sm md:text-base truncate hover:underline"
                             >
-                              Wowhead
+                              {recipe.name}
                             </a>
+                            <div className="flex flex-wrap gap-2 mt-1 text-xs items-center">
+                              <span className="px-2 py-0.5 rounded bg-gray-900/70 border border-gray-700 text-xs text-[#C09A1A]">
+                                {recipe.type}
+                              </span>
+                              {recipe.source && recipe.source !== "-" && (
+                                <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-600 text-xs text-gray-200">
+                                  {recipe.source}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Crafteurs */}
+                            {recipe.crafters && recipe.crafters.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {recipe.crafters.map((name) => (
+                                  <span
+                                    key={`${recipe.id}-${name}`}
+                                    className="inline-flex items-center rounded-full border border-gray-600 bg-gray-800 px-2 py-0.5 text-xs text-gray-100"
+                                  >
+                                    {name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Composants requis (1er niveau uniquement, géré par l'API) */}
+                            <ReagentsBlock
+                              recipeUrl={recipe.url}
+                              spellUrl={recipe.spellUrl}
+                              recipeName={recipe.name}
+                            />
                           </div>
-                        ))}
-                      </div>
+                          <a
+                            href={recipe.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-3 px-3 py-1 bg-black hover:bg-gray-900 border border-gray-600 text-white text-xs rounded flex-shrink-0"
+                          >
+                            Wowhead
+                          </a>
+                        </div>
+                      ))}
                     </div>
-                  )}
-                </div>
-              )
-            )}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-400">
-              Aucune recette trouvée avec les filtres actuels.
-            </p>
+          <div className="text-center py-8 text-gray-400">
+            Aucune recette trouvée avec les filtres actuels.
           </div>
         )}
 
+        {/* Bouton refresh */}
         <div className="mt-6 text-center">
           <button
             onClick={loadRareRecipes}
             disabled={rareRecipesLoading}
-            className="bg-red-700 hover:bg-red-800 border border-[#C09A1A]/30 text-white px-6 py-2 rounded text-sm disabled:opacity-50"
+            className="bg-black hover:bg-gray-900 border border-gray-700 text-white px-6 py-2 rounded text-sm disabled:opacity-50"
             type="button"
           >
-            {rareRecipesLoading
-              ? "Analyse..."
-              : "🔄 Actualiser les recettes rares"}
+            {rareRecipesLoading ? "Analyse..." : "🔄 Actualiser les recettes rares"}
           </button>
         </div>
       </div>
     );
   };
+
 
   const CharacterForm = ({
     editMode = false,
