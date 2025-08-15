@@ -80,49 +80,51 @@ const RECIPE_TYPE_TO_PROFESSION: Record<string, string> = {
   "Technique de calligraphie": "Calligraphie",
 };
 
-// Composant SearchBar — version stable (debounce + focus OK)
-const SearchBar = ({
+// Barre de recherche stable (ne perd plus le focus)
+const SearchBar = React.memo(function SearchBar({
   searchTerm,
   onSearchChange,
   placeholder = "Rechercher une recette...",
+  autoFocus = false,
 }: {
   searchTerm: string;
   onSearchChange: (value: string) => void;
   placeholder?: string;
-}) => {
-  // état local pour refléter immédiatement la saisie
+  autoFocus?: boolean;
+}) {
   const [localValue, setLocalValue] = useState(searchTerm);
-  const timeoutRef = useRef<number | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // garde l'UI en phase si la valeur parent change (ex: bouton "X" externe)
+  // garde en phase si le parent reset la valeur (bouton clear externe, navigation, etc.)
   useEffect(() => {
     setLocalValue(searchTerm);
   }, [searchTerm]);
 
-  // debounce propre côté client
+  // debounce (évite les re-renders coûteux) sans jamais recréer l'input
   useEffect(() => {
-    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-    timeoutRef.current = window.setTimeout(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
       onSearchChange(localValue);
     }, 250);
     return () => {
-      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [localValue, onSearchChange]);
 
   return (
     <div className="mb-6">
-      <div className="bg-gray-800 rounded-lg p-4 border border-red-700 flex items-center space-x-4">
+      <div className="bg-gray-800 rounded-lg p-4 border border-red-700 flex items-center gap-4">
         <Search className="w-5 h-5 text-red-400" aria-hidden="true" />
         <input
-          type="search"
+          ref={inputRef}
+          type="text"                 // <- 'text' (pas 'search') pour éviter les comportements natifs bizarres
           value={localValue}
           onChange={(e) => setLocalValue(e.target.value)}
           placeholder={placeholder}
           className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
           autoComplete="off"
-          inputMode="search"
-          enterKeyHint="search"
+          autoFocus={autoFocus}
           aria-label="Rechercher une recette"
         />
         {localValue && (
@@ -138,7 +140,8 @@ const SearchBar = ({
       </div>
     </div>
   );
-};
+});
+
 
 
 // Panneau latéral d’instructions (slide-over)
