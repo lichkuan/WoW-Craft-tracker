@@ -308,7 +308,39 @@ const WoWCraftingTracker: React.FC = () => {
     const items = text
       .split("\n")
       .filter((line) => line.trim().startsWith("- [") && line.includes("]("))
-      .map((line) => {
+      .map((line) => {[17:35:34.291] Running build in Washington, D.C., USA (East) – iad1
+[17:35:34.292] Build machine configuration: 2 cores, 8 GB
+[17:35:34.345] Cloning github.com/lichkuan/WoW-Craft-tracker (Branch: main, Commit: e4fbb28)
+[17:35:35.187] Cloning completed: 842.000ms
+[17:35:36.237] Restored build cache from previous deployment (G6LJrKCoSJEDUEo51nbdYskTXftP)
+[17:35:39.640] Running "vercel build"
+[17:35:40.143] Vercel CLI 45.0.9
+[17:35:40.527] Installing dependencies...
+[17:35:49.613] 
+[17:35:49.613] added 11 packages, removed 10 packages, and changed 9 packages in 9s
+[17:35:49.613] 
+[17:35:49.614] 170 packages are looking for funding
+[17:35:49.614]   run `npm fund` for details
+[17:35:49.650] Detected Next.js version: 14.2.31
+[17:35:49.657] Running "npm run build"
+[17:35:49.811] 
+[17:35:49.811] > wow-crafting-tracker@0.1.0 build
+[17:35:49.812] > next build
+[17:35:49.812] 
+[17:35:50.561]   ▲ Next.js 14.2.31
+[17:35:50.562]   - Environments: .env.local
+[17:35:50.562] 
+[17:35:50.633]    Creating an optimized production build ...
+[17:36:06.092]  ✓ Compiled successfully
+[17:36:06.093]    Linting and checking validity of types ...
+[17:36:10.295] 
+[17:36:10.296] Failed to compile.
+[17:36:10.296] 
+[17:36:10.296] ./components/WoWCraftingTracker.tsx
+[17:36:10.296] 1658:30  Error: 'HomeView' is not defined.  react/jsx-no-undef
+[17:36:10.296] 
+[17:36:10.296] info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+[17:36:10.332] Error: Command "npm run build" exited with 1
         const match = line.match(/^- \[([^\]]+)\]\(([^)]+)\)$/);
         if (match) {
           let url = match[2];
@@ -1294,7 +1326,278 @@ const WoWCraftingTracker: React.FC = () => {
     );
   };
 
-  const ImportView = ({ profession }: { profession: string }) => (
+  
+  const HomeView = () => (
+    <div className="max-w-6xl mx-auto text-center">
+      <div className="bg-gray-800 rounded-2xl px-6 py-8 border border-red-700 mb-4 shadow-md">
+        <h1 className="text-5xl font-bold text-red-400 mb-4">
+          WoW Crafting Tracker by Ostie
+        </h1>
+        <p className="text-xl text-gray-300 mb-8">
+          Partagez vos métiers World of Warcraft
+        </p>
+
+        <div className="bg-red-900/20 border border-red-700 rounded-2xl p-4 md:p-5 mb-6 text-left grid md:grid-cols-2 gap-2 shadow-sm">
+          <h2 className="text-2xl font-bold text-[#C09A1A] mb-4">
+            📋 Instructions
+          </h2>
+          <div className="space-y-4 text-gray-200">
+            <div>
+              <h3 className="text-lg font-semibold text-[#d8b55c] mb-2">
+                1. Installez l&apos;addon :
+              </h3>
+              <a
+                href="https://www.curseforge.com/wow/addons/simple-trade-skill-exporter"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded"
+              >
+                Simple Trade Skill Exporter
+              </a>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-[#d8b55c] mb-2">
+                2. Dans le jeu :
+              </h3>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Ouvrez votre métier</li>
+                <li>
+                  Tapez :{" "}
+                  <code className="bg-gray-700 px-2 py-1 rounded text-red-300">
+                    /tsexport markdown
+                  </code>
+                </li>
+                <li>Copiez avec Ctrl+C</li>
+                <li>Collez dans ce site</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {characters.length === 0 ? (
+          <button
+            onClick={() => setView("create")}
+            className="bg-red-700 hover:bg-red-800 text-black font-bold py-4 px-8 rounded-lg text-xl"
+            type="button"
+          >
+            Créer mon personnage
+          </button>
+        ) : (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-extrabold text-[#C09A1A] tracking-wide">
+              Mes personnages
+            </h2>
+            <div className="grid gap-2">
+              {characters.map((character) => (
+                <div
+                  key={character.id}
+                  className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-red-600"
+                >
+                  <div className="flex items-center justify-between">
+                    <div
+                      className="flex-1 cursor-pointer"
+                      onClick={() => {
+                        setCurrentCharacter(character);
+                        setView("character");
+                      }}
+                    >
+                      <h3 className="text-xl font-semibold text-[#d8b55c]">
+                        {character.name}
+                      </h3>
+                      <p className="text-gray-300">
+                        Niveau {character.level} {character.race}{" "}
+                        {character.class}
+                      </p>
+                      <p className="text-gray-400 text-sm">
+                        {character.server}{" "}
+                        {character.guild && `• ${character.guild}`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => deleteCharacter(character)}
+                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm ml-4"
+                      type="button"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setView("create")}
+              className="bg-red-700 hover:bg-red-800 text-black font-bold py-2 px-6 rounded"
+              type="button"
+            >
+              Ajouter un personnage
+            </button>
+          </div>
+        )}
+      </div>
+
+      <RareRecipesSection />
+
+      <div className="bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md">
+        <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6">
+          🌟 Communauté
+        </h2>
+
+        {publicCharacters.length > 0 ? (
+          <>
+            <p className="text-gray-300 mb-6">
+              Découvrez les personnages partagés par la communauté
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {publicCharacters.map((character) => (
+                <div
+                  key={character.shareId}
+                  className={`bg-gray-700 rounded-lg p-6 border-2 ${
+                    character.faction === "alliance"
+                      ? "border-blue-500"
+                      : "border-red-500"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <button
+                        onClick={() =>
+                          window.open(`?share=${character.shareId}`, "_blank")
+                        }
+                        className="text-xl font-semibold text-[#d8b55c] hover:text-red-400 cursor-pointer"
+                        type="button"
+                      >
+                        {character.name}
+                      </button>
+                      <p className="text-gray-300 text-sm">
+                        Niveau {character.level} {character.race}{" "}
+                        {character.class}
+                      </p>
+                    </div>
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-semibold ${
+                        character.faction === "alliance"
+                          ? "bg-blue-600 text-blue-100"
+                          : "bg-red-600 text-red-100"
+                      }`}
+                    >
+                      {character.faction === "alliance"
+                        ? "🛡️ Alliance"
+                        : "⚔️ Horde"}
+                    </span>
+                  </div>
+
+                  <div className="mb-4 space-y-1">
+                    {character.server && (
+                      <p className="text-gray-400 text-sm">📍 {character.server}</p>
+                    )}
+                    {character.guild && (
+                      <p className="text-gray-400 text-sm">⚔️ {character.guild}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-red-400 font-semibold text-sm">
+                      Métiers principaux :
+                    </h4>
+
+                    {[character.profession1, character.profession2]
+                      .filter(Boolean)
+                      .map((prof) => (
+                        <div
+                          key={prof as string}
+                          className="flex items-center justify-between bg-gray-600 rounded p-2"
+                        >
+                          <div className="flex flex-col">
+                            <span className="text-white text-sm font-medium">
+                              {prof}
+                            </span>
+                            {(character.professionLevels?.[prof as string] || 0) > 0 && (
+                              <span
+                                className={`text-xs ${getProfessionLevelColor(
+                                  character.professionLevels[prof as string]
+                                )}`}
+                              >
+                                {getProfessionLevelIcon(
+                                  character.professionLevels[prof as string]
+                                )}{" "}
+                                Niveau {character.professionLevels[prof as string]} (
+                                {getProfessionLevelName(
+                                  character.professionLevels[prof as string]
+                                )}
+                                )
+                              </span>
+                            )}
+                          </div>
+                          <span className="bg-red-700 text-black px-2 py-1 rounded text-xs font-bold">
+                            {character.craftCounts?.[prof as string] || 0}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-gray-600">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 text-sm">
+                        Total des recettes :
+                      </span>
+                      <span className="text-red-400 font-bold">
+                        {Object.values(character.craftCounts ?? {}).reduce(
+                          (a: number, b: number) => a + b,
+                          0
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 text-center">
+                    <button
+                      onClick={() =>
+                        window.open(`?share=${character.shareId}`, "_blank")
+                      }
+                      className="text-blue-400 text-xs hover:text-[#C09A1A]"
+                      type="button"
+                    >
+                      🔗 Voir le profil complet
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">👥</div>
+            <h3 className="text-2xl font-bold text-red-300 mb-4">
+              Aucun personnage partagé
+            </h3>
+            <p className="text-gray-400 mb-6">
+              Soyez le premier à partager vos métiers avec la communauté !<br />
+              Créez un personnage, ajoutez vos recettes et cliquez sur
+              &quot;Partager&quot;.
+            </p>
+            <div className="bg-blue-900 border border-blue-600 rounded-lg p-4 max-w-md mx-auto">
+              <p className="text-[#d8b55c] text-sm">
+                💡 <strong>Astuce :</strong> Les personnages partagés
+                apparaissent ici automatiquement et permettent à la communauté
+                de voir vos métiers !
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 text-center">
+          <button
+            onClick={loadPublicCharacters}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
+            type="button"
+          >
+            🔄 Actualiser la liste
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+const ImportView = ({ profession }: { profession: string }) => (
     <div className="max-w-4xl mx-auto bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md">
       <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6">
         <Upload className="inline mr-3" />
@@ -1575,7 +1878,7 @@ const WoWCraftingTracker: React.FC = () => {
                         <div className="mt-2 space-y-1 ml-4">
                           {items.map((item) => (
                             <div key={item.id}>
-                              <div className="group bg-gray-700/70 rounded-xl p-3 md:p-4 flex items-center justify_between border border-gray-600 hover:border-red-500 transition transform hover:-translate-y-[1px] hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)]">
+                              <div className="group bg-gray-700/70 rounded-xl p-3 md:p-4 flex items-center justify-between border border-gray-600 hover:border-red-500 transition transform hover:-translate-y-[1px] hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)]">
                                 <div className="flex items-center gap-2 min-w-0">
                                   <a
                                     href={item.url}
