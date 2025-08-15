@@ -78,11 +78,11 @@ const RECIPE_TYPE_TO_PROFESSION: Record<string, string> = {
   "Technique de calligraphie": "Calligraphie",
 };
 
-// Barre de recherche pour les recettes rares
+// Barre de recherche pour les recettes rares (focus stable + debounce)
 const RareRecipesSearchBar = React.memo(function RareRecipesSearchBar({
   value,
   onChange,
-  placeholder = "Rechercher une recette ou un crafteur..."
+  placeholder = "Rechercher une recette ou un crafteur...",
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -90,13 +90,18 @@ const RareRecipesSearchBar = React.memo(function RareRecipesSearchBar({
 }) {
   const [local, setLocal] = useState(value);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setLocal(value); }, [value]);
+  useEffect(() => {
+    setLocal(value);
+  }, [value]);
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => onChange(local), 250);
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [local, onChange]);
 
   return (
@@ -104,11 +109,12 @@ const RareRecipesSearchBar = React.memo(function RareRecipesSearchBar({
       <div className="flex items-center gap-4">
         <Search className="w-5 h-5 text-[#C09A1A]" aria-hidden="true" />
         <input
+          ref={inputRef}
           type="text"
           value={local}
           onChange={(e) => setLocal(e.target.value)}
           placeholder={placeholder}
-          className="flex-1 bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white focus:border-purple-500 focus:outline-none"
+          className="flex-1 bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
           autoComplete="off"
           aria-label={placeholder}
         />
@@ -117,9 +123,9 @@ const RareRecipesSearchBar = React.memo(function RareRecipesSearchBar({
             type="button"
             onClick={() => setLocal("")}
             aria-label="Effacer la recherche"
-            className="text-gray-400 hover:text-white"
+            className="text-gray-300 hover:text-white text-sm"
           >
-            <X className="w-4 h-4" />
+            Effacer
           </button>
         )}
       </div>
@@ -165,7 +171,7 @@ const SearchBar = React.memo(function SearchBar({
         <Search className="w-5 h-5 text-red-400" aria-hidden="true" />
         <input
           ref={inputRef}
-          type="text"                 // <- 'text' (pas 'search') pour éviter les comportements natifs bizarres
+          type="text" // 'text' (pas 'search') pour éviter les comportements natifs bizarres
           value={localValue}
           onChange={(e) => setLocalValue(e.target.value)}
           placeholder={placeholder}
@@ -188,8 +194,6 @@ const SearchBar = React.memo(function SearchBar({
     </div>
   );
 });
-
-
 
 // Panneau latéral d’instructions (slide-over)
 function InstructionsDrawer({
@@ -279,9 +283,12 @@ const WoWCraftingTracker: React.FC = () => {
   );
   const [importText, setImportText] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const onSearch = useCallback((v: string) => {
-    setSearchTerm(v);
-  }, [setSearchTerm]);
+  const onSearch = useCallback(
+    (v: string) => {
+      setSearchTerm(v);
+    },
+    [setSearchTerm]
+  );
   const [expandedCategories, setExpandedCategories] = useState<{
     [key: string]: boolean;
   }>({});
@@ -696,22 +703,23 @@ const WoWCraftingTracker: React.FC = () => {
     }
   }, [publicCharacters]);
 
-  const saveCharacter = useCallback(async (
-    character: Character
-  ): Promise<string | null> => {
-    try {
-      const shareId = generateShareId();
-      const response = await fetch("/api/character", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shareId, character }),
-      });
-      return response.ok ? shareId : null;
-    } catch (error) {
-      console.error("Erreur sauvegarde:", error);
-      return null;
-    }
-  }, []);
+  const saveCharacter = useCallback(
+    async (character: Character): Promise<string | null> => {
+      try {
+        const shareId = generateShareId();
+        const response = await fetch("/api/character", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ shareId, character }),
+        });
+        return response.ok ? shareId : null;
+      } catch (error) {
+        console.error("Erreur sauvegarde:", error);
+        return null;
+      }
+    },
+    []
+  );
 
   const loadSharedCharacter = useCallback(async (shareId: string) => {
     setLoading(true);
@@ -933,7 +941,7 @@ const WoWCraftingTracker: React.FC = () => {
     setExpandedRareProfessions(updates);
   };
 
-// Remplace complètement cette définition
+  // Remplace complètement cette définition
   const RareRecipesSection = () => {
     if (rareRecipesLoading) {
       return (
@@ -946,9 +954,7 @@ const WoWCraftingTracker: React.FC = () => {
               Découvrez qui peut crafter les recettes les plus recherchées de MoP Classic, notamment ceux des diverses réputations et loot de raid. Pour les autres crafts, allez directement dans Communauté.
             </p>
           </div>
-          <div className="mt-4 text-sm text-gray-400">
-            Analyse en cours…
-          </div>
+          <div className="mt-4 text-sm text-gray-400">Analyse en cours…</div>
         </div>
       );
     }
@@ -979,13 +985,12 @@ const WoWCraftingTracker: React.FC = () => {
       );
     }
 
-    const recipesByProfession = filteredRareRecipes.reduce<Record<string, RareRecipe[]>>(
-      (acc, recipe) => {
-        (acc[recipe.profession] ??= []).push(recipe);
-        return acc;
-      },
-      {}
-    );
+    const recipesByProfession = filteredRareRecipes.reduce<
+      Record<string, RareRecipe[]>
+    >((acc, recipe) => {
+      (acc[recipe.profession] ??= []).push(recipe);
+      return acc;
+    }, {});
 
     const professionIcons = {
       Enchantement: "✨",
@@ -1015,29 +1020,12 @@ const WoWCraftingTracker: React.FC = () => {
 
         {/* Contrôles */}
         <div className="mb-6 space-y-4">
-          {/* Barre de recherche dédiée aux recettes rares */}
-          <div className="bg-gray-700 rounded-lg p-4">
-            <div className="flex items-center gap-4">
-              <Search className="w-5 h-5 text-[#C09A1A]" />
-              <input
-                type="text"
-                value={rareRecipeSearchTerm}
-                onChange={(e) => setRareRecipeSearchTerm(e.target.value)}
-                placeholder="Rechercher une recette ou un crafteur…"
-                className="flex-1 bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-                autoComplete="off"
-              />
-              {rareRecipeSearchTerm && (
-                <button
-                  onClick={() => setRareRecipeSearchTerm("")}
-                  className="text-gray-300 hover:text-white text-sm"
-                  type="button"
-                >
-                  Effacer
-                </button>
-              )}
-            </div>
-          </div>
+          {/* Barre de recherche dédiée aux recettes rares (version stable) */}
+          <RareRecipesSearchBar
+            value={rareRecipeSearchTerm}
+            onChange={setRareRecipeSearchTerm}
+            placeholder="Rechercher une recette ou un crafteur…"
+          />
 
           {/* Filtres par métier */}
           <div className="bg-gray-700 rounded-lg p-4">
@@ -1049,7 +1037,10 @@ const WoWCraftingTracker: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {availableProfessions.map((profession) => (
-                <label key={profession} className="flex items-center gap-2 cursor-pointer text-sm text-gray-200">
+                <label
+                  key={profession}
+                  className="flex items-center gap-2 cursor-pointer text-sm text-gray-200"
+                >
                   <input
                     type="checkbox"
                     checked={selectedProfessions.includes(profession)}
@@ -1105,7 +1096,10 @@ const WoWCraftingTracker: React.FC = () => {
         {Object.keys(recipesByProfession).length > 0 ? (
           <div className="space-y-6">
             {Object.entries(recipesByProfession).map(([profession, recipes]) => (
-              <div key={profession} className="border border-gray-600 rounded-lg overflow-hidden">
+              <div
+                key={profession}
+                className="border border-gray-600 rounded-lg overflow-hidden"
+              >
                 <div
                   className="bg-gray-700 px-6 py-4 border-b border-gray-600 cursor-pointer hover:bg-gray-600"
                   onClick={() =>
@@ -1118,7 +1112,9 @@ const WoWCraftingTracker: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <h3 className="text-xl font-bold text-[#C09A1A] flex items-center">
                       <span className="text-2xl mr-3">
-                        {professionIcons[profession as keyof typeof professionIcons] || "🔮"}
+                        {professionIcons[
+                          profession as keyof typeof professionIcons
+                        ] || "🔮"}
                       </span>
                       {profession}
                       <span className="ml-3 px-2 py-0.5 bg-gray-800 border border-gray-600 rounded text-xs text-gray-200">
@@ -1218,7 +1214,6 @@ const WoWCraftingTracker: React.FC = () => {
       </div>
     );
   };
-
 
   const CharacterForm = ({
     editMode = false,
@@ -1448,7 +1443,7 @@ const WoWCraftingTracker: React.FC = () => {
                 📋 Besoin d&apos;aide ?
               </h2>
               <p className="text-gray-200">
-                Cliquez sur le bouton <strong>Instructions</strong> 
+                Cliquez sur le bouton <strong>Instructions</strong>
                 pour afficher le guide détaillé.
               </p>
             </div>
@@ -1498,8 +1493,7 @@ const WoWCraftingTracker: React.FC = () => {
                         {character.class}
                       </p>
                       <p className="text-gray-400 text-sm">
-                        {character.server}{" "}
-                        {character.guild && `• ${character.guild}`}
+                        {character.server} {character.guild && `• ${character.guild}`}
                       </p>
                     </div>
                     <button
@@ -1569,9 +1563,7 @@ const WoWCraftingTracker: React.FC = () => {
                           : "bg-red-600 text-red-100"
                       }`}
                     >
-                      {character.faction === "alliance"
-                        ? "🛡️ Alliance"
-                        : "⚔️ Horde"}
+                      {character.faction === "alliance" ? "🛡️ Alliance" : "⚔️ Horde"}
                     </span>
                   </div>
 
@@ -1596,12 +1588,16 @@ const WoWCraftingTracker: React.FC = () => {
                         const lvl = character.professionLevels?.[key] ?? 0;
 
                         return (
-                          <div key={key} className="flex items-center justify-between bg-gray-600 rounded p-2">
+                          <div
+                            key={key}
+                            className="flex items-center justify-between bg-gray-600 rounded p-2"
+                          >
                             <div className="flex flex-col">
                               <span className="text-white text-sm font-medium">{key}</span>
                               {lvl > 0 && (
                                 <span className={`text-xs ${getProfessionLevelColor(lvl)}`}>
-                                  {getProfessionLevelIcon(lvl)} Niveau {lvl} ({getProfessionLevelName(lvl)})
+                                  {getProfessionLevelIcon(lvl)} Niveau {lvl} (
+                                  {getProfessionLevelName(lvl)})
                                 </span>
                               )}
                             </div>
@@ -1615,9 +1611,7 @@ const WoWCraftingTracker: React.FC = () => {
 
                   <div className="mt-4 pt-4 border-t border-gray-600">
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-400 text-sm">
-                        Total des recettes :
-                      </span>
+                      <span className="text-gray-400 text-sm">Total des recettes :</span>
                       <span className="text-red-400 font-bold">
                         {Object.values(character.craftCounts ?? {}).reduce(
                           (a: number, b: number) => a + b,
@@ -1724,8 +1718,9 @@ const WoWCraftingTracker: React.FC = () => {
   const professionsArray = useMemo(() => {
     if (!currentCharacter) return [] as string[];
     return (
-      [currentCharacter.profession1, currentCharacter.profession2]
-        .filter(Boolean) as string[]
+      [currentCharacter.profession1, currentCharacter.profession2].filter(
+        Boolean
+      ) as string[]
     );
   }, [currentCharacter]);
 
@@ -1775,12 +1770,8 @@ const WoWCraftingTracker: React.FC = () => {
                   Niveau {currentCharacter.level} {currentCharacter.race}{" "}
                   {currentCharacter.class}
                 </p>
-                {currentCharacter.server && (
-                  <p>Serveur: {currentCharacter.server}</p>
-                )}
-                {currentCharacter.guild && (
-                  <p>Guilde: {currentCharacter.guild}</p>
-                )}
+                {currentCharacter.server && <p>Serveur: {currentCharacter.server}</p>}
+                {currentCharacter.guild && <p>Guilde: {currentCharacter.guild}</p>}
                 <p
                   className={
                     currentCharacter.faction === "alliance"
@@ -1788,9 +1779,7 @@ const WoWCraftingTracker: React.FC = () => {
                       : "text-red-400"
                   }
                 >
-                  {currentCharacter.faction === "alliance"
-                    ? "🛡️ Alliance"
-                    : "⚔️ Horde"}
+                  {currentCharacter.faction === "alliance" ? "🛡️ Alliance" : "⚔️ Horde"}
                 </p>
               </div>
             </div>
@@ -1957,112 +1946,112 @@ const WoWCraftingTracker: React.FC = () => {
                         )}
                       </button>
 
-                        {isExpanded && (
-                                                <div className="mt-2 space-y-1 ml-4">
-                                                {items.map((item) => (
-                                                    <div key={item.id}>
-                                                    <div className="group bg-gray-700/70 rounded-xl p-3 md:p-4 flex items-center justify-between border border-gray-600 hover:border-red-500 transition transform hover:-translate-y-[1px] hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)]">
-                                                        <div className="flex items-center gap-2 min-w-0">
-                                                        <a
-                                                            href={item.url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded"
-                                                        >
-                                                            Wowhead
-                                                        </a>
-                                                        <a
-                                                            href={item.url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-red-300 text-sm md:text-base hover:underline truncate"
-                                                        >
-                                                            {item.name}
-                                                        </a>
-                                                        </div>
-                                                        <span className="px-2 py-0.5 rounded bg-gray-900/70 border border-gray-700 text-xs text-[#d8b55c]">
-                                                        {item.category}
-                                                        </span>
-                                                    </div>
-                                                    <ReagentsBlock
-                                                        recipeUrl={item.url}
-                                                        spellUrl={item.spellUrl}
-                                                        recipeName={item.name}
-                                                    />
-                                                    </div>
-                                                ))}
-                                                </div>
-                                            )}
-                                            </div>
-                                        );
-                                        })}
-                                    </div>
-                                    ) : (
-                                    <div className="p-6 text-center text-gray-500">
-                                        <p>Aucune recette</p>
-                                    </div>
-                                    )}
+                      {isExpanded && (
+                        <div className="mt-2 space-y-1 ml-4">
+                          {items.map((item) => (
+                            <div key={item.id}>
+                              <div className="group bg-gray-700/70 rounded-xl p-3 md:p-4 flex items-center justify-between border border-gray-600 hover:border-red-500 transition transform hover:-translate-y-[1px] hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)]">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <a
+                                    href={item.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded"
+                                  >
+                                    Wowhead
+                                  </a>
+                                  <a
+                                    href={item.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-red-300 text-sm md:text-base hover:underline truncate"
+                                  >
+                                    {item.name}
+                                  </a>
                                 </div>
-                                ))}
-                            </div>
-                            );
-                        };
-
-                        if (loading) {
-                            return (
-                            <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
-                                <div className="text-center">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-                                <p className="text-xl text-gray-300">Chargement...</p>
-                                </div>
-                            </div>
-                            );
-                        }
-
-                        return (
-                            <div className="min-h-screen bg-gradient-to-b from-black via-[#210a0a] to-[#0b0000] text-white">
-                            <nav className="bg-gray-800 border-b border-red-700">
-                              <div className="max-w-6xl mx-auto flex justify-end items-center p-3">
-                                {currentCharacter && view === "character" && (
-                                  <div className="text-red-300">
-                                    {currentCharacter.name} - {currentCharacter.server}
-                                  </div>
-                                )}
+                                <span className="px-2 py-0.5 rounded bg-gray-900/70 border border-gray-700 text-xs text-[#d8b55c]">
+                                  {item.category}
+                                </span>
                               </div>
-                            </nav>
-
-                            <main className="container mx-auto px-4 py-8">
-                                {view === "home" && <HomeView />}
-                                {view === "create" && <CharacterForm />}
-                                {view === "edit" && (
-                                <CharacterForm editMode={true} characterToEdit={editingCharacter} />
-                                )}
-                                {view === "character" && <CharacterView />}
-                                {view.startsWith("import-") && (
-                                <ImportView profession={view.replace("import-", "")} />
-                                )}
-                            </main>
-                            <InstructionsDrawer
-                              open={helpOpen}
-                              onClose={() => setHelpOpen(false)}
-                            />
-                            {/* Wowhead Tooltips */}
-                            <Script id="wh-config" strategy="afterInteractive">
-                                {`
-                                    var whTooltips = {
-                                    colorLinks: true,
-                                    iconizeLinks: true,
-                                    renameLinks: true,
-                                    locale: "fr"
-                                    };
-                                `}
-                            </Script>
-                            <Script
-                                src="https://wow.zamimg.com/widgets/power.js"
-                                strategy="afterInteractive"
-                            />
+                              <ReagentsBlock
+                                recipeUrl={item.url}
+                                spellUrl={item.spellUrl}
+                                recipeName={item.name}
+                              />
                             </div>
-                        );
-                        };
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-6 text-center text-gray-500">
+                <p>Aucune recette</p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
 
-                        export default WoWCraftingTracker;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+          <p className="text-xl text-gray-300">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-white text-gray-900">
+      <nav className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto flex justify-end items-center p-3">
+          {currentCharacter && view === "character" && (
+            <div className="text-gray-600">
+              {currentCharacter.name} - {currentCharacter.server}
+            </div>
+          )}
+        </div>
+      </nav>
+
+      <main className="container mx-auto px-4 py-8">
+        {view === "home" && <HomeView />}
+        {view === "create" && <CharacterForm />}
+        {view === "edit" && (
+          <CharacterForm editMode={true} characterToEdit={editingCharacter} />
+        )}
+        {view === "character" && <CharacterView />}
+        {view.startsWith("import-") && (
+          <ImportView profession={view.replace("import-", "")} />
+        )}
+      </main>
+
+      {/* Panneau latéral d’instructions */}
+      <InstructionsDrawer open={helpOpen} onClose={() => setHelpOpen(false)} />
+
+      {/* Wowhead Tooltips */}
+      <Script id="wh-config" strategy="afterInteractive">
+        {`
+          var whTooltips = {
+            colorLinks: true,
+            iconizeLinks: true,
+            renameLinks: true,
+            locale: "fr"
+          };
+        `}
+      </Script>
+      <Script
+        src="https://wow.zamimg.com/widgets/power.js"
+        strategy="afterInteractive"
+      />
+    </div>
+  );
+};
+
+export default WoWCraftingTracker;
