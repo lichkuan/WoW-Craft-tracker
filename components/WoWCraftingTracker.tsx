@@ -309,38 +309,6 @@ const WoWCraftingTracker: React.FC = () => {
       .split("\n")
       .filter((line) => line.trim().startsWith("- [") && line.includes("]("))
       .map((line) => {[17:35:34.291] Running build in Washington, D.C., USA (East) – iad1
-[17:35:34.292] Build machine configuration: 2 cores, 8 GB
-[17:35:34.345] Cloning github.com/lichkuan/WoW-Craft-tracker (Branch: main, Commit: e4fbb28)
-[17:35:35.187] Cloning completed: 842.000ms
-[17:35:36.237] Restored build cache from previous deployment (G6LJrKCoSJEDUEo51nbdYskTXftP)
-[17:35:39.640] Running "vercel build"
-[17:35:40.143] Vercel CLI 45.0.9
-[17:35:40.527] Installing dependencies...
-[17:35:49.613] 
-[17:35:49.613] added 11 packages, removed 10 packages, and changed 9 packages in 9s
-[17:35:49.613] 
-[17:35:49.614] 170 packages are looking for funding
-[17:35:49.614]   run `npm fund` for details
-[17:35:49.650] Detected Next.js version: 14.2.31
-[17:35:49.657] Running "npm run build"
-[17:35:49.811] 
-[17:35:49.811] > wow-crafting-tracker@0.1.0 build
-[17:35:49.812] > next build
-[17:35:49.812] 
-[17:35:50.561]   ▲ Next.js 14.2.31
-[17:35:50.562]   - Environments: .env.local
-[17:35:50.562] 
-[17:35:50.633]    Creating an optimized production build ...
-[17:36:06.092]  ✓ Compiled successfully
-[17:36:06.093]    Linting and checking validity of types ...
-[17:36:10.295] 
-[17:36:10.296] Failed to compile.
-[17:36:10.296] 
-[17:36:10.296] ./components/WoWCraftingTracker.tsx
-[17:36:10.296] 1658:30  Error: 'HomeView' is not defined.  react/jsx-no-undef
-[17:36:10.296] 
-[17:36:10.296] info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
-[17:36:10.332] Error: Command "npm run build" exited with 1
         const match = line.match(/^- \[([^\]]+)\]\(([^)]+)\)$/);
         if (match) {
           let url = match[2];
