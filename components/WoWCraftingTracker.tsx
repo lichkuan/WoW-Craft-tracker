@@ -277,24 +277,27 @@ const WoWCraftingTracker: React.FC = () => {
       const lowerLine = line.toLowerCase();
       const professionLower = profession.toLowerCase();
 
+      // Ex: "... skill 523 ... Enchantement ..."
       if (lowerLine.includes("skill") && lowerLine.includes(professionLower)) {
         const skillMatch = line.match(/skill\s+(\d+)/i);
-        if (skillMatch) return parseInt(skillMatch[1]);
+        const levelStr = skillMatch?.[1];
+        if (levelStr) return parseInt(levelStr, 10);
       }
 
-      const pattern = new RegExp(
-        `${professionLower}.*\\((\\d+)\\/(\\d+)\\)`,
-        "i"
-      );
+      // Ex: "Enchantement (523/600)"
+      const pattern = new RegExp(`${professionLower}.*\\((\\d+)\/(\\d+)\\)`, "i");
       const match = line.match(pattern);
-      if (match) return parseInt(match[1]);
+      const levelFromParen = match?.[1];
+      if (levelFromParen) return parseInt(levelFromParen, 10);
 
+      // Ex: "... Enchantement ... level 523 ..." ou "... niveau 523 ..."
       if (
         lowerLine.includes(professionLower) &&
         (lowerLine.includes("level") || lowerLine.includes("niveau"))
       ) {
         const levelMatch = line.match(/(\d+)/);
-        if (levelMatch) return parseInt(levelMatch[1]);
+        const lm = levelMatch?.[1];
+        if (lm) return parseInt(lm, 10);
       }
     }
 
