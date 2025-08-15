@@ -2,11 +2,16 @@
 import { NextResponse } from 'next/server';
 import { createClient } from 'redis';
 
+const DEBUG = process.env.NODE_ENV !== 'production' && process.env.DEBUG_LOGS === '1';
+const log = (...args: any[]) => { if (DEBUG) console.log(...args); };
+
+// ... puis remplacement de console.log(...) par log(...)
+
 const redis = createClient({ url: process.env.REDIS_URL });
 
 export async function GET() {
   try {
-    console.log('=== DEBUT API CHARACTERS PUBLIC ===');
+    log('=== DEBUT API CHARACTERS PUBLIC ===');
     
     if (!redis.isReady) await redis.connect();
 

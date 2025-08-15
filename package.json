@@ -9,22 +9,24 @@
     "autoprefixer": "^10.0.1",
     "cheerio": "^1.0.0-rc.12",
     "eslint": "^8",
-    "eslint-config-next": "14.0.0",
     "lucide-react": "^0.263.1",
     "next": "^14.2.31",
-    "node-html-parser": "^6.1.5",
     "postcss": "^8",
     "react": "^18",
     "react-dom": "^18",
-    "redis": "^4.7.1",
-    "swr": "^2.3.5",
-    "tailwindcss": "^3.3.0",
-    "typescript": "^5"
+    "redis": "^4",
+    "tailwindcss": "^3.4.1"
+  },
+  "devDependencies": {
+    "eslint-config-next": "^14.2.5"
   },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write ."
   }
 }

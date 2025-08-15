@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from 'redis';
 
 const redis = createClient({ url: process.env.REDIS_URL });
+const DEBUG = process.env.NODE_ENV !== 'production' && process.env.DEBUG_LOGS === '1';
+const log = (...args: any[]) => { if (DEBUG) console.log(...args); }
 
 export async function POST(request: NextRequest) {
   try {

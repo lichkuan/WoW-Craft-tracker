@@ -1,70 +1,43 @@
-// app/api/community/enrich/route.ts
+// app/api/community/enrich-all/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getRedis } from "../../../../lib/redis";
-import {
-  resolveSpellFromUrlPreferSpell,
-  resolveItemFromSpellUrl,
-} from "../../../../lib/wowhead2";
+import { resolveSpellFromUrlPreferSpell, resolveItemFromSpellUrl } from "../../../../lib/wowhead2";
+import { Craft, CharacterDoc } from "../../../../lib/types";
+import { log } from "../../../../lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Craft = {
-  id?: string | number;
-  name?: string;
-  source?: string;
-  type?: string;
-  url?: string; // item URL
-  SPELL_ID?: number; // optionnel
-  SPELL_URL?: string; // spell URL
-  spellUrl?: string; // alias toléré
-};
-
-type CharacterDoc = {
-  // … autres champs éventuels
-  crafts?: Record<string, Craft[]>;
-};
-
-async function enrichCraftArray(
-  rows: Craft[]
-): Promise<{ out: Craft[]; updated: number }> {
+async function enrichCraftArray(rows: Craft[]): Promise<{ out: Craft[]; updated: number }> {
   let updated = 0;
   const out: Craft[] = [];
   for (const r of rows) {
     const ret: Craft = { ...r };
-    const url = r.url || (r as any).URL || "";
-    const spellUrl = r.SPELL_URL || (r as any).spellUrl || "";
+    const url = (r as any).url || (r as any).URL || "";
+    const spellUrl = (r as any).SPELL_URL || (r as any).spellUrl || "";
 
-    // ITEM -> SPELL
     if (!spellUrl && url) {
       const s = await resolveSpellFromUrlPreferSpell(url);
       if (s && s !== url) {
         ret.SPELL_URL = s;
         const m = s.match(/\/spell=(\d+)/);
         if (m) ret.SPELL_ID = Number(m[1]);
+        updated++;
       }
     }
-    // SPELL -> ITEM
-    if (!ret.url && (ret.SPELL_URL || spellUrl)) {
-      const itemUrl = await resolveItemFromSpellUrl(ret.SPELL_URL || spellUrl!);
-      if (itemUrl) ret.url = itemUrl;
-    }
-
-    if (
-      ret.SPELL_URL !== (r as any).SPELL_URL ||
-      ret.SPELL_ID !== (r as any).SPELL_ID ||
-      ret.url !== (r as any).url
-    ) {
-      updated++;
+    if (!ret.url && spellUrl) {
+      const item = await resolveItemFromSpellUrl(spellUrl);
+      if (item) {
+        (ret as any).url = item;
+        updated++;
+      }
     }
     out.push(ret);
   }
   return { out, updated };
 }
 
-async function enrichValue(
-  raw: string
-): Promise<{ newValue: string; updated: number; count: number }> {
+async function enrichValue(raw: string): Promise<{ newValue: string; updated: number; count: number }> {
   let parsed: any;
   try {
     parsed = JSON.parse(raw);
@@ -72,19 +45,12 @@ async function enrichValue(
     return { newValue: raw, updated: 0, count: 0 };
   }
 
-  // A) clé = Craft[]
   if (Array.isArray(parsed)) {
     const { out, updated } = await enrichCraftArray(parsed);
     return { newValue: JSON.stringify(out), updated, count: out.length };
   }
 
-  // B) clé = document personnage avec crafts par métier
-  if (
-    parsed &&
-    typeof parsed === "object" &&
-    parsed.crafts &&
-    typeof parsed.crafts === "object"
-  ) {
+  if (parsed && typeof parsed === "object" && parsed.crafts && typeof parsed.crafts === "object") {
     let totalUpdated = 0;
     let totalCount = 0;
     const nextCrafts: Record<string, Craft[]> = {};
@@ -102,38 +68,33 @@ async function enrichValue(
     }
 
     const nextDoc: CharacterDoc = { ...parsed, crafts: nextCrafts };
-    return {
-      newValue: JSON.stringify(nextDoc),
-      updated: totalUpdated,
-      count: totalCount,
-    };
+    return { newValue: JSON.stringify(nextDoc), updated: totalUpdated, count: totalCount };
   }
 
-  // Autre format → on ne touche pas
   return { newValue: raw, updated: 0, count: 0 };
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
-  const key = (body?.key ||
-    process.env.COMMUNITY_REDIS_KEY ||
-    "character:UNKNOWN") as string;
-  const dry = Boolean(body?.dryRun);
-
+  const { prefix = "character:", dryRun } = await req.json() || {};
+  const dry = !!dryRun;
   const redis = await getRedis();
-  const raw = await redis.get(key);
-  if (!raw)
-    return NextResponse.json({
-      key,
-      count: 0,
-      updated: 0,
-      message: "Key not found or empty.",
-    });
 
-  const { newValue, updated, count } = await enrichValue(raw);
-  if (!dry && updated > 0) {
-    await redis.set(key, newValue);
+  const keys = await redis.keys(`${prefix}*`);
+  let totalUpdated = 0;
+  let totalCount = 0;
+  const perKey: Array<{ key: string; updated: number; count: number }> = [];
+
+  for (const key of keys) {
+    const raw = await redis.get(key);
+    if (!raw) continue;
+    const { newValue, updated, count } = await enrichValue(raw);
+    perKey.push({ key, updated, count });
+    totalUpdated += updated;
+    totalCount += count;
+    if (!dry && updated > 0) {
+      await redis.set(key, newValue);
+    }
   }
 
-  return NextResponse.json({ key, count, updated, dryRun: dry });
+  return NextResponse.json({ prefix, keys: keys.length, updated: totalUpdated, count: totalCount, dryRun: dry, perKey });
 }

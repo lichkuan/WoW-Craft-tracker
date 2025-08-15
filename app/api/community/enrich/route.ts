@@ -1,43 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRedis } from "../../../../lib/redis";
 import { resolveSpellFromUrlPreferSpell, resolveItemFromSpellUrl } from "../../../../lib/wowhead2";
-
-type Craft = {
-  id?: string | number;
-  name?: string;
-  source?: string;
-  type?: string;
-  url?: string;
-  SPELL_ID?: number | string;
-  SPELL_URL?: string;
-  spellUrl?: string; // alias toléré
-};
+import { Craft } from "../../../../lib/types";
+import { log } from "../../../../lib/logger";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
-  const key = (body?.key || process.env.COMMUNITY_REDIS_KEY || "community:crafts") as string;
-  const dry = Boolean(body?.dryRun);
-
-  const redis = await getRedis();
-  const raw = await redis.get(key);
-  if (!raw) return NextResponse.json({ key, count: 0, updated: 0, message: "Key not found or empty." });
-
-  let rows: Craft[] = [];
-  try {
-    rows = JSON.parse(raw);
-    if (!Array.isArray(rows)) throw new Error("Value is not an array");
-  } catch {
-    return NextResponse.json({ key, error: "Value at key is not valid JSON array" }, { status: 400 });
-  }
-
+async function enrichCraftArray(rows: Craft[]): Promise<{ out: Craft[]; updated: number }> {
   let updated = 0;
   const out: Craft[] = [];
   for (const r of rows) {
     const ret: Craft = { ...r };
-    const url = r.url || (r as any).URL || "";
-    const spellUrl = r.SPELL_URL || (r as any).spellUrl || "";
+    const url = (r as any).url || (r as any).URL || "";
+    const spellUrl = (r as any).SPELL_URL || (r as any).spellUrl || "";
 
     // ITEM -> SPELL
     if (!spellUrl && url) {
@@ -46,28 +21,72 @@ export async function POST(req: NextRequest) {
         ret.SPELL_URL = s;
         const m = s.match(/\/spell=(\d+)/);
         if (m) ret.SPELL_ID = Number(m[1]);
+        updated++;
       }
     }
 
-    // SPELL -> ITEM (si URL manquante)
-    if (!ret.url && (ret.SPELL_URL || spellUrl)) {
-      const itemUrl = await resolveItemFromSpellUrl(ret.SPELL_URL || spellUrl!);
-      if (itemUrl) ret.url = itemUrl;
+    // SPELL -> ITEM
+    if (!ret.url && spellUrl) {
+      const item = await resolveItemFromSpellUrl(spellUrl);
+      if (item) {
+        (ret as any).url = item;
+        updated++;
+      }
     }
 
-    if (
-      ret.SPELL_URL !== (r as any).SPELL_URL ||
-      ret.SPELL_ID !== (r as any).SPELL_ID ||
-      ret.url !== (r as any).url
-    ) {
-      updated++;
-    }
     out.push(ret);
   }
-
-  if (!dry) {
-    await redis.set(key, JSON.stringify(out));
-  }
-  return NextResponse.json({ key, count: rows.length, updated, dryRun: dry });
+  return { out, updated };
 }
 
+export async function POST(req: NextRequest) {
+  const { key, dryRun } = await req.json();
+  const dry = !!dryRun;
+  if (!key || typeof key !== "string") {
+    return NextResponse.json({ error: "Missing Redis key" }, { status: 400 });
+  }
+
+  const redis = await getRedis();
+  const raw = await redis.get(key);
+  if (!raw) return NextResponse.json({ key, count: 0, updated: 0, message: "Key not found or empty." });
+
+  let parsed: any;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return NextResponse.json({ error: "Stored value is not JSON" }, { status: 400 });
+  }
+
+  // Case A: array of Craft
+  if (Array.isArray(parsed)) {
+    const { out, updated } = await enrichCraftArray(parsed);
+    if (!dry && updated > 0) await redis.set(key, JSON.stringify(out));
+    return NextResponse.json({ key, count: out.length, updated, dryRun: dry });
+  }
+
+  // Case B: character doc with crafts by profession
+  if (parsed && typeof parsed === "object" && parsed.crafts && typeof parsed.crafts === "object") {
+    let totalUpdated = 0;
+    let totalCount = 0;
+    const nextCrafts: Record<string, Craft[]> = {};
+
+    for (const prof of Object.keys(parsed.crafts)) {
+      const arr = parsed.crafts[prof];
+      if (Array.isArray(arr)) {
+        const { out, updated } = await enrichCraftArray(arr);
+        nextCrafts[prof] = out;
+        totalUpdated += updated;
+        totalCount += out.length;
+      } else {
+        nextCrafts[prof] = arr;
+      }
+    }
+
+    const nextDoc = { ...parsed, crafts: nextCrafts };
+    if (!dry && totalUpdated > 0) await redis.set(key, JSON.stringify(nextDoc));
+    return NextResponse.json({ key, count: totalCount, updated: totalUpdated, dryRun: dry });
+  }
+
+  // Other format → untouched
+  return NextResponse.json({ key, count: 0, updated: 0, message: "Unsupported value shape", dryRun: dry });
+}

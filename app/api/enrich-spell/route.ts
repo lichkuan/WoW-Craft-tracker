@@ -29,11 +29,10 @@ export async function POST(req: NextRequest) {
   const base = "https://www.wowhead.com/mop-classic/fr";
   const itemUrlFR = url.replace(/https:\/\/www\.wowhead\.com\/mop-classic\/..\//, base + "/");
 
-  // 1) item#teaches-recipe
+  // 1) direct item#teaches-recipe redirect
   {
-    const u = `${itemUrlFR}#teaches-recipe`;
-    const sid = await followForSpellId(u);
-    if (sid) return NextResponse.json({ spellId: sid, spellUrl: `${base}/spell=${sid}`, method: "anchor" });
+    const sid = await followForSpellId(itemUrlFR.replace(/(#.*)?$/, "#teaches-recipe"));
+    if (sid) return NextResponse.json({ spellId: sid, spellUrl: `${base}/spell=${sid}`, method: "redirect" });
   }
   // 2) item/<slug>#teaches-recipe
   if (name) {
