@@ -308,7 +308,7 @@ const WoWCraftingTracker: React.FC = () => {
     const items = text
       .split("\n")
       .filter((line) => line.trim().startsWith("- [") && line.includes("]("))
-      .map((line) => {[17:35:34.291] Running build in Washington, D.C., USA (East) – iad1
+      .map((line) => {
         const match = line.match(/^- \[([^\]]+)\]\(([^)]+)\)$/);
         if (match) {
           let url = match[2];
