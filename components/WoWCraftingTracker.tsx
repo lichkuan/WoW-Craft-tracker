@@ -70,47 +70,6 @@ const RECIPE_TYPE_TO_PROFESSION = {
   "Patron de travail du cuir": "Travail du cuir",
   "Technique de calligraphie": "Calligraphie",
 };
-const ThemeSwitcher = () => {
-  const [isDark, setIsDark] = useState(false);
-
-  // Applique le thème au chargement
-  useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    if (
-      saved === "dark" ||
-      (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches)
-    ) {
-      document.documentElement.classList.add("dark");
-      setIsDark(true);
-    } else {
-      document.documentElement.classList.remove("dark");
-      setIsDark(false);
-    }
-  }, []);
-
-  // Change le thème au clic
-  const toggleTheme = () => {
-    if (document.documentElement.classList.contains("dark")) {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-      setIsDark(false);
-    } else {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-      setIsDark(true);
-    }
-  };
-
-  return (
-    <button
-      onClick={toggleTheme}
-      className="ml-4 px-3 py-1 rounded bg-gray-700 text-red-300 hover:bg-red-700 hover:text-black transition"
-      title="Changer le thème"
-    >
-      {isDark ? "🌙 Thème sombre" : "🌞 Thème clair"}
-    </button>
-  );
-};
 // Composant SearchBar
 const SearchBar = ({
   searchTerm,
@@ -535,7 +494,27 @@ const WoWCraftingTracker: React.FC = () => {
         publicCharacters.forEach((character) => {
           const characterCrafts = character.crafts[profession] || [];
           const hasRecipe = characterCrafts.some((craft) => {
-            // 1) match par nom (fallback large)
+              if (
+                craftName.includes(cleanRecipeName) ||
+                cleanRecipeName.includes(craftName)
+              ) {
+                console.log("MATCH NOM", craftName, cleanRecipeName);
+                return true;
+              }
+              if (craftItemId && recipeItemId && craftItemId === recipeItemId) {
+                console.log("MATCH ITEM ID", craftItemId, recipeItemId);
+                return true;
+              }
+              if (
+                craftSpellId &&
+                recipeSpellId &&
+                craftSpellId === recipeSpellId
+              ) {
+                console.log("MATCH SPELL ID", craftSpellId, recipeSpellId);
+                return true;
+              }
+              return false;
+            });
             const craftName = craft.name.toLowerCase();
             if (
               craftName.includes(cleanRecipeName) ||
@@ -1924,7 +1903,7 @@ const WoWCraftingTracker: React.FC = () => {
             onClick={() => setView("home")}
             className="text-2xl font-extrabold text-[#C09A1A] tracking-wide hover:text-red-300"
           >
-            WoW Crafting Tracker
+            WoW Crafting Tracker by Ostie
           </button>
           <div className="flex items-center">
             {currentCharacter && view === "character" && (
@@ -1932,7 +1911,7 @@ const WoWCraftingTracker: React.FC = () => {
                 {currentCharacter.name} - {currentCharacter.server}
               </div>
             )}
-            <ThemeSwitcher />
+            {/* Supprime ici le ThemeSwitcher */}
           </div>
         </div>
       </nav>
@@ -1966,6 +1945,5 @@ const WoWCraftingTracker: React.FC = () => {
       />
     </div>
   );
-};
 
 export default WoWCraftingTracker;
