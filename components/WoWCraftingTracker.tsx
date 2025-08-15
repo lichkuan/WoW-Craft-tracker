@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 "use client";
 
 import React, {
@@ -41,7 +42,9 @@ interface Character {
 interface CraftItem {
   id: string;
   name: string;
-  url: string; spellUrl?: string; category: string;
+  url: string;
+  spellUrl?: string;
+  category: string;
 }
 
 interface PublicCharacter extends Character {
@@ -54,22 +57,25 @@ interface RareRecipe {
   name: string;
   type: string;
   profession: string;
-  url: string; spellUrl?: string; source: string; // Ajout
+  url: string;
+  spellUrl?: string;
+  source: string;
   crafters: string[];
 }
 
 // Mapping des types CSV vers les métiers du jeu
-const RECIPE_TYPE_TO_PROFESSION = {
+const RECIPE_TYPE_TO_PROFESSION: Record<string, string> = {
   "Formule d'enchantement": "Enchantement",
   "Dessin de joaillerie": "Joaillerie",
   "Patron de couture": "Couture",
   "Plans de forge": "Forge",
-  "Armures en plaques": "Forge", // Ajout pour ton CSV
+  "Armures en plaques": "Forge",
   "Schéma d'ingénierie": "Ingénierie",
   "Recette d'alchimie": "Alchimie",
   "Patron de travail du cuir": "Travail du cuir",
   "Technique de calligraphie": "Calligraphie",
 };
+
 // Composant SearchBar
 const SearchBar = ({
   searchTerm,
@@ -78,7 +84,7 @@ const SearchBar = ({
   searchTerm: string;
   onSearchChange: (value: string) => void;
 }) => {
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleChange = (value: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -104,12 +110,14 @@ const SearchBar = ({
           placeholder="Rechercher une recette..."
           className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
           autoComplete="off"
+          aria-label="Rechercher une recette"
         />
         {searchTerm && (
           <button
             onClick={() => onSearchChange("")}
             className="text-gray-400 hover:text-white"
             type="button"
+            aria-label="Effacer la recherche"
           >
             <X className="w-4 h-4" />
           </button>
@@ -308,7 +316,7 @@ const WoWCraftingTracker: React.FC = () => {
             url = url.replace("/cata/", "/mop-classic/fr/");
           }
           return {
-            id: Math.random().toString(36).substr(2, 9),
+            id: Math.random().toString(36).slice(2, 11),
             name: match[1],
             url,
             category: categorizeItem(match[1]),
@@ -335,17 +343,13 @@ const WoWCraftingTracker: React.FC = () => {
     let message = `🎮 **${character.name}** - Niveau ${character.level} ${character.race} ${character.class}\n`;
     message += `${
       character.faction === "alliance" ? "🛡️ Alliance" : "⚔️ Horde"
-    } | ${character.server}${
-      character.guild ? ` | ${character.guild}` : ""
-    }\n\n`;
+    } | ${character.server}${character.guild ? ` | ${character.guild}` : ""}\n\n`;
 
     characterProfessions.forEach((prof) => {
       const level = character.professionLevels?.[prof] || 0;
       const count = character.crafts[prof]?.length || 0;
       const icon = getProfessionLevelIcon(level);
-      message += `${icon} **${prof}** ${
-        level > 0 ? `niveau ${level}` : ""
-      } - ${count} recettes\n`;
+      message += `${icon} **${prof}** ${level > 0 ? `niveau ${level}` : ""} - ${count} recettes\n`;
     });
 
     message += `\n📊 **Total : ${totalRecipes} recettes**\n`;
@@ -359,7 +363,7 @@ const WoWCraftingTracker: React.FC = () => {
 
     // Armes
     if (
-      /(arme|épée|hache|masse|dague|bâton|arbalète|fusil|carabine|arc|glaive|hast|lance|boumerang)/.test(
+      /(arme|épée|hache|masse|dague|bâton|arbalète|fusil|carabine|arc|glaive|hast|lance|boomerang)/.test(
         lower
       )
     )
@@ -406,13 +410,14 @@ const WoWCraftingTracker: React.FC = () => {
   };
 
   const getItemIdFromUrl = (url: string) => {
-    // Supprime les espaces avant l'ID
+    if (!url) return null;
     const cleanUrl = url.replace(/\s+/g, "");
     const match = cleanUrl.match(/item=(\d+)/);
     return match ? match[1] : null;
   };
 
-  const getSpellIdFromUrl = (url: string) => {
+  const getSpellIdFromUrl = (url?: string) => {
+    if (!url) return null;
     const cleanUrl = url.replace(/\s+/g, "");
     const match = cleanUrl.match(/spell=(\d+)/);
     return match ? match[1] : null;
@@ -422,7 +427,7 @@ const WoWCraftingTracker: React.FC = () => {
     try {
       setRareRecipesLoading(true);
 
-      // 🔁 On pointe vers le CSV enrichi qui contient SPELL ID / SPELL URL
+      // CSV enrichi (SPELL ID / SPELL URL)
       const response = await fetch(
         "/Recettes_MoP_90__Liens_Wowhead_ENRICHED.csv"
       );
@@ -433,11 +438,8 @@ const WoWCraftingTracker: React.FC = () => {
 
       const csvText = await response.text();
 
-      // ⚠️ Parsing simple (comme ton code actuel). Si tu as des virgules dans les champs,
-      // on pourra passer à Papaparse côté client, mais je reste cohérent avec ton implémentation.
+      // Colonnes: 0:ID, 1:Name, 2:Source, 3:Type, 4:URL, 5:SPELL ID, 6:SPELL URL, 7:Fetch Status
       const lines = csvText.split("\n");
-      // Enrichi: colonnes attendues =
-      // 0:ID, 1:Name, 2:Source, 3:Type, 4:URL, 5:SPELL ID, 6:SPELL URL, 7:Fetch Status
       const data = lines
         .slice(1)
         .filter((line) => line.trim())
@@ -450,7 +452,7 @@ const WoWCraftingTracker: React.FC = () => {
           const URL = (values[4] || "").replace(/"/g, "");
           const SPELL_ID = (values[5] || "").replace(/"/g, "");
           const SPELL_URL = (values[6] || "").replace(/"/g, "");
-          // Choix du lien préféré (SPELL d'abord, sinon ITEM)
+
           const preferredURL = SPELL_URL || URL;
 
           return {
@@ -458,19 +460,18 @@ const WoWCraftingTracker: React.FC = () => {
             Name,
             Source,
             Type,
-            URL: preferredURL, // <- on stocke l'URL préférée pour clic/affichage
-            _rawItemURL: URL, // (au cas où tu veux encore l’item plus tard)
-            _spellId: SPELL_ID, // pour le matching
-            _spellURL: SPELL_URL, // pour info
+            URL: preferredURL,
+            _rawItemURL: URL,
+            _spellId: SPELL_ID,
+            _spellURL: SPELL_URL,
           };
-        }, [publicCharacters]);
+        });
 
       const processedRecipes: RareRecipe[] = [];
       const seenIds = new Set<number>();
 
       data.forEach((row: any) => {
         if (!row || !row.ID) return;
-        // Ignore les doublons d'ID
         if (seenIds.has(row.ID)) return;
         seenIds.add(row.ID);
 
@@ -481,7 +482,7 @@ const WoWCraftingTracker: React.FC = () => {
         if (!profession) return;
 
         const cleanRecipeName = row.Name.replace(
-          /^(Formule|Dessin|Patron|Plans|Schéma|Recette|Technique) : /,
+          /^(Formule|Dessin|Patron|Plans|Schéma|Recette|Technique)\s*:\s*/i,
           ""
         )
           .toLowerCase()
@@ -492,48 +493,23 @@ const WoWCraftingTracker: React.FC = () => {
 
         const crafters: string[] = [];
         publicCharacters.forEach((character) => {
-          const characterCrafts = character.crafts[profession] || [];
+          const characterCrafts = character.crafts?.[profession] || [];
+
           const hasRecipe = characterCrafts.some((craft) => {
-              if (
-                craftName.includes(cleanRecipeName) ||
-                cleanRecipeName.includes(craftName)
-              ) {
-                console.log("MATCH NOM", craftName, cleanRecipeName);
-                return true;
-              }
-              if (craftItemId && recipeItemId && craftItemId === recipeItemId) {
-                console.log("MATCH ITEM ID", craftItemId, recipeItemId);
-                return true;
-              }
-              if (
-                craftSpellId &&
-                recipeSpellId &&
-                craftSpellId === recipeSpellId
-              ) {
-                console.log("MATCH SPELL ID", craftSpellId, recipeSpellId);
-                return true;
-              }
-              return false;
-            });
             const craftName = craft.name.toLowerCase();
+            const craftItemId = getItemIdFromUrl(craft.url);
+            const craftSpellId = getSpellIdFromUrl(craft.spellUrl || craft.url);
+
             if (
               craftName.includes(cleanRecipeName) ||
               cleanRecipeName.includes(craftName)
             ) {
               return true;
             }
-            // 2) match par ITEM ID (depuis l'URL craft)
-            const craftItemId = getItemIdFromUrl(craft.url);
-            if (craftItemId && recipeItemId && craftItemId === recipeItemId) {
+            if (craftItemId && recipeItemId && craftItemId == recipeItemId) {
               return true;
             }
-            // 3) match par SPELL ID (nouveau)
-            const craftSpellId = getSpellIdFromUrl(craft.url);
-            if (
-              craftSpellId &&
-              recipeSpellId &&
-              craftSpellId === recipeSpellId
-            ) {
+            if (craftSpellId && recipeSpellId && craftSpellId == recipeSpellId) {
               return true;
             }
             return false;
@@ -545,15 +521,17 @@ const WoWCraftingTracker: React.FC = () => {
         });
 
         if (crafters.length > 0) {
-          processedRecipes.push({
+          const rare: RareRecipe = {
             id: row.ID,
             name: row.Name,
             type: row.Type,
             profession,
-            url: row.URL, // <- URL préférée (SPELL si dispo, sinon ITEM)
+            url: row.URL,
             source: row.Source,
             crafters,
-          });
+          };
+          if (row._spellURL) rare.spellUrl = row._spellURL;
+          processedRecipes.push(rare);
         }
       });
 
@@ -564,9 +542,9 @@ const WoWCraftingTracker: React.FC = () => {
     } finally {
       setRareRecipesLoading(false);
     }
-  };
+  }, [publicCharacters]);
 
-  const saveCharacter = async (
+  const saveCharacter = useCallback(async (
     character: Character
   ): Promise<string | null> => {
     try {
@@ -581,7 +559,7 @@ const WoWCraftingTracker: React.FC = () => {
       console.error("Erreur sauvegarde:", error);
       return null;
     }
-  };
+  }, []);
 
   const loadSharedCharacter = useCallback(async (shareId: string) => {
     setLoading(true);
@@ -597,7 +575,7 @@ const WoWCraftingTracker: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const loadPublicCharacters = useCallback(async () => {
     try {
@@ -608,7 +586,7 @@ const WoWCraftingTracker: React.FC = () => {
           "Cache-Control": "no-cache, no-store, must-revalidate",
           Pragma: "no-cache",
         },
-      }, []);
+      });
 
       if (response.ok) {
         const chars = await response.json();
@@ -620,7 +598,7 @@ const WoWCraftingTracker: React.FC = () => {
     } catch (error) {
       console.error("Erreur chargement public:", error);
     }
-  };
+  }, []);
 
   const deleteCharacter = async (character: Character) => {
     if (!confirm(`Supprimer ${character.name} ?`)) return;
@@ -633,7 +611,7 @@ const WoWCraftingTracker: React.FC = () => {
           characterName: character.name,
           characterServer: character.server,
         }),
-      }, []);
+      });
 
       setCharacters((chars) => chars.filter((c) => c.id !== character.id));
       if (currentCharacter?.id === character.id) {
@@ -649,7 +627,7 @@ const WoWCraftingTracker: React.FC = () => {
   const createCharacter = (data: any) => {
     const character: Character = {
       ...data,
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).slice(2, 11),
       professionLevels: {},
       crafts: {},
     };
@@ -791,7 +769,8 @@ const WoWCraftingTracker: React.FC = () => {
       loadRareRecipes();
     }
   }, [publicCharacters, loadRareRecipes]);
-const toggleAllRareRecipes = () => {
+
+  const toggleAllRareRecipes = () => {
     const newState = !allRareRecipesExpanded;
     setAllRareRecipesExpanded(newState);
 
@@ -854,7 +833,7 @@ const toggleAllRareRecipes = () => {
       return acc;
     }, {} as { [profession: string]: RareRecipe[] });
 
-    const professionIcons = {
+    const professionIcons: Record<string, string> = {
       Enchantement: "✨",
       Joaillerie: "💎",
       Couture: "🧵",
@@ -898,12 +877,14 @@ const toggleAllRareRecipes = () => {
                 placeholder="Rechercher une recette ou un crafteur..."
                 className="flex-1 bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white focus:border-purple-500 focus:outline-none"
                 autoComplete="off"
+                aria-label="Rechercher une recette rare"
               />
               {rareRecipeSearchTerm && (
                 <button
                   onClick={() => setRareRecipeSearchTerm("")}
                   className="text-gray-400 hover:text-white"
                   type="button"
+                  aria-label="Effacer la recherche de recettes rares"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -947,6 +928,7 @@ const toggleAllRareRecipes = () => {
               <button
                 onClick={() => setSelectedProfessions([])}
                 className="mt-3 text-sm text-[#C09A1A] hover:text-[#d8b55c]"
+                type="button"
               >
                 Effacer tous les filtres
               </button>
@@ -958,6 +940,7 @@ const toggleAllRareRecipes = () => {
             <button
               onClick={toggleAllRareRecipes}
               className="bg-red-700 hover:bg-red-800 border border-[#C09A1A]/30 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
+              type="button"
             >
               {allRareRecipesExpanded ? (
                 <>
@@ -1057,7 +1040,8 @@ const toggleAllRareRecipes = () => {
                               <ReagentsBlock
                                 recipeUrl={recipe.url}
                                 spellUrl={recipe.spellUrl}
-                               recipeName={recipe.name} />
+                                recipeName={recipe.name}
+                              />
                             </div>
                             <a
                               href={recipe.url}
@@ -1089,6 +1073,7 @@ const toggleAllRareRecipes = () => {
             onClick={loadRareRecipes}
             disabled={rareRecipesLoading}
             className="bg-red-700 hover:bg-red-800 border border-[#C09A1A]/30 text-white px-6 py-2 rounded text-sm disabled:opacity-50"
+            type="button"
           >
             {rareRecipesLoading
               ? "Analyse..."
@@ -1155,6 +1140,7 @@ const toggleAllRareRecipes = () => {
                 setForm((prev) => ({ ...prev, name: e.target.value }))
               }
               className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              aria-label="Nom du personnage"
             />
             <input
               type="text"
@@ -1164,6 +1150,7 @@ const toggleAllRareRecipes = () => {
                 setForm((prev) => ({ ...prev, server: e.target.value }))
               }
               className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              aria-label="Serveur du personnage"
             />
           </div>
 
@@ -1179,6 +1166,7 @@ const toggleAllRareRecipes = () => {
                 }))
               }
               className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              aria-label="Niveau du personnage"
             />
             <select
               value={form.faction}
@@ -1190,6 +1178,7 @@ const toggleAllRareRecipes = () => {
                 }))
               }
               className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              aria-label="Faction"
             >
               <option value="alliance">🛡️ Alliance</option>
               <option value="horde">⚔️ Horde</option>
@@ -1202,6 +1191,7 @@ const toggleAllRareRecipes = () => {
                 setForm((prev) => ({ ...prev, guild: e.target.value }))
               }
               className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              aria-label="Guilde"
             />
           </div>
 
@@ -1212,6 +1202,7 @@ const toggleAllRareRecipes = () => {
                 setForm((prev) => ({ ...prev, race: e.target.value }))
               }
               className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              aria-label="Race"
             >
               <option value="">Choisir une race</option>
               {races[form.faction].map((race) => (
@@ -1226,6 +1217,7 @@ const toggleAllRareRecipes = () => {
                 setForm((prev) => ({ ...prev, class: e.target.value }))
               }
               className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              aria-label="Classe"
             >
               <option value="">Choisir une classe</option>
               {classes.map((cls) => (
@@ -1243,6 +1235,7 @@ const toggleAllRareRecipes = () => {
                 setForm((prev) => ({ ...prev, profession1: e.target.value }))
               }
               className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              aria-label="Métier principal 1"
             >
               <option value="">Métier principal 1</option>
               {professions.map((prof) => (
@@ -1257,6 +1250,7 @@ const toggleAllRareRecipes = () => {
                 setForm((prev) => ({ ...prev, profession2: e.target.value }))
               }
               className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              aria-label="Métier principal 2"
             >
               <option value="">Métier principal 2</option>
               {professions
@@ -1274,6 +1268,7 @@ const toggleAllRareRecipes = () => {
               onClick={handleSubmit}
               disabled={!form.name || !form.race || !form.class}
               className="bg-red-700 hover:bg-red-800 text-black font-bold py-3 px-6 rounded disabled:opacity-50"
+              type="button"
             >
               {editMode
                 ? "Sauvegarder les modifications"
@@ -1289,6 +1284,7 @@ const toggleAllRareRecipes = () => {
                 }
               }}
               className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded"
+              type="button"
             >
               Annuler
             </button>
@@ -1313,8 +1309,8 @@ const toggleAllRareRecipes = () => {
           value={importText}
           onChange={(e) => setImportText(e.target.value)}
           className="w-full h-12 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none font-mono text-sm"
-          placeholder="- [Item Name](https://wowhead.com/cata/item=12345)
-- [Autre Item](https://wowhead.com/cata/spell=67890)"
+          placeholder="- [Item Name](https://wowhead.com/cata/item=12345)\n- [Autre Item](https://wowhead.com/cata/spell=67890)"
+          aria-label="Zone d'import markdown"
         />
         <p className="text-gray-400 text-sm mt-2">
           ℹ️ Le niveau de métier sera automatiquement détecté depuis votre
@@ -1327,12 +1323,14 @@ const toggleAllRareRecipes = () => {
           onClick={() => importCrafts(profession)}
           disabled={!importText.trim()}
           className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded disabled:opacity-50"
+          type="button"
         >
           Importer
         </button>
         <button
           onClick={() => setView("character")}
           className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded"
+          type="button"
         >
           Annuler
         </button>
@@ -1340,44 +1338,45 @@ const toggleAllRareRecipes = () => {
     </div>
   );
 
+  const professionsArray = useMemo(() => {
+    if (!currentCharacter) return [] as string[];
+    return (
+      [currentCharacter.profession1, currentCharacter.profession2]
+        .filter(Boolean) as string[]
+    );
+  }, [currentCharacter]);
+
+  const filteredProfessionData = useMemo(() => {
+    if (!currentCharacter) return [];
+    return professionsArray.map((profession) => {
+      const crafts = currentCharacter.crafts[profession] || [];
+      const filteredCrafts = crafts.filter(
+        (craft) =>
+          !searchTerm ||
+          craft.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+
+      filteredCrafts.sort((a, b) => a.name.localeCompare(b.name));
+
+      const categories = filteredCrafts.reduce((acc, craft) => {
+        if (!acc[craft.category]) acc[craft.category] = [];
+        acc[craft.category].push(craft);
+        return acc;
+      }, {} as { [key: string]: CraftItem[] });
+
+      return {
+        profession,
+        crafts,
+        filteredCrafts,
+        categories,
+      };
+    });
+  }, [currentCharacter, professionsArray, searchTerm]);
+
   const CharacterView = () => {
-    // Hooks top-level, même si currentCharacter est null
-    const professionsArray = useMemo(() => {
-      if (!currentCharacter) return [] as string[];
-      return ([currentCharacter.profession1, currentCharacter.profession2].filter(Boolean) as string[]);
-    }, [currentCharacter]);
-
-    const filteredProfessionData = useMemo(() => {
-      if (!currentCharacter) return [];
-      return professionsArray.map((profession) => {
-        const crafts = currentCharacter.crafts[profession] || [];
-        const filteredCrafts = crafts.filter(
-          (craft) =>
-            !searchTerm ||
-            craft.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-
-        // Tri alphabétique des crafts
-        filteredCrafts.sort((a, b) => a.name.localeCompare(b.name));
-
-        const categories = filteredCrafts.reduce((acc, craft) => {
-          if (!acc[craft.category]) acc[craft.category] = [];
-          acc[craft.category].push(craft);
-          return acc;
-        }, {} as { [key: string]: CraftItem[] });
-
-        return {
-          profession,
-          crafts,
-          filteredCrafts,
-          categories,
-        };
-      });
-    }, [currentCharacter, professionsArray, searchTerm]);
-
     if (!currentCharacter) return null;
 
-return (
+    return (
       <div className="max-w-6xl mx-auto">
         <div className="bg-gray-800 rounded-2xl p-6 mb-6 border border-red-700 shadow-md hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)] transition">
           <div className="flex justify-between items-start">
@@ -1416,6 +1415,7 @@ return (
                   setView("edit");
                 }}
                 className="bg-red-700 hover:bg-red-800 border border-[#C09A1A]/30 text-white px-4 py-2 rounded flex items-center"
+                type="button"
               >
                 <Edit className="w-4 h-4 mr-2" />
                 Éditer
@@ -1424,14 +1424,16 @@ return (
                 onClick={shareCharacter}
                 disabled={loading}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center disabled:opacity-50"
+                type="button"
               >
                 <Share className="w-4 h-4 mr-2" />
-                {loading ? "Partage..." : &quot;Partager&quot;}
+                {loading ? "Partage..." : "Partager"}
               </button>
               <button
                 onClick={shareToDiscord}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded flex items-center"
                 title="Partager sur Discord"
+                type="button"
               >
                 💬 Discord
               </button>
@@ -1452,8 +1454,7 @@ return (
                   <h2 className="text-2xl font-extrabold text-[#C09A1A] tracking-wide">
                     {profession}
                   </h2>
-                  {(currentCharacter.professionLevels?.[profession] || 0) >
-                    0 && (
+                  {(currentCharacter.professionLevels?.[profession] || 0) > 0 && (
                     <p
                       className={`text-sm ${getProfessionLevelColor(
                         currentCharacter.professionLevels[profession]
@@ -1474,6 +1475,7 @@ return (
                   <button
                     onClick={() => setView(`import-${profession}`)}
                     className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded flex items-center border border-[#C09A1A]/30"
+                    type="button"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Importer
@@ -1506,6 +1508,7 @@ return (
                         }
                       }}
                       className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex items-center border border-[#C09A1A]/20"
+                      type="button"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
                       Supprimer
@@ -1525,6 +1528,7 @@ return (
                         toggleAllCategories(profession, Object.keys(categories))
                       }
                       className="bg-red-700 hover:bg-red-800 border border-[#C09A1A]/30 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
+                      type="button"
                     >
                       {allExpanded[profession] ? (
                         <>
@@ -1555,6 +1559,7 @@ return (
                           }))
                         }
                         className="w-full flex items-center justify-between bg-gray-700/70 hover:bg-gray-600 rounded-xl p-3 border border-gray-600 hover:border-red-500 transition"
+                        type="button"
                       >
                         <span className="text-red-300 font-semibold">
                           {category} ({items.length})
@@ -1570,7 +1575,7 @@ return (
                         <div className="mt-2 space-y-1 ml-4">
                           {items.map((item) => (
                             <div key={item.id}>
-                              <div className="group bg-gray-700/70 rounded-xl p-3 md:p-4 flex items-center justify-between border border-gray-600 hover:border-red-500 transition transform hover:-translate-y-[1px] hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)]">
+                              <div className="group bg-gray-700/70 rounded-xl p-3 md:p-4 flex items-center justify_between border border-gray-600 hover:border-red-500 transition transform hover:-translate-y-[1px] hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)]">
                                 <div className="flex items-center gap-2 min-w-0">
                                   <a
                                     href={item.url}
@@ -1595,8 +1600,9 @@ return (
                               </div>
                               <ReagentsBlock
                                 recipeUrl={item.url}
-                                spellUrl={"spellUrl" in item ? (item as any).spellUrl : undefined}
-                               recipeName={item.name} />
+                                spellUrl={item.spellUrl}
+                                recipeName={item.name}
+                              />
                             </div>
                           ))}
                         </div>
@@ -1616,275 +1622,6 @@ return (
     );
   };
 
-  const HomeView = () => (
-    <div className="max-w-6xl mx-auto text-center">
-      <div className="bg-gray-800 rounded-2xl px-6 py-8 border border-red-700 mb-4 shadow-md">
-        <h1 className="text-5xl font-bold text-red-400 mb-4">
-          WoW Crafting Tracker by Ostie
-        </h1>
-        <p className="text-xl text-gray-300 mb-8">
-          Partagez vos métiers World of Warcraft
-        </p>
-
-        <div className="bg-red-900/20 border border-red-700 rounded-2xl p-4 md:p-5 mb-6 text-left grid md:grid-cols-2 gap-2 shadow-sm">
-          <h2 className="text-2xl font-bold text-[#C09A1A] mb-4">
-            📋 Instructions
-          </h2>
-          <div className="space-y-4 text-gray-200">
-            <div>
-              <h3 className="text-lg font-semibold text-[#d8b55c] mb-2">
-                1. Installez l&apos;addon :
-              </h3>
-              <a
-                href="https://www.curseforge.com/wow/addons/simple-trade-skill-exporter"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded"
-              >
-                Simple Trade Skill Exporter
-              </a>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-[#d8b55c] mb-2">
-                2. Dans le jeu :
-              </h3>
-              <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Ouvrez votre métier</li>
-                <li>
-                  Tapez :{" "}
-                  <code className="bg-gray-700 px-2 py-1 rounded text-red-300">
-                    /tsexport markdown
-                  </code>
-                </li>
-                <li>Copiez avec Ctrl+C</li>
-                <li>Collez dans ce site</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {characters.length === 0 ? (
-          <button
-            onClick={() => setView("create")}
-            className="bg-red-700 hover:bg-red-800 text-black font-bold py-4 px-8 rounded-lg text-xl"
-          >
-            Créer mon personnage
-          </button>
-        ) : (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-extrabold text-[#C09A1A] tracking-wide">
-              Mes personnages
-            </h2>
-            <div className="grid gap-2">
-              {characters.map((character) => (
-                <div
-                  key={character.id}
-                  className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-red-600"
-                >
-                  <div className="flex items-center justify-between">
-                    <div
-                      className="flex-1 cursor-pointer"
-                      onClick={() => {
-                        setCurrentCharacter(character);
-                        setView("character");
-                      }}
-                    >
-                      <h3 className="text-xl font-semibold text-[#d8b55c]">
-                        {character.name}
-                      </h3>
-                      <p className="text-gray-300">
-                        Niveau {character.level} {character.race}{" "}
-                        {character.class}
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        {character.server}{" "}
-                        {character.guild && `• ${character.guild}`}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => deleteCharacter(character)}
-                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm ml-4"
-                    >
-                      Supprimer
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={() => setView("create")}
-              className="bg-red-700 hover:bg-red-800 text-black font-bold py-2 px-6 rounded"
-            >
-              Ajouter un personnage
-            </button>
-          </div>
-        )}
-      </div>
-
-      <RareRecipesSection />
-
-      <div className="bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md">
-        <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6">
-          🌟 Communauté
-        </h2>
-
-        {publicCharacters.length > 0 ? (
-          <>
-            <p className="text-gray-300 mb-6">
-              Découvrez les personnages partagés par la communauté
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {publicCharacters.map((character) => (
-                <div
-                  key={character.shareId}
-                  className={`bg-gray-700 rounded-lg p-6 border-2 ${
-                    character.faction === "alliance"
-                      ? "border-blue-500"
-                      : "border-red-500"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <button
-                        onClick={() =>
-                          window.open(`?share=${character.shareId}`, "_blank")
-                        }
-                        className="text-xl font-semibold text-[#d8b55c] hover:text-red-400 cursor-pointer"
-                      >
-                        {character.name}
-                      </button>
-                      <p className="text-gray-300 text-sm">
-                        Niveau {character.level} {character.race}{" "}
-                        {character.class}
-                      </p>
-                    </div>
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-semibold ${
-                        character.faction === "alliance"
-                          ? "bg-blue-600 text-blue-100"
-                          : "bg-red-600 text-red-100"
-                      }`}
-                    >
-                      {character.faction === "alliance"
-                        ? "🛡️ Alliance"
-                        : "⚔️ Horde"}
-                    </span>
-                  </div>
-
-                  <div className="mb-4 space-y-1">
-                    {character.server && (
-                      <p className="text-gray-400 text-sm">
-                        📍 {character.server}
-                      </p>
-                    )}
-                    {character.guild && (
-                      <p className="text-gray-400 text-sm">
-                        ⚔️ {character.guild}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <h4 className="text-red-400 font-semibold text-sm">
-                      Métiers principaux :
-                    </h4>
-
-                    {[character.profession1, character.profession2]
-                      .filter(Boolean)
-                      .map((prof) => (
-                        <div
-                          key={prof}
-                          className="flex items-center justify-between bg-gray-600 rounded p-2"
-                        >
-                          <div className="flex flex-col">
-                            <span className="text-white text-sm font-medium">
-                              {prof}
-                            </span>
-                            {(character.professionLevels?.[prof] || 0) > 0 && (
-                              <span
-                                className={`text-xs ${getProfessionLevelColor(
-                                  character.professionLevels[prof]
-                                )}`}
-                              >
-                                {getProfessionLevelIcon(
-                                  character.professionLevels[prof]
-                                )}{" "}
-                                Niveau {character.professionLevels[prof]} (
-                                {getProfessionLevelName(
-                                  character.professionLevels[prof]
-                                )}
-                                )
-                              </span>
-                            )}
-                          </div>
-                          <span className="bg-red-700 text-black px-2 py-1 rounded text-xs font-bold">
-                            {character.craftCounts?.[prof] || 0}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-gray-600">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-400 text-sm">
-                        Total des recettes :
-                      </span>
-                      <span className="text-red-400 font-bold">
-                        {Object.values(character.craftCounts ?? {}).reduce(
-                          (a: number, b: number) => a + b,
-                          0
-                        )}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 text-center">
-                    <button
-                      onClick={() =>
-                        window.open(`?share=${character.shareId}`, "_blank")
-                      }
-                      className="text-blue-400 text-xs hover:text-[#C09A1A]"
-                    >
-                      🔗 Voir le profil complet
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">👥</div>
-            <h3 className="text-2xl font-bold text-red-300 mb-4">
-              Aucun personnage partagé
-            </h3>
-            <p className="text-gray-400 mb-6">
-              Soyez le premier à partager vos métiers avec la communauté !<br />
-              Créez un personnage, ajoutez vos recettes et cliquez sur
-              &quot;Partager&quot;.
-            </p>
-            <div className="bg-blue-900 border border-blue-600 rounded-lg p-4 max-w-md mx-auto">
-              <p className="text-[#d8b55c] text-sm">
-                💡 <strong>Astuce :</strong> Les personnages partagés
-                apparaissent ici automatiquement et permettent à la communauté
-                de voir vos métiers !
-              </p>
-            </div>
-          </div>
-        )}
-
-        <div className="mt-6 text-center">
-          <button
-            onClick={loadPublicCharacters}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
-          >
-            🔄 Actualiser la liste
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
@@ -1903,6 +1640,7 @@ return (
           <button
             onClick={() => setView("home")}
             className="text-2xl font-extrabold text-[#C09A1A] tracking-wide hover:text-red-300"
+            type="button"
           >
             WoW Crafting Tracker by Ostie
           </button>
@@ -1912,7 +1650,6 @@ return (
                 {currentCharacter.name} - {currentCharacter.server}
               </div>
             )}
-            {/* Supprime ici le ThemeSwitcher */}
           </div>
         </div>
       </nav>
@@ -1946,5 +1683,6 @@ return (
       />
     </div>
   );
+};
 
 export default WoWCraftingTracker;

@@ -1,16 +1,15 @@
 {
-  "extends": [
-    "next/core-web-vitals"
-  ],
+  "extends": ["next/core-web-vitals"],
   "rules": {
-    "no-console": [
-      "warn",
-      {
-        "allow": [
-          "error",
-          "warn"
-        ]
+    "no-console": ["warn", { "allow": ["warn", "error"] }],
+    "react/no-unescaped-entities": "warn"
+  },
+  "overrides": [
+    {
+      "files": ["app/api/**/*.ts", "lib/logger.ts"],
+      "rules": {
+        "no-console": "off"
       }
-    ]
-  }
+    }
+  ]
 }

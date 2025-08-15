@@ -1,4 +1,3 @@
-/* eslint-disable react/no-unescaped-entities */
 // app/admin/page.tsx
 "use client";
 
@@ -100,7 +99,7 @@ export default function AdminPage() {
             🔧 Administration
           </h1>
           <p className="text-red-200">
-            Zone d'administration WoW Crafting Tracker
+            Administration WoW Crafting Tracker
           </p>
         </div>
 
