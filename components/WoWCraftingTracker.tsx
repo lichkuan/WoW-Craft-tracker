@@ -1630,11 +1630,15 @@ const ImportView = ({ profession }: { profession: string }) => (
 
       filteredCrafts.sort((a, b) => a.name.localeCompare(b.name));
 
-      const categories = filteredCrafts.reduce((acc, craft) => {
-        if (!acc[craft.category]) acc[craft.category] = [];
-        acc[craft.category].push(craft);
-        return acc;
-      }, {} as { [key: string]: CraftItem[] });
+      const categories = filteredCrafts.reduce<Record<string, CraftItem[]>>(
+        (acc, craft) => {
+          const bucket = acc[craft.category] ?? (acc[craft.category] = []);
+          bucket.push(craft);
+          return acc;
+        },
+        {}
+      );
+
 
       return {
         profession,
