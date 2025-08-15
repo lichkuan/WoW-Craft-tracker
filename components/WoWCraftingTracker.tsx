@@ -7,7 +7,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
-  useRef,     // ⬅️ ajoute/maintiens ceci
+  useRef,
   useMemo,
 } from "react";
 
@@ -232,6 +232,9 @@ const WoWCraftingTracker: React.FC = () => {
   );
   const [importText, setImportText] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const onSearch = useCallback((v: string) => {
+    setSearchTerm(v);
+  }, [setSearchTerm]);
   const [expandedCategories, setExpandedCategories] = useState<{
     [key: string]: boolean;
   }>({});
@@ -1799,7 +1802,7 @@ const WoWCraftingTracker: React.FC = () => {
           </div>
         </div>
 
-        <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+        <SearchBar searchTerm={searchTerm} onSearchChange={onSearch} autoFocus />
 
         {filteredProfessionData.map(({ profession, crafts, categories }) => (
           <div
