@@ -1482,37 +1482,26 @@ const WoWCraftingTracker: React.FC = () => {
 
                     {[character.profession1, character.profession2]
                       .filter(Boolean)
-                      .map((prof) => (
-                        <div
-                          key={prof as string}
-                          className="flex items-center justify-between bg-gray-600 rounded p-2"
-                        >
-                          <div className="flex flex-col">
-                            <span className="text-white text-sm font-medium">
-                              {prof}
+                      .map((prof) => {
+                        const key = prof as string;
+                        const lvl = character.professionLevels?.[key] ?? 0;
+
+                        return (
+                          <div key={key} className="flex items-center justify-between bg-gray-600 rounded p-2">
+                            <div className="flex flex-col">
+                              <span className="text-white text-sm font-medium">{key}</span>
+                              {lvl > 0 && (
+                                <span className={`text-xs ${getProfessionLevelColor(lvl)}`}>
+                                  {getProfessionLevelIcon(lvl)} Niveau {lvl} ({getProfessionLevelName(lvl)})
+                                </span>
+                              )}
+                            </div>
+                            <span className="bg-red-700 text-black px-2 py-1 rounded text-xs font-bold">
+                              {character.craftCounts?.[key] ?? 0}
                             </span>
-                            {(character.professionLevels?.[prof as string] || 0) > 0 && (
-                              <span
-                                className={`text-xs ${getProfessionLevelColor(
-                                  character.professionLevels[prof as string]
-                                )}`}
-                              >
-                                {getProfessionLevelIcon(
-                                  character.professionLevels[prof as string]
-                                )}{" "}
-                                Niveau {character.professionLevels[prof as string]} (
-                                {getProfessionLevelName(
-                                  character.professionLevels[prof as string]
-                                )}
-                                )
-                              </span>
-                            )}
                           </div>
-                          <span className="bg-red-700 text-black px-2 py-1 rounded text-xs font-bold">
-                            {character.craftCounts?.[prof as string] || 0}
-                          </span>
-                        </div>
-                      ))}
+                        );
+                      })}
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-gray-600">
