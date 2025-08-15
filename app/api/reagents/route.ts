@@ -104,20 +104,35 @@ function parseRecipesReagentsFromListview(html: string): Reag[] {
   const candidates: string[] = [];
 
   // new Listview({ id:'recipes', ... data: [...] });
-  const reRecipes1 = /new\s+Listview\(\{\s*[^}]*?\bid\s*:\s*['"]recipes['"][\s\S]*?\bdata\s*:\s*(\[[\s\S]*?\])\s*\}\);/gi;
+  const reRecipes1 =
+    /new\s+Listview\(\{\s*[^}]*?\bid\s*:\s*['"]recipes['"][\s\S]*?\bdata\s*:\s*(\[[\s\S]*?\])\s*\}\);/gi;
   let m: RegExpExecArray | null;
-  while ((m = reRecipes1.exec(html))) candidates.push(m[1]);
+  while ((m = reRecipes1.exec(html)) !== null) {
+    const g = m[1] as string | undefined;
+    if (g) candidates.push(g);
+  }
 
   // g_listviews['recipes'] = { data:[ ... ] };
-  const reRecipes2 = /g_listviews\[['"]recipes['"]]\s*=\s*\{[\s\S]*?"data"\s*:\s*(\[[\s\S]*?\])\s*\};/gi;
-  while ((m = reRecipes2.exec(html))) candidates.push(m[1]);
+  const reRecipes2 =
+    /g_listviews\[['"]recipes['"]]\s*=\s*\{[\s\S]*?"data"\s*:\s*(\[[\s\S]*?\])\s*\};/gi;
+  while ((m = reRecipes2.exec(html)) !== null) {
+    const g = m[1] as string | undefined;
+    if (g) candidates.push(g);
+  }
 
-  // Si pas explicitement “recipes”, scanner toutes les listviews
+  // If we didn't explicitly find "recipes", scan all listviews and keep those with reagents-like keys
   if (!candidates.length) {
     const reAny = /new\s+Listview\(\{[\s\S]*?\bdata\s*:\s*(\[[\s\S]*?\])\s*\}\);/gi;
-    while ((m = reAny.exec(html))) candidates.push(m[1]);
-    const reAny2 = /g_listviews\[[^\]]+]\s*=\s*\{[\s\S]*?"data"\s*:\s*(\[[\s\S]*?\])\s*\};/gi;
-    while ((m = reAny2.exec(html))) candidates.push(m[1]);
+    while ((m = reAny.exec(html)) !== null) {
+      const g = m[1] as string | undefined;
+      if (g) candidates.push(g);
+    }
+    const reAny2 =
+      /g_listviews\[[^\]]+]\s*=\s*\{[\s\S]*?"data"\s*:\s*(\[[\s\S]*?\])\s*\};/gi;
+    while ((m = reAny2.exec(html)) !== null) {
+      const g = m[1] as string | undefined;
+      if (g) candidates.push(g);
+    }
   }
 
   const out: Reag[] = [];
@@ -127,7 +142,7 @@ function parseRecipesReagentsFromListview(html: string): Reag[] {
       if (!Array.isArray(arr) || !arr.length) continue;
 
       for (const e of arr) {
-        // 1) e.reagents [...]
+        // 1) e.reagents: [[itemId, qty], ...]  OR  [{id, qty|count}, ...]
         if (Array.isArray(e?.reagents)) {
           for (const r of e.reagents) {
             if (Array.isArray(r)) {
@@ -142,24 +157,21 @@ function parseRecipesReagentsFromListview(html: string): Reag[] {
           }
         }
 
-        // 2) e.reagent1 / e.reagent1count ... e.reagent12
+        // 2) e.reagent1 / e.reagent1count ... up to 12
         for (let i = 1; i <= 12; i++) {
           const id = Number(e?.[`reagent${i}`] ?? 0) || 0;
           if (!id) continue;
-          const qty = Number(
-            e?.[`reagent${i}count`] ??
-            e?.[`reagent${i}qty`] ??
-            1
-          ) || 1;
+          const qty =
+            Number(e?.[`reagent${i}count`] ?? e?.[`reagent${i}qty`] ?? 1) || 1;
           out.push({ id, qty });
         }
       }
     } catch {
-      // on passe au bloc suivant
+      // ignore bad blocks
     }
   }
 
-  // dédoublonnage par id (on garde la plus grande qty vue)
+  // dedupe by id (keep the largest qty)
   const map = new Map<number, Reag>();
   for (const it of out) {
     const had = map.get(it.id);
@@ -167,6 +179,7 @@ function parseRecipesReagentsFromListview(html: string): Reag[] {
   }
   return Array.from(map.values());
 }
+
 
 /* ========= STRAT B : hydrater les noms depuis les liens présents dans le HTML ========= */
 function hydrateNamesFromHtml(html: string, reagents: Reag[]): Reag[] {
