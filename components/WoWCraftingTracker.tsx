@@ -1961,33 +1961,14 @@ const WoWCraftingTracker: React.FC = () => {
 
                         return (
                             <div className="min-h-screen bg-gradient-to-b from-black via-[#210a0a] to-[#0b0000] text-white">
-                            <nav className="bg-gray-800 border-b border-red-700 p-4">
-                                <div className="max-w-6xl mx-auto flex justify-between items-center">
-                                <button
-                                    onClick={() => setView("home")}
-                                    className="text-2xl font-extrabold text-[#C09A1A] tracking-wide hover:text-red-300"
-                                    type="button"
-                                >
-                                    WoW Crafting Tracker by Ostie
-                                </button>
-                                <div className="flex items-center gap-3">
-                                  {currentCharacter && view === "character" && (
-                                    <div className="text-red-300 mr-2">
-                                      {currentCharacter.name} - {currentCharacter.server}
-                                    </div>
-                                  )}
-                                  <button
-                                    onClick={() => setHelpOpen(true)}
-                                    className="inline-flex items-center gap-2 bg-gray-900 hover:bg-black text-white rounded px-3 py-2 border border-gray-600"
-                                    type="button"
-                                    aria-label="Ouvrir les instructions"
-                                  >
-                                    <HelpCircle className="w-4 h-4" />
-                                    Instructions
-                                  </button>
-                                </div>
-
-                                </div>
+                            <nav className="bg-gray-800 border-b border-red-700">
+                              <div className="max-w-6xl mx-auto flex justify-end items-center p-3">
+                                {currentCharacter && view === "character" && (
+                                  <div className="text-red-300">
+                                    {currentCharacter.name} - {currentCharacter.server}
+                                  </div>
+                                )}
+                              </div>
                             </nav>
 
                             <main className="container mx-auto px-4 py-8">
