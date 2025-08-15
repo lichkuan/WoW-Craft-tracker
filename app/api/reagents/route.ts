@@ -23,22 +23,22 @@ async function resolveToSpell(url: string): Promise<string> {
 }
 
 function collectReagentsFromHtml(html: string) {
-  const items: { id: number; name: string; url: string; qty: number }[] = [];
+  type Reag = { id: number; name: string; url: string; qty: number };
+
+  const items: Reag[] = [];
   const chunks = html.split(/Composants/i).slice(1);
 
   for (const ch of chunks) {
     const block = ch.split(/<h[12][^>]*>|<div class=".*?listview.*?">/i)[0] || ch;
     const linkRE = /href=\"[^\"]*\/(?:mop-classic\/..\/)?(item|spell)=(\d+)[^\"]*\"[^>]*>([^<]+)<\/a>/g;
     let m: RegExpExecArray | null;
-    const locals: { id: number; name: string; url: string; qty: number }[] = [];
+    const locals: Reag[] = [];
 
     while ((m = linkRE.exec(block))) {
-      // Gardes pour tous les groupes
       const type = (m[1] ?? "item");
       const id = Number(m[2] ?? "0");
       const name = (m[3] ?? "").trim();
 
-      // Sécurité sur index (TS apprécie)
       const start = typeof m.index === "number" ? m.index : 0;
       const url = `https://www.wowhead.com/mop-classic/fr/${type}=${id}`;
       const tail = block.slice(start, start + 200);
@@ -76,19 +76,24 @@ function collectReagentsFromHtml(html: string) {
   }
 
   // Dédupe par id en gardant la plus grande quantité observée
-  const map = new Map<number, { id: number; name: string; url: string; qty: number }>();
+  const map = new Map<number, Reag>();
   for (const it of items) {
     const had = map.get(it.id);
     if (!had || it.qty > had.qty) map.set(it.id, it);
   }
-  const unique = Array.from(map.values());
+  const unique: Reag[] = Array.from(map.values());
   unique.sort((a, b) => b.qty - a.qty);
 
   // On retourne 1 à 4 "primaires" : d'abord ceux avec qty>=2, sinon le top 1, puis on complète
-  const primaries: typeof unique = [];
+  const primaries: Reag[] = [];
   const qty2 = unique.filter((x) => x.qty >= 2);
   primaries.push(...qty2);
-  if (primaries.length === 0 && unique.length > 0) primaries.push(unique[0]);
+
+  if (primaries.length === 0) {
+    const first = unique[0];
+    if (first) primaries.push(first); // <-- évite unique[0] potentiellement undefined
+  }
+
   for (const it of unique) {
     if (primaries.length >= 4) break;
     if (!primaries.find((p) => p.id === it.id)) primaries.push(it);
