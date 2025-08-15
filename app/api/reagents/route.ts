@@ -25,27 +25,36 @@ async function resolveToSpell(url: string): Promise<string> {
 function collectReagentsFromHtml(html: string) {
   const items: { id: number; name: string; url: string; qty: number }[] = [];
   const chunks = html.split(/Composants/i).slice(1);
+
   for (const ch of chunks) {
     const block = ch.split(/<h[12][^>]*>|<div class=".*?listview.*?">/i)[0] || ch;
     const linkRE = /href=\"[^\"]*\/(?:mop-classic\/..\/)?(item|spell)=(\d+)[^\"]*\"[^>]*>([^<]+)<\/a>/g;
     let m: RegExpExecArray | null;
     const locals: { id: number; name: string; url: string; qty: number }[] = [];
+
     while ((m = linkRE.exec(block))) {
-      const type = m[1];
-      const id = Number(m[2]);
-      const name = m[3].trim();
+      // Gardes pour tous les groupes
+      const type = (m[1] ?? "item");
+      const id = Number(m[2] ?? "0");
+      const name = (m[3] ?? "").trim();
+
+      // Sécurité sur index (TS apprécie)
+      const start = typeof m.index === "number" ? m.index : 0;
       const url = `https://www.wowhead.com/mop-classic/fr/${type}=${id}`;
-      const tail = block.slice(m.index, m.index + 200);
+      const tail = block.slice(start, start + 200);
+
       let qty = 1;
       const mParen = tail.match(/\((\d{1,3})\)/);
       const mX = tail.match(/x\s*(\d{1,3})/i);
-      if (mParen) qty = Number(mParen[1]);
-      else if (mX) qty = Number(mX[1]);
+      if (mParen && mParen[1]) qty = Number(mParen[1]);
+      else if (mX && mX[1]) qty = Number(mX[1]);
+
       locals.push({ id, name, url, qty });
     }
     if (locals.length) items.push(...locals);
   }
 
+  // Fallback si la section "Composants" n'a pas matché
   if (items.length === 0) {
     const rowRE = /<tr[^>]*>\s*<td[^>]*class=\"iconlarge[^\"]*\"[\s\S]*?<\/tr>/g;
     let m: RegExpExecArray | null;
@@ -54,17 +63,19 @@ function collectReagentsFromHtml(html: string) {
       const idm = row.match(/href=\"[^\"]*\/(item|spell)=(\d+)[^\"]*\"/);
       const nm = row.match(/>([^<]+)<\/a>/);
       const qtm = row.match(/<td[^>]*>\s*(?:x\s*)?(\d{1,3})\s*<\/td>/);
+
       if (idm && nm) {
         const type = idm[1];
         const id = Number(idm[2]);
-        const name = nm[1].trim();
-        const qty = qtm ? Number(qtm[1]) : 1;
+        const name = (nm[1] ?? "").trim();
+        const qty = qtm && qtm[1] ? Number(qtm[1]) : 1;
         const url = `https://www.wowhead.com/mop-classic/fr/${type}=${id}`;
         items.push({ id, name, url, qty });
       }
     }
   }
 
+  // Dédupe par id en gardant la plus grande quantité observée
   const map = new Map<number, { id: number; name: string; url: string; qty: number }>();
   for (const it of items) {
     const had = map.get(it.id);
@@ -72,6 +83,8 @@ function collectReagentsFromHtml(html: string) {
   }
   const unique = Array.from(map.values());
   unique.sort((a, b) => b.qty - a.qty);
+
+  // On retourne 1 à 4 "primaires" : d'abord ceux avec qty>=2, sinon le top 1, puis on complète
   const primaries: typeof unique = [];
   const qty2 = unique.filter((x) => x.qty >= 2);
   primaries.push(...qty2);
@@ -86,12 +99,17 @@ function collectReagentsFromHtml(html: string) {
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("url") || "";
   if (!url) return NextResponse.json([], { status: 200 });
+
   try {
     const spellUrl = await resolveToSpell(url);
     const res = await fetch(spellUrl, { cache: "no-store" });
     const html = await res.text();
     const primaries = collectReagentsFromHtml(html);
-    return NextResponse.json(primaries.map(p => ({ id: p.id, name: p.name, url: p.url, quantity: p.qty })));
+
+    return NextResponse.json(
+      primaries.map((p) => ({ id: p.id, name: p.name, url: p.url, quantity: p.qty })),
+      { status: 200 }
+    );
   } catch {
     return NextResponse.json([], { status: 200 });
   }
