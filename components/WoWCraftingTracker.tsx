@@ -131,7 +131,7 @@ const SearchBar = React.memo(function SearchBar({
         {localValue && (
           <button
             onClick={() => setLocalValue("")}
-            className="text-gray-300 hover:text-white text-sm"
+            className="text-black hover:text-red-500 text-sm"
             type="button"
             aria-label="Effacer la recherche"
           >

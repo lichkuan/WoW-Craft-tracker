@@ -1,69 +1,100 @@
+/* eslint-disable react/no-unescaped-entities */
 "use client";
-import { useEffect, useState } from "react";
 
-type Reagent = { id: number; name: string; url: string; quantity: number };
+import React, { useEffect, useState } from "react";
 
-/**
- * ReagentsBlock
- * - Préfère l'URL du SPELL si dispo.
- * - Si seule une URL ITEM est fournie, tente d'enrichir pour obtenir le SPELL (avec slug du nom).
- */
+type Reagent = {
+  id: number;
+  name: string;
+  url: string;
+  quantity: number; // correspond à "qty" côté API
+};
+
 export default function ReagentsBlock({
   recipeUrl,
   spellUrl,
   recipeName,
-}: { recipeUrl?: string; spellUrl?: string; recipeName?: string }) {
-  const [resolvedUrl, setResolvedUrl] = useState<string | undefined>(spellUrl || recipeUrl);
-  const [data, setData] = useState<Reagent[] | null>(null);
+}: {
+  recipeUrl: string;
+  spellUrl?: string;
+  recipeName?: string;
+}) {
+  const [reagents, setReagents] = useState<Reagent[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Si on n'a qu'une URL ITEM, tenter d'obtenir le SPELL (une seule fois)
   useEffect(() => {
-    let mounted = true;
-    async function enrich() {
-      if (!resolvedUrl || /\/spell=\d+/.test(resolvedUrl) || !/\/item=\d+/.test(resolvedUrl)) return;
-      try {
-        const res = await fetch("/api/enrich-spell", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: resolvedUrl, name: recipeName || "" }),
-        });
-        const json = await res.json();
-        if (mounted && json?.spellUrl) setResolvedUrl(json.spellUrl);
-      } catch {}
+    const urlToUse = spellUrl || recipeUrl;
+    if (!urlToUse) {
+      setReagents([]);
+      return;
     }
-    enrich();
-    return () => { mounted = false };
-  }, [resolvedUrl, recipeName]);
 
-  // Charger les réactifs (idéalement via SPELL)
-  useEffect(() => {
-    let abort = false;
-    async function load() {
-      if (!resolvedUrl) return;
-      try {
-        const r = await fetch(`/api/reagents?url=${encodeURIComponent(resolvedUrl)}`, { cache: "no-store" });
-        const json = await r.json();
-        if (!abort) setData(Array.isArray(json) ? json : []);
-      } catch {
-        if (!abort) setData([]);
-      }
-    }
-    load();
-    return () => { abort = true };
-  }, [resolvedUrl]);
+    let aborted = false;
+    setLoading(true);
+    setError(null);
 
-  if (!resolvedUrl || !data || data.length === 0) return null;
+    // on encode correctement l’URL de wowhead dans la query
+    fetch(`/api/reagents?url=${encodeURIComponent(urlToUse)}`, {
+      cache: "no-store",
+    })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data: Reagent[] = await r.json();
+        if (!aborted) setReagents(Array.isArray(data) ? data : []);
+      })
+      .catch((e) => {
+        if (!aborted) setError(e?.message || "Erreur inconnue");
+      })
+      .finally(() => {
+        if (!aborted) setLoading(false);
+      });
+
+    return () => {
+      aborted = true;
+    };
+  }, [recipeUrl, spellUrl]);
+
+  // UI
+  if (loading) {
+    return (
+      <div className="mt-2 ml-10 text-xs text-gray-400">
+        Recherche des composants…
+      </div>
+    );
+  }
+
+  if (error) {
+    // on n’en fait pas un drame à l’écran, mais on laisse un petit indice
+    return (
+      <div className="mt-2 ml-10 text-xs text-gray-500">
+        Composants indisponibles pour le moment.
+      </div>
+    );
+  }
+
+  if (!reagents || reagents.length === 0) {
+    // Pas de composants détectés (ou wowhead ne liste rien) → on n’affiche rien.
+    return null;
+  }
 
   return (
-    <div className="mt-2 text-xs text-gray-300 flex flex-wrap gap-2 items-center">
-      {data.map((r) => (
-        <span key={r.id} className="inline-flex items-center gap-1 bg-gray-800/70 border border-gray-700 rounded px-2 py-0.5">
-          <span className="font-mono">{r.quantity}×</span>
-          <a href={r.url} target="_blank" rel="noreferrer" className="hover:underline">
-            {r.name}
+    <div className="mt-2 ml-10">
+      <div className="flex flex-wrap gap-2">
+        {reagents.map((r) => (
+          <a
+            key={r.id}
+            href={r.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 rounded-full border border-gray-700 bg-gray-900/60 px-2 py-1 text-xs text-gray-100 hover:border-[#C09A1A] transition"
+            title={r.name}
+          >
+            <span className="font-medium text-[#C09A1A]">x{r.quantity}</span>
+            <span className="truncate max-w-[220px]">{r.name}</span>
           </a>
-        </span>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
