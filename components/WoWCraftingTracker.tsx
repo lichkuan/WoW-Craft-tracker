@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import ReagentsBlock from "./ReagentsBlock";
 
+import { Home as HomeIcon } from "lucide-react";
+
 interface Character {
   id: string;
   name: string;
@@ -1689,73 +1691,91 @@ const WoWCraftingTracker: React.FC = () => {
   const CharacterView = () => {
     if (!currentCharacter) return null;
 
-    return (
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-gray-900/85 rounded-2xl p-6 mb-6 border border-gray-700 shadow-md">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-4xl font-extrabold text-[#C09A1A] drop-shadow-sm mb-2">
-                {currentCharacter.name}
-              </h1>
-              <div className="text-gray-200 space-y-1">
-                <p>
-                  Niveau {currentCharacter.level} {currentCharacter.race}{" "}
-                  {currentCharacter.class}
-                </p>
-                {currentCharacter.server && <p>Serveur: {currentCharacter.server}</p>}
-                {currentCharacter.guild && <p>Guilde: {currentCharacter.guild}</p>}
-                <p
-                  className={
-                    currentCharacter.faction === "alliance"
-                      ? "text-blue-300"
-                      : "text-red-300"
-                  }
-                >
-                  {currentCharacter.faction === "alliance" ? "🛡️ Alliance" : "⚔️ Horde"}
-                </p>
-              </div>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => {
-                  setEditingCharacter(currentCharacter);
-                  setView("edit");
-                }}
-                className="bg-[#C09A1A] hover:bg-yellow-500 text-black px-4 py-2 rounded flex items-center"
-                type="button"
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Éditer
-              </button>
-              <button
-                onClick={shareCharacter}
-                disabled={loading}
-                className="bg-black/80 hover:bg-black text-white px-4 py-2 rounded flex items-center border border-gray-700 disabled:opacity-50"
-                type="button"
-              >
-                <Share className="w-4 h-4 mr-2" />
-                {loading ? "Partage..." : "Partager"}
-              </button>
-              <button
-                onClick={shareToDiscord}
-                className="bg-black/80 hover:bg-black text-white px-4 py-2 rounded flex items-center border border-gray-700"
-                title="Partager sur Discord"
-                type="button"
-              >
-                💬 Discord
-              </button>
-            </div>
+return (
+  <div className="max-w-6xl mx-auto">
+    <div className="mb-3">
+      <button
+        type="button"
+        onClick={() => {
+          // si tu gères l'état local :
+          setCurrentCharacter?.(null);
+          setView?.("home");
+        }}
+        className="inline-flex items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-1.5 text-sm text-yellow-200 hover:bg-yellow-500/20"
+      >
+        <HomeIcon className="h-4 w-4" />
+        Pierre de Foyer
+      </button>
+    </div>
+
+    <div className="bg-gray-900/85 rounded-2xl p-6 mb-6 border border-gray-700 shadow-md">
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-4xl font-extrabold text-[#C09A1A] drop-shadow-sm mb-2">
+            {currentCharacter.name}
+          </h1>
+          <div className="text-gray-200 space-y-1">
+            <p>
+              Niveau {currentCharacter.level} {currentCharacter.race}{" "}
+              {currentCharacter.class}
+            </p>
+            {currentCharacter.server && <p>Serveur: {currentCharacter.server}</p>}
+            {currentCharacter.guild && <p>Guilde: {currentCharacter.guild}</p>}
+            <p
+              className={
+                currentCharacter.faction === "alliance"
+                  ? "text-blue-300"
+                  : "text-red-300"
+              }
+            >
+              {currentCharacter.faction === "alliance" ? "🛡️ Alliance" : "⚔️ Horde"}
+            </p>
           </div>
         </div>
 
-        <div className="mb-6">
-          <SearchBar
-            searchTerm={searchTerm}
-            onSearchChange={onSearch}
-            placeholder="Rechercher une recette…"
-            autoFocus
-          />
+        <div className="flex space-x-2">
+          <button
+            onClick={() => {
+              setEditingCharacter(currentCharacter);
+              setView("edit");
+            }}
+            className="bg-[#C09A1A] hover:bg-yellow-500 text-black px-4 py-2 rounded flex items-center"
+            type="button"
+          >
+            <Edit className="w-4 h-4 mr-2" />
+            Éditer
+          </button>
+
+          <button
+            onClick={shareCharacter}
+            disabled={loading}
+            className="bg-black/80 hover:bg-black text-white px-4 py-2 rounded flex items-center border border-gray-700 disabled:opacity-50"
+            type="button"
+          >
+            <Share className="w-4 h-4 mr-2" />
+            {loading ? "Partage..." : "Partager"}
+          </button>
+
+          <button
+            onClick={shareToDiscord}
+            className="bg-black/80 hover:bg-black text-white px-4 py-2 rounded flex items-center border border-gray-700"
+            title="Partager sur Discord"
+            type="button"
+          >
+            💬 Discord
+          </button>
         </div>
+      </div>
+    </div>
+
+    <div className="mb-6">
+      <SearchBar
+        searchTerm={searchTerm}
+        onSearchChange={onSearch}
+        placeholder="Rechercher une recette…"
+        autoFocus
+      />
+    </div>
 
         {filteredProfessionData.map(({ profession, crafts, categories }) => (
           <div

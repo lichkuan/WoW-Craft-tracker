@@ -1,24 +1,23 @@
-import './globals.css'
-import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
-import { Inter } from 'next/font/google'
-
-const inter = Inter({ subsets: ['latin'] })
+import type { Metadata } from "next";
+import "./globals.css";
+import SiteHeader from "../components/SiteHeader"; // chemin relatif
 
 export const metadata: Metadata = {
-  title: 'WoW Crafting Tracker',
-  description: 'Mists of Pandaria Classic',
-}
+  title: "Wow Craft TRacker by Ostie",
+  description: "Partagez et explorez les métiers de WoW MoP Classic.",
+  icons: {
+    icon: [{ url: "/favicon-64.png", sizes: "64x64", type: "image/png" }],
+    shortcut: ["/favicon-64.png"],
+    apple: [{ url: "/raid-tisane-dodo-logo-512.png", sizes: "512x512", type: "image/png" }],
+  },
+};
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
-      <head>
-        {/* Favicon dérivé du logo */}
-        <link rel="icon" href="/favicon.png" />
-        <meta name="theme-color" content="#0b0b0b" />
-      </head>
-      <body className={inter.className}>
+      {/* Le padding-top du body est ajusté dynamiquement via --header-h */}
+      <body>
+        <SiteHeader />
         {children}
       </body>
     </html>

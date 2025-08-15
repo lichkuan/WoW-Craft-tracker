@@ -1,100 +1,269 @@
-/* eslint-disable react/no-unescaped-entities */
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronRight, Package } from "lucide-react";
 
-type Reagent = {
+/** Structure renvoyée par /api/reagents (cf. route.ts) */
+type ReagentNode = {
   id: number;
   name: string;
-  url: string;
-  quantity: number; // correspond à "qty" côté API
+  url: string; // item url (FR)
+  quantity: number;
+  children?: ReagentNode[];
 };
 
-export default function ReagentsBlock({
+type Props = {
+  /** De préférence l’URL du spell; sinon item ou même l’URL Wowhead de la recette. */
+  recipeUrl: string;
+  /** Si fourni, on priorise cette URL (souvent l’URL du spell). */
+  spellUrl?: string;
+  /** Purement affichage (non obligatoire) */
+  recipeName?: string;
+  /** Profondeur max à demander à l’API (1 = seulement premier niveau) */
+  maxDepth?: number;
+};
+
+/* ---------- couleurs de rareté ----------
+  0: poor (gris), 1: commun (blanc), 2: inhabituel (vert), 3: rare (bleu),
+  4: épique (violet), 5: légendaire (orange), 6: artefact (jaune)
+----------------------------------------- */
+const QUALITY_CLASS: Record<number, string> = {
+  0: "text-gray-400 border-gray-600",
+  1: "text-gray-100 border-gray-600",
+  2: "text-emerald-400 border-emerald-600",
+  3: "text-blue-400 border-blue-600",
+  4: "text-purple-400 border-purple-600",
+  5: "text-orange-400 border-orange-600",
+  6: "text-yellow-300 border-yellow-600",
+};
+
+// cache qualité item en mémoire (clé: itemId)
+const qualityCache = new Map<number, number | undefined>();
+
+async function fetchItemQuality(itemId: number): Promise<number | undefined> {
+  if (qualityCache.has(itemId)) return qualityCache.get(itemId);
+
+  // Endpoint tooltip Wowhead — si CORS bloque, on retombe sur undefined.
+  const url = `https://www.wowhead.com/tooltip/item/${itemId}?dataEnv=mop-classic&locale=fr_FR`;
+  try {
+    const r = await fetch(url, { cache: "force-cache" });
+    if (!r.ok) throw new Error("tooltip fetch failed");
+    const data = (await r.json()) as any;
+    const q =
+      Number(
+        data?.quality ??
+          data?.item?.quality ??
+          data?.json?.quality ??
+          data?.data?.quality
+      ) || undefined;
+    qualityCache.set(itemId, q);
+    return q;
+  } catch {
+    qualityCache.set(itemId, undefined);
+    return undefined;
+  }
+}
+
+/** Petit chip quantité, compact */
+function Qty({ n }: { n: number }) {
+  return (
+    <span className="ml-2 inline-flex items-center rounded bg-gray-900/60 border border-gray-700 px-1.5 py-0.5 text-[11px] leading-none text-gray-300">
+      ×{n}
+    </span>
+  );
+}
+
+/** Une ligne de réactif (un nœud), avec toggle & récursif */
+function ReagentRow({
+  node,
+  depth,
+  expandedMap,
+  toggle,
+  eagerQuality = false,
+}: {
+  node: ReagentNode;
+  depth: number;
+  expandedMap: Record<string, boolean>;
+  toggle: (key: string) => void;
+  eagerQuality?: boolean;
+}) {
+  // clé d’expansion stable pour ce nœud (chemin basé sur l’id + profondeur)
+  const key = useMemo(() => `${depth}-${node.id}`, [depth, node.id]);
+  const isExpanded = expandedMap[key] ?? false;
+
+  const [quality, setQuality] = useState<number | undefined>(undefined);
+
+  // qualité: ne requête que niveaux visibles OU demander dès le 1er niveau (eager)
+  useEffect(() => {
+    let ignore = false;
+    const doFetch = async () => {
+      if (node?.id) {
+        const q = await fetchItemQuality(node.id);
+        if (!ignore) setQuality(q);
+      }
+    };
+    if (eagerQuality || isExpanded || depth === 1) void doFetch();
+    return () => {
+      ignore = true;
+    };
+  }, [node?.id, isExpanded, depth, eagerQuality]);
+
+  const qualityClass =
+    typeof quality === "number" ? QUALITY_CLASS[quality] ?? "" : "";
+
+  const hasChildren = (node.children?.length ?? 0) > 0;
+
+  return (
+    <div className="w-full">
+      <button
+        className={`group w-full flex items-center justify-between rounded-lg border bg-gray-800/60 hover:bg-gray-700/60 transition px-2 py-1.5 mb-1 ${qualityClass}`}
+        onClick={() => (hasChildren ? toggle(key) : window.open(node.url, "_blank"))}
+        type="button"
+      >
+        <div className="min-w-0 flex items-center gap-2 text-left">
+          {hasChildren ? (
+            isExpanded ? (
+              <ChevronDown className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
+            )
+          ) : (
+            <Package className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+          )}
+
+          {/* Lien Wowhead (ouvre nouvel onglet si clic directement) */}
+          <a
+            href={node.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="truncate text-[13px] md:text-sm text-gray-100 hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {node.name}
+          </a>
+
+          <Qty n={node.quantity} />
+        </div>
+
+        {hasChildren && (
+          <span className="text-[10px] text-gray-400">
+            {node.children?.length} sous-composant
+            {node.children!.length > 1 ? "s" : ""}
+          </span>
+        )}
+      </button>
+
+      {/* enfants */}
+      {hasChildren && isExpanded && (
+        <div className="pl-3 md:pl-5">
+          {node.children!.map((child) => (
+            <ReagentRow
+              key={`${key}-${child.id}`}
+              node={child}
+              depth={depth + 1}
+              expandedMap={expandedMap}
+              toggle={toggle}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Bloc principal (récupère l’arbre et rend la liste) */
+const ReagentsBlock: React.FC<Props> = ({
   recipeUrl,
   spellUrl,
   recipeName,
-}: {
-  recipeUrl: string;
-  spellUrl?: string;
-  recipeName?: string;
-}) {
-  const [reagents, setReagents] = useState<Reagent[]>([]);
+  maxDepth = 3, // 3 niveaux par défaut; passer 1 pour “premier niveau uniquement”
+}) => {
+  const urlToUse = spellUrl || recipeUrl;
+
+  const [tree, setTree] = useState<ReagentNode[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const urlToUse = spellUrl || recipeUrl;
-    if (!urlToUse) {
-      setReagents([]);
-      return;
-    }
+  // état d’expansion: clé -> bool
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-    let aborted = false;
+  const fetchTree = async () => {
     setLoading(true);
     setError(null);
-
-    // on encode correctement l’URL de wowhead dans la query
-    fetch(`/api/reagents?url=${encodeURIComponent(urlToUse)}`, {
-      cache: "no-store",
-    })
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const data: Reagent[] = await r.json();
-        if (!aborted) setReagents(Array.isArray(data) ? data : []);
-      })
-      .catch((e) => {
-        if (!aborted) setError(e?.message || "Erreur inconnue");
-      })
-      .finally(() => {
-        if (!aborted) setLoading(false);
+    try {
+      const p = new URLSearchParams();
+      p.set("url", urlToUse);
+      p.set("maxDepth", String(maxDepth));
+      // Ajoute un timestamp pour éviter les caches agressifs côté navigateur
+      p.set("t", String(Date.now()));
+      const r = await fetch(`/api/reagents?${p.toString()}`, {
+        cache: "no-store",
       });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = (await r.json()) as ReagentNode[];
+      setTree(data);
+    } catch (e: any) {
+      setError(e?.message || "Erreur inconnue");
+      setTree([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return () => {
-      aborted = true;
-    };
-  }, [recipeUrl, spellUrl]);
+  useEffect(() => {
+    void fetchTree();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlToUse, maxDepth]);
 
-  // UI
-  if (loading) {
+  const hasData = (tree?.length ?? 0) > 0;
+
+  const toggle = (key: string) =>
+    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  if (loading && !tree) {
     return (
-      <div className="mt-2 ml-10 text-xs text-gray-400">
-        Recherche des composants…
+      <div className="mt-2 rounded-lg border border-gray-700 bg-gray-800/70 p-3 text-sm text-gray-300">
+        Chargement des composants…
       </div>
     );
   }
 
   if (error) {
-    // on n’en fait pas un drame à l’écran, mais on laisse un petit indice
     return (
-      <div className="mt-2 ml-10 text-xs text-gray-500">
-        Composants indisponibles pour le moment.
+      <div className="mt-2 rounded-lg border border-red-700 bg-red-900/30 p-3 text-sm text-red-200">
+        Impossible de récupérer les composants{recipeName ? ` pour "${recipeName}"` : ""}. {error}
       </div>
     );
   }
 
-  if (!reagents || reagents.length === 0) {
-    // Pas de composants détectés (ou wowhead ne liste rien) → on n’affiche rien.
-    return null;
+  if (!hasData) {
+    return (
+      <div className="mt-2 rounded-lg border border-gray-700 bg-gray-800/60 p-3 text-sm text-gray-400">
+        Aucun composant trouvé.
+      </div>
+    );
   }
 
   return (
-    <div className="mt-2 ml-10">
-      <div className="flex flex-wrap gap-2">
-        {reagents.map((r) => (
-          <a
-            key={r.id}
-            href={r.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-full border border-gray-700 bg-gray-900/60 px-2 py-1 text-xs text-gray-100 hover:border-[#C09A1A] transition"
-            title={r.name}
-          >
-            <span className="font-medium text-[#C09A1A]">x{r.quantity}</span>
-            <span className="truncate max-w-[220px]">{r.name}</span>
-          </a>
+    <div className="mt-2 rounded-lg border border-gray-700 bg-gray-800/50 p-2">
+      <div className="mb-1 text-[13px] font-semibold text-yellow-300">
+        Composants
+      </div>
+
+      <div>
+        {tree!.map((node) => (
+          <ReagentRow
+            key={`1-${node.id}`}
+            node={node}
+            depth={1}
+            expandedMap={expanded}
+            toggle={toggle}
+            eagerQuality
+          />
         ))}
       </div>
     </div>
   );
-}
+};
+
+export default ReagentsBlock;
