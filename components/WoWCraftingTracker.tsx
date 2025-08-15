@@ -78,66 +78,14 @@ const RECIPE_TYPE_TO_PROFESSION: Record<string, string> = {
   "Technique de calligraphie": "Calligraphie",
 };
 
-// Barre de recherche pour les recettes rares (focus stable + debounce)
-const RareRecipesSearchBar = React.memo(function RareRecipesSearchBar({
-  value,
-  onChange,
-  placeholder = "Rechercher une recette ou un crafteur...",
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-}) {
-  const [local, setLocal] = useState(value);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setLocal(value);
-  }, [value]);
-
-  useEffect(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => onChange(local), 250);
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [local, onChange]);
-
-  return (
-    <div className="bg-gray-700 rounded-lg p-4">
-      <div className="flex items-center gap-4">
-        <Search className="w-5 h-5 text-[#C09A1A]" aria-hidden="true" />
-        <input
-          ref={inputRef}
-          type="text"
-          value={local}
-          onChange={(e) => setLocal(e.target.value)}
-          placeholder={placeholder}
-          className="flex-1 bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
-          autoComplete="off"
-          aria-label={placeholder}
-        />
-        {local && (
-          <button
-            type="button"
-            onClick={() => setLocal("")}
-            aria-label="Effacer la recherche"
-            className="text-gray-300 hover:text-white text-sm"
-          >
-            Effacer
-          </button>
-        )}
-      </div>
-    </div>
-  );
-});
-
-// Barre de recherche stable (ne perd plus le focus)
+/* =========================
+   Barre de recherche stable
+   (utilisée partout, y compris Recettes rares)
+   ========================= */
 const SearchBar = React.memo(function SearchBar({
   searchTerm,
   onSearchChange,
-  placeholder = "Rechercher une recette...",
+  placeholder = "Rechercher…",
   autoFocus = false,
 }: {
   searchTerm: string;
@@ -166,28 +114,28 @@ const SearchBar = React.memo(function SearchBar({
   }, [localValue, onSearchChange]);
 
   return (
-    <div className="mb-6">
-      <div className="bg-gray-800 rounded-lg p-4 border border-red-700 flex items-center gap-4">
-        <Search className="w-5 h-5 text-red-400" aria-hidden="true" />
+    <div>
+      <div className="bg-gray-800/90 rounded-lg p-4 border border-gray-700 flex items-center gap-4">
+        <Search className="w-5 h-5 text-[#C09A1A]" aria-hidden="true" />
         <input
           ref={inputRef}
           type="text" // 'text' (pas 'search') pour éviter les comportements natifs bizarres
           value={localValue}
           onChange={(e) => setLocalValue(e.target.value)}
           placeholder={placeholder}
-          className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+          className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
           autoComplete="off"
           autoFocus={autoFocus}
-          aria-label="Rechercher une recette"
+          aria-label={placeholder}
         />
         {localValue && (
           <button
             onClick={() => setLocalValue("")}
-            className="text-gray-400 hover:text-white"
+            className="text-gray-300 hover:text-white text-sm"
             type="button"
             aria-label="Effacer la recherche"
           >
-            <X className="w-4 h-4" />
+            Effacer
           </button>
         )}
       </div>
@@ -195,7 +143,9 @@ const SearchBar = React.memo(function SearchBar({
   );
 });
 
-// Panneau latéral d’instructions (slide-over)
+/* ================
+   Drawer d’aide
+   ================ */
 function InstructionsDrawer({
   open,
   onClose,
@@ -207,7 +157,7 @@ function InstructionsDrawer({
     <>
       {/* Overlay */}
       <div
-        className={`fixed inset-0 bg-black/50 transition-opacity z-40 ${
+        className={`fixed inset-0 bg-black/60 transition-opacity z-40 ${
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         onClick={onClose}
@@ -283,12 +233,7 @@ const WoWCraftingTracker: React.FC = () => {
   );
   const [importText, setImportText] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const onSearch = useCallback(
-    (v: string) => {
-      setSearchTerm(v);
-    },
-    [setSearchTerm]
-  );
+  const onSearch = useCallback((v: string) => setSearchTerm(v), []);
   const [expandedCategories, setExpandedCategories] = useState<{
     [key: string]: boolean;
   }>({});
@@ -382,16 +327,16 @@ const WoWCraftingTracker: React.FC = () => {
   };
 
   const getProfessionLevelColor = (level?: number): string => {
-    if (!level || level <= 0) return "text-gray-400";
-    if (level <= 60) return "text-gray-400";
-    if (level <= 140) return "text-green-400";
-    if (level <= 205) return "text-red-400";
-    if (level <= 300) return "text-orange-400";
-    if (level <= 350) return "text-red-400";
+    if (!level || level <= 0) return "text-gray-300";
+    if (level <= 60) return "text-gray-300";
+    if (level <= 140) return "text-green-300";
+    if (level <= 205) return "text-red-300";
+    if (level <= 300) return "text-orange-300";
+    if (level <= 350) return "text-red-300";
     if (level <= 425) return "text-[#C09A1A]";
-    if (level <= 500) return "text-blue-400";
-    if (level <= 600) return "text-pink-400";
-    return "text-gray-400";
+    if (level <= 500) return "text-blue-300";
+    if (level <= 600) return "text-pink-300";
+    return "text-gray-300";
   };
 
   const toggleAllCategories = useCallback(
@@ -941,16 +886,16 @@ const WoWCraftingTracker: React.FC = () => {
     setExpandedRareProfessions(updates);
   };
 
-  // Remplace complètement cette définition
+  // Section Recettes rares (utilise la SearchBar commune)
   const RareRecipesSection = () => {
     if (rareRecipesLoading) {
       return (
-        <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 shadow-md mb-8">
+        <div className="bg-gray-900/85 rounded-2xl p-8 border border-gray-700 shadow-md mb-8">
           <div className="flex flex-col items-start">
             <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-2">
               ✨ Recettes rares
             </h2>
-            <p className="text-gray-300">
+            <p className="text-gray-200">
               Découvrez qui peut crafter les recettes les plus recherchées de MoP Classic, notamment ceux des diverses réputations et loot de raid. Pour les autres crafts, allez directement dans Communauté.
             </p>
           </div>
@@ -961,12 +906,12 @@ const WoWCraftingTracker: React.FC = () => {
 
     if (rareRecipes.length === 0) {
       return (
-        <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 shadow-md mb-8">
+        <div className="bg-gray-900/85 rounded-2xl p-8 border border-gray-700 shadow-md mb-8">
           <div className="flex flex-col items-start">
             <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-2">
               ✨ Recettes rares
             </h2>
-            <p className="text-gray-300">
+            <p className="text-gray-200">
               Découvrez qui peut crafter les recettes les plus recherchées de MoP Classic, notamment ceux des diverses réputations et loot de raid. Pour les autres crafts, allez directement dans Communauté.
             </p>
           </div>
@@ -975,7 +920,7 @@ const WoWCraftingTracker: React.FC = () => {
             <h3 className="text-2xl font-bold text-[#C09A1A] mb-4">
               Aucune recette rare détectée
             </h3>
-            <p className="text-gray-400">
+            <p className="text-gray-300">
               Les recettes rares apparaîtront ici quand des personnages
               <br />
               avec des formules, patrons ou plans spéciaux seront partagés.
@@ -1004,7 +949,7 @@ const WoWCraftingTracker: React.FC = () => {
     } as const;
 
     return (
-      <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 shadow-md mb-8">
+      <div className="bg-gray-900/85 rounded-2xl p-8 border border-gray-700 shadow-md mb-8">
         {/* En-tête alignée à gauche + texte demandé */}
         <div className="flex flex-col items-start mb-6">
           <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-1">
@@ -1013,22 +958,22 @@ const WoWCraftingTracker: React.FC = () => {
               ({filteredRareRecipes.length})
             </span>
           </h2>
-          <p className="text-gray-300">
+          <p className="text-gray-200">
             Découvrez qui peut crafter les recettes les plus recherchées de MoP Classic, notamment ceux des diverses réputations et loot de raid. Pour les autres crafts, allez directement dans Communauté.
           </p>
         </div>
 
         {/* Contrôles */}
         <div className="mb-6 space-y-4">
-          {/* Barre de recherche dédiée aux recettes rares (version stable) */}
-          <RareRecipesSearchBar
-            value={rareRecipeSearchTerm}
-            onChange={setRareRecipeSearchTerm}
+          {/* Search bar identique à Character View */}
+          <SearchBar
+            searchTerm={rareRecipeSearchTerm}
+            onSearchChange={setRareRecipeSearchTerm}
             placeholder="Rechercher une recette ou un crafteur…"
           />
 
           {/* Filtres par métier */}
-          <div className="bg-gray-700 rounded-lg p-4">
+          <div className="bg-gray-800/90 rounded-lg p-4 border border-gray-700">
             <div className="flex items-center mb-3">
               <Filter className="w-5 h-5 text-[#C09A1A] mr-2" />
               <h3 className="text-lg font-semibold text-[#C09A1A]">
@@ -1074,7 +1019,7 @@ const WoWCraftingTracker: React.FC = () => {
           <div className="flex justify-end">
             <button
               onClick={toggleAllRareRecipes}
-              className="bg-gray-900 hover:bg-black border border-gray-700 text-white px-4 py-2 rounded flex items-center text-sm"
+              className="bg-black/80 hover:bg-black border border-gray-700 text-white px-4 py-2 rounded flex items-center text-sm"
               type="button"
             >
               {allRareRecipesExpanded ? (
@@ -1098,10 +1043,10 @@ const WoWCraftingTracker: React.FC = () => {
             {Object.entries(recipesByProfession).map(([profession, recipes]) => (
               <div
                 key={profession}
-                className="border border-gray-600 rounded-lg overflow-hidden"
+                className="border border-gray-700 rounded-lg overflow-hidden"
               >
                 <div
-                  className="bg-gray-700 px-6 py-4 border-b border-gray-600 cursor-pointer hover:bg-gray-600"
+                  className="bg-gray-800/90 px-6 py-4 border-b border-gray-700 cursor-pointer hover:bg-gray-800"
                   onClick={() =>
                     setExpandedRareProfessions((prev) => ({
                       ...prev,
@@ -1117,7 +1062,7 @@ const WoWCraftingTracker: React.FC = () => {
                         ] || "🔮"}
                       </span>
                       {profession}
-                      <span className="ml-3 px-2 py-0.5 bg-gray-800 border border-gray-600 rounded text-xs text-gray-200">
+                      <span className="ml-3 px-2 py-0.5 bg-gray-900/60 border border-gray-700 rounded text-xs text-gray-200">
                         {recipes.length} recette{recipes.length > 1 ? "s" : ""}
                       </span>
                     </h3>
@@ -1135,7 +1080,7 @@ const WoWCraftingTracker: React.FC = () => {
                       {recipes.map((recipe) => (
                         <div
                           key={recipe.id}
-                          className="group flex items-start justify-between p-4 rounded-xl border bg-gray-700/70 border-gray-600 hover:border-[#C09A1A] transition mb-2"
+                          className="group flex items-start justify-between p-4 rounded-xl border bg-gray-800/70 border-gray-700 hover:border-[#C09A1A] transition mb-2"
                         >
                           <div className="flex-1 min-w-0">
                             <a
@@ -1151,7 +1096,7 @@ const WoWCraftingTracker: React.FC = () => {
                                 {recipe.type}
                               </span>
                               {recipe.source && recipe.source !== "-" && (
-                                <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-600 text-xs text-gray-200">
+                                <span className="px-2 py-0.5 rounded bg-gray-900/60 border border-gray-700 text-xs text-gray-200">
                                   {recipe.source}
                                 </span>
                               )}
@@ -1163,7 +1108,7 @@ const WoWCraftingTracker: React.FC = () => {
                                 {recipe.crafters.map((name) => (
                                   <span
                                     key={`${recipe.id}-${name}`}
-                                    className="inline-flex items-center rounded-full border border-gray-600 bg-gray-800 px-2 py-0.5 text-xs text-gray-100"
+                                    className="inline-flex items-center rounded-full border border-gray-700 bg-gray-900/60 px-2 py-0.5 text-xs text-gray-100"
                                   >
                                     {name}
                                   </span>
@@ -1182,7 +1127,7 @@ const WoWCraftingTracker: React.FC = () => {
                             href={recipe.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="ml-3 px-3 py-1 bg-black hover:bg-gray-900 border border-gray-600 text-white text-xs rounded flex-shrink-0"
+                            className="ml-3 px-3 py-1 bg-black hover:bg-gray-900 border border-gray-700 text-white text-xs rounded flex-shrink-0"
                           >
                             Wowhead
                           </a>
@@ -1195,7 +1140,7 @@ const WoWCraftingTracker: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-400">
+          <div className="text-center py-8 text-gray-300">
             Aucune recette trouvée avec les filtres actuels.
           </div>
         )}
@@ -1205,7 +1150,7 @@ const WoWCraftingTracker: React.FC = () => {
           <button
             onClick={loadRareRecipes}
             disabled={rareRecipesLoading}
-            className="bg-black hover:bg-gray-900 border border-gray-700 text-white px-6 py-2 rounded text-sm disabled:opacity-50"
+            className="bg-black/80 hover:bg-black border border-gray-700 text-white px-6 py-2 rounded text-sm disabled:opacity-50"
             type="button"
           >
             {rareRecipesLoading ? "Analyse..." : "🔄 Actualiser les recettes rares"}
@@ -1255,7 +1200,7 @@ const WoWCraftingTracker: React.FC = () => {
     };
 
     return (
-      <div className="max-w-2xl mx-auto bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md">
+      <div className="max-w-2xl mx-auto bg-gray-900/85 rounded-2xl p-8 border border-gray-700 shadow-md">
         <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6 flex items-center">
           <User className="mr-3" />
           {editMode ? "Modifier le personnage" : "Créer un personnage"}
@@ -1270,7 +1215,7 @@ const WoWCraftingTracker: React.FC = () => {
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, name: e.target.value }))
               }
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
               aria-label="Nom du personnage"
             />
             <input
@@ -1280,7 +1225,7 @@ const WoWCraftingTracker: React.FC = () => {
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, server: e.target.value }))
               }
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
               aria-label="Serveur du personnage"
             />
           </div>
@@ -1296,7 +1241,7 @@ const WoWCraftingTracker: React.FC = () => {
                   level: parseInt(e.target.value) || 90,
                 }))
               }
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
               aria-label="Niveau du personnage"
             />
             <select
@@ -1308,7 +1253,7 @@ const WoWCraftingTracker: React.FC = () => {
                   race: "",
                 }))
               }
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
               aria-label="Faction"
             >
               <option value="alliance">🛡️ Alliance</option>
@@ -1321,7 +1266,7 @@ const WoWCraftingTracker: React.FC = () => {
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, guild: e.target.value }))
               }
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
               aria-label="Guilde"
             />
           </div>
@@ -1332,7 +1277,7 @@ const WoWCraftingTracker: React.FC = () => {
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, race: e.target.value }))
               }
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
               aria-label="Race"
             >
               <option value="">Choisir une race</option>
@@ -1347,7 +1292,7 @@ const WoWCraftingTracker: React.FC = () => {
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, class: e.target.value }))
               }
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
               aria-label="Classe"
             >
               <option value="">Choisir une classe</option>
@@ -1365,7 +1310,7 @@ const WoWCraftingTracker: React.FC = () => {
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, profession1: e.target.value }))
               }
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
               aria-label="Métier principal 1"
             >
               <option value="">Métier principal 1</option>
@@ -1380,7 +1325,7 @@ const WoWCraftingTracker: React.FC = () => {
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, profession2: e.target.value }))
               }
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
               aria-label="Métier principal 2"
             >
               <option value="">Métier principal 2</option>
@@ -1398,7 +1343,7 @@ const WoWCraftingTracker: React.FC = () => {
             <button
               onClick={handleSubmit}
               disabled={!form.name || !form.race || !form.class}
-              className="bg-red-700 hover:bg-red-800 text-black font-bold py-3 px-6 rounded disabled:opacity-50"
+              className="bg-[#C09A1A] hover:bg-yellow-500 text-black font-bold py-3 px-6 rounded disabled:opacity-50"
               type="button"
             >
               {editMode
@@ -1414,7 +1359,7 @@ const WoWCraftingTracker: React.FC = () => {
                   setView("home");
                 }
               }}
-              className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded"
+              className="bg-gray-700 hover:bg-gray-600 border border-gray-600 text-white font-bold py-3 px-6 rounded"
               type="button"
             >
               Annuler
@@ -1427,29 +1372,23 @@ const WoWCraftingTracker: React.FC = () => {
 
   const HomeView = () => (
     <div className="max-w-6xl mx-auto text-center">
-      <div className="bg-gray-800 rounded-2xl px-6 py-8 border border-red-700 mb-4 shadow-md">
-        <h1 className="text-5xl font-bold text-red-400 mb-4">
-          WoW Crafting Tracker by Ostie
-        </h1>
-        <p className="text-xl text-gray-300 mb-8">
-          Partagez vos métiers World of Warcraft
-        </p>
+      <div className="bg-gray-900/85 rounded-2xl px-6 py-8 border border-gray-700 mb-4 shadow-md">
+        {/* Titre enlevé conformément à ta demande précédente */}
 
-        {/* On enlève le bloc 2 colonnes et on invite à ouvrir l'aide */}
-        <div className="bg-gray-700/60 border border-gray-600 rounded-2xl p-4 md:p-5 mb-6 text-left">
+        {/* Bandeau d'aide */}
+        <div className="bg-gray-800/85 border border-gray-700 rounded-2xl p-4 md:p-5 mb-6 text-left">
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-2xl font-bold text-[#C09A1A] mb-2">
                 📋 Besoin d&apos;aide ?
               </h2>
               <p className="text-gray-200">
-                Cliquez sur le bouton <strong>Instructions</strong>
-                pour afficher le guide détaillé.
+                Clique sur <strong>Instructions</strong> pour afficher le guide détaillé.
               </p>
             </div>
             <button
               onClick={() => setHelpOpen(true)}
-              className="inline-flex items-center gap-2 bg-gray-900 hover:bg-black text-white rounded px-3 py-2 border border-gray-600"
+              className="inline-flex items-center gap-2 bg-black/80 hover:bg-black text-white rounded px-3 py-2 border border-gray-700"
               type="button"
             >
               <HelpCircle className="w-4 h-4" />
@@ -1461,7 +1400,7 @@ const WoWCraftingTracker: React.FC = () => {
         {characters.length === 0 ? (
           <button
             onClick={() => setView("create")}
-            className="bg-red-700 hover:bg-red-800 text-black font-bold py-4 px-8 rounded-lg text-xl"
+            className="bg-[#C09A1A] hover:bg-yellow-500 text-black font-bold py-4 px-8 rounded-lg text-xl"
             type="button"
           >
             Créer mon personnage
@@ -1475,7 +1414,7 @@ const WoWCraftingTracker: React.FC = () => {
               {characters.map((character) => (
                 <div
                   key={character.id}
-                  className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-red-600"
+                  className="bg-gray-800/85 rounded-lg p-4 border border-gray-700 hover:border-[#C09A1A]"
                 >
                   <div className="flex items-center justify-between">
                     <div
@@ -1488,7 +1427,7 @@ const WoWCraftingTracker: React.FC = () => {
                       <h3 className="text-xl font-semibold text-[#d8b55c]">
                         {character.name}
                       </h3>
-                      <p className="text-gray-300">
+                      <p className="text-gray-200">
                         Niveau {character.level} {character.race}{" "}
                         {character.class}
                       </p>
@@ -1498,7 +1437,7 @@ const WoWCraftingTracker: React.FC = () => {
                     </div>
                     <button
                       onClick={() => deleteCharacter(character)}
-                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm ml-4"
+                      className="bg-black hover:bg-gray-900 border border-gray-700 text-white px-3 py-1 rounded text-sm ml-4"
                       type="button"
                     >
                       Supprimer
@@ -1509,7 +1448,7 @@ const WoWCraftingTracker: React.FC = () => {
             </div>
             <button
               onClick={() => setView("create")}
-              className="bg-red-700 hover:bg-red-800 text-black font-bold py-2 px-6 rounded"
+              className="bg-[#C09A1A] hover:bg-yellow-500 text-black font-bold py-2 px-6 rounded"
               type="button"
             >
               Ajouter un personnage
@@ -1520,54 +1459,47 @@ const WoWCraftingTracker: React.FC = () => {
 
       <RareRecipesSection />
 
-      <div className="bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md">
-        <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6">
+      {/* ======================
+          SECTION COMMUNAUTÉ (relook grisé/jaune/noir/blanc)
+         ====================== */}
+      <div className="bg-gray-900/85 rounded-2xl p-8 border border-gray-700 shadow-md">
+        <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6 text-left">
           🌟 Communauté
         </h2>
 
         {publicCharacters.length > 0 ? (
           <>
-            <p className="text-gray-300 mb-6">
+            <p className="text-gray-200 mb-6 text-left">
               Découvrez les personnages partagés par la communauté
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {publicCharacters.map((character) => (
                 <div
                   key={character.shareId}
-                  className={`bg-gray-700 rounded-lg p-6 border-2 ${
-                    character.faction === "alliance"
-                      ? "border-blue-500"
-                      : "border-red-500"
-                  }`}
+                  className="bg-gray-800/80 rounded-lg p-6 border border-gray-700 hover:border-[#C09A1A] transition"
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <div>
+                    <div className="text-left">
                       <button
                         onClick={() =>
                           window.open(`?share=${character.shareId}`, "_blank")
                         }
-                        className="text-xl font-semibold text-[#d8b55c] hover:text-red-400 cursor-pointer"
+                        className="text-xl font-semibold text-[#d8b55c] hover:text-yellow-400 cursor-pointer"
                         type="button"
                       >
                         {character.name}
                       </button>
-                      <p className="text-gray-300 text-sm">
+                      <p className="text-gray-200 text-sm">
                         Niveau {character.level} {character.race}{" "}
                         {character.class}
                       </p>
                     </div>
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-semibold ${
-                        character.faction === "alliance"
-                          ? "bg-blue-600 text-blue-100"
-                          : "bg-red-600 text-red-100"
-                      }`}
-                    >
+                    <span className="px-2 py-1 rounded text-xs font-semibold bg-black/70 text-gray-200 border border-gray-700">
                       {character.faction === "alliance" ? "🛡️ Alliance" : "⚔️ Horde"}
                     </span>
                   </div>
 
-                  <div className="mb-4 space-y-1">
+                  <div className="mb-4 space-y-1 text-left">
                     {character.server && (
                       <p className="text-gray-400 text-sm">📍 {character.server}</p>
                     )}
@@ -1576,8 +1508,8 @@ const WoWCraftingTracker: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="space-y-3">
-                    <h4 className="text-red-400 font-semibold text-sm">
+                  <div className="space-y-3 text-left">
+                    <h4 className="text-[#C09A1A] font-semibold text-sm">
                       Métiers principaux :
                     </h4>
 
@@ -1590,7 +1522,7 @@ const WoWCraftingTracker: React.FC = () => {
                         return (
                           <div
                             key={key}
-                            className="flex items-center justify-between bg-gray-600 rounded p-2"
+                            className="flex items-center justify-between bg-gray-700/70 rounded p-2 border border-gray-700"
                           >
                             <div className="flex flex-col">
                               <span className="text-white text-sm font-medium">{key}</span>
@@ -1601,7 +1533,7 @@ const WoWCraftingTracker: React.FC = () => {
                                 </span>
                               )}
                             </div>
-                            <span className="bg-red-700 text-black px-2 py-1 rounded text-xs font-bold">
+                            <span className="bg-[#C09A1A] text-black px-2 py-1 rounded text-xs font-bold">
                               {character.craftCounts?.[key] ?? 0}
                             </span>
                           </div>
@@ -1609,10 +1541,10 @@ const WoWCraftingTracker: React.FC = () => {
                       })}
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-gray-600">
+                  <div className="mt-4 pt-4 border-t border-gray-700">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-400 text-sm">Total des recettes :</span>
-                      <span className="text-red-400 font-bold">
+                      <span className="text-[#C09A1A] font-bold">
                         {Object.values(character.craftCounts ?? {}).reduce(
                           (a: number, b: number) => a + b,
                           0
@@ -1626,7 +1558,7 @@ const WoWCraftingTracker: React.FC = () => {
                       onClick={() =>
                         window.open(`?share=${character.shareId}`, "_blank")
                       }
-                      className="text-blue-400 text-xs hover:text-[#C09A1A]"
+                      className="text-gray-200 text-xs hover:text-[#C09A1A]"
                       type="button"
                     >
                       🔗 Voir le profil complet
@@ -1639,15 +1571,15 @@ const WoWCraftingTracker: React.FC = () => {
         ) : (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">👥</div>
-            <h3 className="text-2xl font-bold text-red-300 mb-4">
+            <h3 className="text-2xl font-bold text-[#C09A1A] mb-4">
               Aucun personnage partagé
             </h3>
-            <p className="text-gray-400 mb-6">
+            <p className="text-gray-300 mb-6">
               Soyez le premier à partager vos métiers avec la communauté !<br />
               Créez un personnage, ajoutez vos recettes et cliquez sur
               &quot;Partager&quot;.
             </p>
-            <div className="bg-blue-900 border border-blue-600 rounded-lg p-4 max-w-md mx-auto">
+            <div className="bg-black/60 border border-gray-700 rounded-lg p-4 max-w-md mx-auto">
               <p className="text-[#d8b55c] text-sm">
                 💡 <strong>Astuce :</strong> Les personnages partagés
                 apparaissent ici automatiquement et permettent à la communauté
@@ -1660,7 +1592,7 @@ const WoWCraftingTracker: React.FC = () => {
         <div className="mt-6 text-center">
           <button
             onClick={loadPublicCharacters}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
+            className="bg-black/80 hover:bg-black text-white border border-gray-700 px-4 py-2 rounded text-sm"
             type="button"
           >
             🔄 Actualiser la liste
@@ -1671,25 +1603,25 @@ const WoWCraftingTracker: React.FC = () => {
   );
 
   const ImportView = ({ profession }: { profession: string }) => (
-    <div className="max-w-4xl mx-auto bg-gray-800 rounded-2xl p-8 border border-red-700 shadow-md">
+    <div className="max-w-4xl mx-auto bg-gray-900/85 rounded-2xl p-8 border border-gray-700 shadow-md">
       <h2 className="text-3xl font-extrabold text-[#C09A1A] tracking-wide mb-6">
         <Upload className="inline mr-3" />
         Importer - {profession}
       </h2>
 
       <div className="mb-6">
-        <label className="block text-red-300 font-semibold mb-2">
+        <label className="block text-gray-200 font-semibold mb-2">
           Liste markdown :
         </label>
         <textarea
           value={importText}
           onChange={(e) => setImportText(e.target.value)}
-          className="w-full h-12 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none font-mono text-sm"
+          className="w-full h-12 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none font-mono text-sm"
           placeholder="- [Item Name](https://wowhead.com/cata/item=12345)
 - [Autre Item](https://wowhead.com/cata/spell=67890)"
           aria-label="Zone d'import markdown"
         />
-        <p className="text-gray-400 text-sm mt-2">
+        <p className="text-gray-300 text-sm mt-2">
           ℹ️ Le niveau de métier sera automatiquement détecté depuis votre
           export
         </p>
@@ -1699,14 +1631,14 @@ const WoWCraftingTracker: React.FC = () => {
         <button
           onClick={() => importCrafts(profession)}
           disabled={!importText.trim()}
-          className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded disabled:opacity-50"
+          className="bg-[#C09A1A] hover:bg-yellow-500 text-black font-bold py-2 px-6 rounded disabled:opacity-50"
           type="button"
         >
           Importer
         </button>
         <button
           onClick={() => setView("character")}
-          className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded"
+          className="bg-black/80 hover:bg-black text-white border border-gray-700 font-bold py-2 px-6 rounded"
           type="button"
         >
           Annuler
@@ -1759,13 +1691,13 @@ const WoWCraftingTracker: React.FC = () => {
 
     return (
       <div className="max-w-6xl mx-auto">
-        <div className="bg-gray-800 rounded-2xl p-6 mb-6 border border-red-700 shadow-md hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)] transition">
+        <div className="bg-gray-900/85 rounded-2xl p-6 mb-6 border border-gray-700 shadow-md">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-4xl font-extrabold text-[#C09A1A] drop-shadow-sm mb-2 transition-colors duration-200 hover:text-yellow-300">
+              <h1 className="text-4xl font-extrabold text-[#C09A1A] drop-shadow-sm mb-2">
                 {currentCharacter.name}
               </h1>
-              <div className="text-gray-300 space-y-1">
+              <div className="text-gray-200 space-y-1">
                 <p>
                   Niveau {currentCharacter.level} {currentCharacter.race}{" "}
                   {currentCharacter.class}
@@ -1775,8 +1707,8 @@ const WoWCraftingTracker: React.FC = () => {
                 <p
                   className={
                     currentCharacter.faction === "alliance"
-                      ? "text-blue-400"
-                      : "text-red-400"
+                      ? "text-blue-300"
+                      : "text-red-300"
                   }
                 >
                   {currentCharacter.faction === "alliance" ? "🛡️ Alliance" : "⚔️ Horde"}
@@ -1789,7 +1721,7 @@ const WoWCraftingTracker: React.FC = () => {
                   setEditingCharacter(currentCharacter);
                   setView("edit");
                 }}
-                className="bg-red-700 hover:bg-red-800 border border-[#C09A1A]/30 text-white px-4 py-2 rounded flex items-center"
+                className="bg-[#C09A1A] hover:bg-yellow-500 text-black px-4 py-2 rounded flex items-center"
                 type="button"
               >
                 <Edit className="w-4 h-4 mr-2" />
@@ -1798,7 +1730,7 @@ const WoWCraftingTracker: React.FC = () => {
               <button
                 onClick={shareCharacter}
                 disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center disabled:opacity-50"
+                className="bg-black/80 hover:bg-black text-white px-4 py-2 rounded flex items-center border border-gray-700 disabled:opacity-50"
                 type="button"
               >
                 <Share className="w-4 h-4 mr-2" />
@@ -1806,7 +1738,7 @@ const WoWCraftingTracker: React.FC = () => {
               </button>
               <button
                 onClick={shareToDiscord}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded flex items-center"
+                className="bg-black/80 hover:bg-black text-white px-4 py-2 rounded flex items-center border border-gray-700"
                 title="Partager sur Discord"
                 type="button"
               >
@@ -1816,12 +1748,19 @@ const WoWCraftingTracker: React.FC = () => {
           </div>
         </div>
 
-        <SearchBar searchTerm={searchTerm} onSearchChange={onSearch} autoFocus />
+        <div className="mb-6">
+          <SearchBar
+            searchTerm={searchTerm}
+            onSearchChange={onSearch}
+            placeholder="Rechercher une recette…"
+            autoFocus
+          />
+        </div>
 
         {filteredProfessionData.map(({ profession, crafts, categories }) => (
           <div
             key={profession}
-            className="bg-gray-800 rounded-2xl border border-red-700 mb-6 shadow-md"
+            className="bg-gray-900/85 rounded-2xl border border-gray-700 mb-6 shadow-md"
           >
             <div className="p-6 border-b border-gray-700">
               <div className="flex justify-between items-center">
@@ -1849,7 +1788,7 @@ const WoWCraftingTracker: React.FC = () => {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => setView(`import-${profession}`)}
-                    className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded flex items-center border border-[#C09A1A]/30"
+                    className="bg-[#C09A1A] hover:bg-yellow-500 text-black px-4 py-2 rounded flex items-center"
                     type="button"
                   >
                     <Plus className="w-4 h-4 mr-2" />
@@ -1882,7 +1821,7 @@ const WoWCraftingTracker: React.FC = () => {
                           setCurrentCharacter(updated);
                         }
                       }}
-                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex items-center border border-[#C09A1A]/20"
+                      className="bg-black/80 hover:bg-black text-white px-4 py-2 rounded flex items-center border border-gray-700"
                       type="button"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
@@ -1891,7 +1830,7 @@ const WoWCraftingTracker: React.FC = () => {
                   )}
                 </div>
               </div>
-              <p className="text-gray-400 mt-2">{crafts.length} recettes</p>
+              <p className="text-gray-300 mt-2">{crafts.length} recettes</p>
             </div>
 
             {Object.keys(categories).length > 0 ? (
@@ -1902,7 +1841,7 @@ const WoWCraftingTracker: React.FC = () => {
                       onClick={() =>
                         toggleAllCategories(profession, Object.keys(categories))
                       }
-                      className="bg-red-700 hover:bg-red-800 border border-[#C09A1A]/30 text-white px-4 py-2 rounded flex items-center transition-colors text-sm"
+                      className="bg-black/80 hover:bg-black text-white border border-gray-700 px-4 py-2 rounded flex items-center transition-colors text-sm"
                       type="button"
                     >
                       {allExpanded[profession] ? (
@@ -1933,10 +1872,10 @@ const WoWCraftingTracker: React.FC = () => {
                             [`${profession}-${category}`]: !isExpanded,
                           }))
                         }
-                        className="w-full flex items-center justify-between bg-gray-700/70 hover:bg-gray-600 rounded-xl p-3 border border-gray-600 hover:border-red-500 transition"
+                        className="w-full flex items-center justify-between bg-gray-800/80 hover:bg-gray-800 rounded-xl p-3 border border-gray-700 hover:border-[#C09A1A] transition"
                         type="button"
                       >
-                        <span className="text-red-300 font-semibold">
+                        <span className="text-[#d8b55c] font-semibold">
                           {category} ({items.length})
                         </span>
                         {isExpanded ? (
@@ -1950,13 +1889,13 @@ const WoWCraftingTracker: React.FC = () => {
                         <div className="mt-2 space-y-1 ml-4">
                           {items.map((item) => (
                             <div key={item.id}>
-                              <div className="group bg-gray-700/70 rounded-xl p-3 md:p-4 flex items-center justify-between border border-gray-600 hover:border-red-500 transition transform hover:-translate-y-[1px] hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)]">
+                              <div className="group bg-gray-800/80 rounded-xl p-3 md:p-4 flex items-center justify-between border border-gray-700 hover:border-[#C09A1A] transition">
                                 <div className="flex items-center gap-2 min-w-0">
                                   <a
                                     href={item.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded"
+                                    className="text-xs bg-black/80 hover:bg-black text-white border border-gray-700 px-2 py-1 rounded"
                                   >
                                     Wowhead
                                   </a>
@@ -1964,12 +1903,12 @@ const WoWCraftingTracker: React.FC = () => {
                                     href={item.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-red-300 text-sm md:text-base hover:underline truncate"
+                                    className="text-[#d8b55c] text-sm md:text-base hover:underline truncate"
                                   >
                                     {item.name}
                                   </a>
                                 </div>
-                                <span className="px-2 py-0.5 rounded bg-gray-900/70 border border-gray-700 text-xs text-[#d8b55c]">
+                                <span className="px-2 py-0.5 rounded bg-gray-900/60 border border-gray-700 text-xs text-[#d8b55c]">
                                   {item.category}
                                 </span>
                               </div>
@@ -1987,7 +1926,7 @@ const WoWCraftingTracker: React.FC = () => {
                 })}
               </div>
             ) : (
-              <div className="p-6 text-center text-gray-500">
+              <div className="p-6 text-center text-gray-300">
                 <p>Aucune recette</p>
               </div>
             )}
@@ -1999,21 +1938,39 @@ const WoWCraftingTracker: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
+      <div
+        className="min-h-screen text-white flex items-center justify-center"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,.65)), url('/Horde-Wallpapers-HD.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+        }}
+      >
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-          <p className="text-xl text-gray-300">Chargement...</p>
+          <p className="text-xl text-gray-200">Chargement...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
-      <nav className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto flex justify-end items-center p-3">
+    <div
+      className="min-h-screen text-gray-100"
+      style={{
+        backgroundImage:
+          "linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,.65)), url('/Horde-Wallpapers-HD.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+      }}
+    >
+      <nav className="bg-black/50 backdrop-blur border-b border-gray-800">
+        <div className="max-w-6xl mx-auto flex justify-end items-center p-3 text-gray-300">
           {currentCharacter && view === "character" && (
-            <div className="text-gray-600">
+            <div className="text-gray-300">
               {currentCharacter.name} - {currentCharacter.server}
             </div>
           )}
