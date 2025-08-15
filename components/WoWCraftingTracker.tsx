@@ -313,19 +313,23 @@ const WoWCraftingTracker: React.FC = () => {
       .filter((line) => line.trim().startsWith("- [") && line.includes("]("))
       .map((line) => {
         const match = line.match(/^- \[([^\]]+)\]\(([^)]+)\)$/);
-        if (match) {
-          let url = match[2];
-          if (url.includes("/cata/")) {
-            url = url.replace("/cata/", "/mop-classic/fr/");
-          }
-          return {
-            id: Math.random().toString(36).slice(2, 11),
-            name: match[1],
-            url,
-            category: categorizeItem(match[1]),
-          };
+        if (!match) return null;
+
+        const name = match[1] ?? "";
+        const rawUrl = match[2] ?? "";
+        if (!rawUrl) return null; // garde TS content + évite un includes() sur undefined
+
+        let url = rawUrl;
+        if (url.includes("/cata/")) {
+          url = url.replace("/cata/", "/mop-classic/fr/");
         }
-        return null;
+
+        return {
+          id: Math.random().toString(36).slice(2, 11),
+          name,
+          url,
+          category: categorizeItem(name),
+        } as CraftItem;
       })
       .filter(Boolean) as CraftItem[];
 
