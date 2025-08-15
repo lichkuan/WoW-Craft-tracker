@@ -452,7 +452,8 @@ const WoWCraftingTracker: React.FC = () => {
         .filter((line) => line.trim())
         .map((line) => {
           const values = line.split(",");
-          const ID = parseInt(values[0]) || 0;
+          const idRaw = (values[0] ?? "").trim();
+          const ID = Number.parseInt(idRaw, 10) || 0;
           const Name = (values[1] || "").replace(/"/g, "");
           const Source = (values[2] || "").replace(/"/g, "");
           const Type = (values[3] || "").replace(/"/g, "");
