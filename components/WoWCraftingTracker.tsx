@@ -1484,7 +1484,7 @@ const WoWCraftingTracker: React.FC = () => {
                         onClick={() =>
                           window.open(`?share=${character.shareId}`, "_blank")
                         }
-                        className="text-xl font-semibold text-[#d8b55c] hover:text-yellow-400 cursor-pointer"
+                        className="text-xl font-semibold text-[#080600] hover:text-[#bd1111] cursor-pointer"
                         type="button"
                       >
                         {character.name}
@@ -1558,7 +1558,7 @@ const WoWCraftingTracker: React.FC = () => {
                       onClick={() =>
                         window.open(`?share=${character.shareId}`, "_blank")
                       }
-                      className="text-gray-200 text-xs hover:text-[#C09A1A]"
+                      className="text-[#080600] text-xs hover:text-[#bd1111]"
                       type="button"
                     >
                       🔗 Voir le profil complet
