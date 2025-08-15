@@ -76,30 +76,54 @@ const RECIPE_TYPE_TO_PROFESSION: Record<string, string> = {
   "Technique de calligraphie": "Calligraphie",
 };
 
-// Composant SearchBar —> MAJ IMMÉDIATE (plus de debounce)
+// Composant SearchBar — version stable (debounce + focus OK)
 const SearchBar = ({
   searchTerm,
   onSearchChange,
+  placeholder = "Rechercher une recette...",
 }: {
   searchTerm: string;
   onSearchChange: (value: string) => void;
+  placeholder?: string;
 }) => {
+  // état local pour refléter immédiatement la saisie
+  const [localValue, setLocalValue] = useState(searchTerm);
+  const timeoutRef = useRef<number | null>(null);
+
+  // garde l'UI en phase si la valeur parent change (ex: bouton "X" externe)
+  useEffect(() => {
+    setLocalValue(searchTerm);
+  }, [searchTerm]);
+
+  // debounce propre côté client
+  useEffect(() => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    timeoutRef.current = window.setTimeout(() => {
+      onSearchChange(localValue);
+    }, 250);
+    return () => {
+      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    };
+  }, [localValue, onSearchChange]);
+
   return (
     <div className="mb-6">
       <div className="bg-gray-800 rounded-lg p-4 border border-red-700 flex items-center space-x-4">
-        <Search className="w-5 h-5 text-red-400" />
+        <Search className="w-5 h-5 text-red-400" aria-hidden="true" />
         <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Rechercher une recette..."
+          type="search"
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          placeholder={placeholder}
           className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-600 focus:outline-none"
           autoComplete="off"
+          inputMode="search"
+          enterKeyHint="search"
           aria-label="Rechercher une recette"
         />
-        {searchTerm && (
+        {localValue && (
           <button
-            onClick={() => onSearchChange("")}
+            onClick={() => setLocalValue("")}
             className="text-gray-400 hover:text-white"
             type="button"
             aria-label="Effacer la recherche"
@@ -111,6 +135,7 @@ const SearchBar = ({
     </div>
   );
 };
+
 
 // Panneau latéral d’instructions (slide-over)
 function InstructionsDrawer({
@@ -1388,7 +1413,7 @@ const WoWCraftingTracker: React.FC = () => {
                 📋 Besoin d&apos;aide ?
               </h2>
               <p className="text-gray-200">
-                Cliquez sur le bouton <strong>Instructions</strong> en haut à droite
+                Cliquez sur le bouton <strong>Instructions</strong> 
                 pour afficher le guide détaillé.
               </p>
             </div>
