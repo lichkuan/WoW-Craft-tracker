@@ -13,20 +13,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="fr">
-      <body>
-        <div
-          className="min-h-screen flex items-center justify-center bg-black"
-          style={{
-            backgroundImage: "url('/e557b46e7d5f64872f6e5ca0b9744d6c.gif')",
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-          }}
-        >
-          <span className="text-white text-4xl md:text-6xl font-extrabold text-center bg-black/70 px-8 py-6 rounded-xl shadow-lg">
-            🚧 SITE EN MAINTENANCE 🚧
-          </span>
-        </div>
+      <head>
+        {/* Favicon dérivé du logo */}
+        <link rel="icon" href="/favicon.png" />
+        <meta name="theme-color" content="#0b0b0b" />
+      </head>
+      <body className={inter.className}>
+        {children}
       </body>
     </html>
   );
