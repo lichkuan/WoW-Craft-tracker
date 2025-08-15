@@ -41,9 +41,7 @@ interface Character {
 interface CraftItem {
   id: string;
   name: string;
-  url: string;
-  spellUrl?: string;
-  category: string;
+  url: string; spellUrl?: string; category: string;
 }
 
 interface PublicCharacter extends Character {
@@ -56,14 +54,12 @@ interface RareRecipe {
   name: string;
   type: string;
   profession: string;
-  url: string;
-  spellUrl?: string; // <- on la propage si disponible
-  source: string;
+  url: string; spellUrl?: string; source: string; // Ajout
   crafters: string[];
 }
 
 // Mapping des types CSV vers les métiers du jeu
-const RECIPE_TYPE_TO_PROFESSION: Record<string, string> = {
+const RECIPE_TYPE_TO_PROFESSION = {
   "Formule d'enchantement": "Enchantement",
   "Dessin de joaillerie": "Joaillerie",
   "Patron de couture": "Couture",
@@ -74,7 +70,6 @@ const RECIPE_TYPE_TO_PROFESSION: Record<string, string> = {
   "Patron de travail du cuir": "Travail du cuir",
   "Technique de calligraphie": "Calligraphie",
 };
-
 // Composant SearchBar
 const SearchBar = ({
   searchTerm,
@@ -83,7 +78,7 @@ const SearchBar = ({
   searchTerm: string;
   onSearchChange: (value: string) => void;
 }) => {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
   const handleChange = (value: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -313,7 +308,7 @@ const WoWCraftingTracker: React.FC = () => {
             url = url.replace("/cata/", "/mop-classic/fr/");
           }
           return {
-            id: Math.random().toString(36).slice(2, 11),
+            id: Math.random().toString(36).substr(2, 9),
             name: match[1],
             url,
             category: categorizeItem(match[1]),
@@ -364,7 +359,7 @@ const WoWCraftingTracker: React.FC = () => {
 
     // Armes
     if (
-      /(arme|épée|hache|masse|dague|bâton|arbalète|fusil|carabine|arc|glaive|hast|lance|boomerang)/.test(
+      /(arme|épée|hache|masse|dague|bâton|arbalète|fusil|carabine|arc|glaive|hast|lance|boumerang)/.test(
         lower
       )
     )
@@ -411,20 +406,19 @@ const WoWCraftingTracker: React.FC = () => {
   };
 
   const getItemIdFromUrl = (url: string) => {
-    if (!url) return null;
+    // Supprime les espaces avant l'ID
     const cleanUrl = url.replace(/\s+/g, "");
     const match = cleanUrl.match(/item=(\d+)/);
     return match ? match[1] : null;
   };
 
-  const getSpellIdFromUrl = (url?: string) => {
-    if (!url) return null;
+  const getSpellIdFromUrl = (url: string) => {
     const cleanUrl = url.replace(/\s+/g, "");
     const match = cleanUrl.match(/spell=(\d+)/);
     return match ? match[1] : null;
   };
 
-  const loadRareRecipes = async () => {
+  const loadRareRecipes = useCallback(async () => {
     try {
       setRareRecipesLoading(true);
 
@@ -439,9 +433,11 @@ const WoWCraftingTracker: React.FC = () => {
 
       const csvText = await response.text();
 
-      // Parsing simple (OK si pas de virgules dans les champs)
-      // Colonnes: 0:ID, 1:Name, 2:Source, 3:Type, 4:URL, 5:SPELL ID, 6:SPELL URL, 7:Fetch Status
+      // ⚠️ Parsing simple (comme ton code actuel). Si tu as des virgules dans les champs,
+      // on pourra passer à Papaparse côté client, mais je reste cohérent avec ton implémentation.
       const lines = csvText.split("\n");
+      // Enrichi: colonnes attendues =
+      // 0:ID, 1:Name, 2:Source, 3:Type, 4:URL, 5:SPELL ID, 6:SPELL URL, 7:Fetch Status
       const data = lines
         .slice(1)
         .filter((line) => line.trim())
@@ -454,7 +450,7 @@ const WoWCraftingTracker: React.FC = () => {
           const URL = (values[4] || "").replace(/"/g, "");
           const SPELL_ID = (values[5] || "").replace(/"/g, "");
           const SPELL_URL = (values[6] || "").replace(/"/g, "");
-
+          // Choix du lien préféré (SPELL d'abord, sinon ITEM)
           const preferredURL = SPELL_URL || URL;
 
           return {
@@ -462,18 +458,19 @@ const WoWCraftingTracker: React.FC = () => {
             Name,
             Source,
             Type,
-            URL: preferredURL,
-            _rawItemURL: URL,
-            _spellId: SPELL_ID,
-            _spellURL: SPELL_URL,
+            URL: preferredURL, // <- on stocke l'URL préférée pour clic/affichage
+            _rawItemURL: URL, // (au cas où tu veux encore l’item plus tard)
+            _spellId: SPELL_ID, // pour le matching
+            _spellURL: SPELL_URL, // pour info
           };
-        });
+        }, [publicCharacters]);
 
       const processedRecipes: RareRecipe[] = [];
       const seenIds = new Set<number>();
 
       data.forEach((row: any) => {
         if (!row || !row.ID) return;
+        // Ignore les doublons d'ID
         if (seenIds.has(row.ID)) return;
         seenIds.add(row.ID);
 
@@ -484,7 +481,7 @@ const WoWCraftingTracker: React.FC = () => {
         if (!profession) return;
 
         const cleanRecipeName = row.Name.replace(
-          /^(Formule|Dessin|Patron|Plans|Schéma|Recette|Technique)\s*:\s*/i,
+          /^(Formule|Dessin|Patron|Plans|Schéma|Recette|Technique) : /,
           ""
         )
           .toLowerCase()
@@ -495,22 +492,43 @@ const WoWCraftingTracker: React.FC = () => {
 
         const crafters: string[] = [];
         publicCharacters.forEach((character) => {
-          const characterCrafts = character.crafts?.[profession] || [];
-
+          const characterCrafts = character.crafts[profession] || [];
           const hasRecipe = characterCrafts.some((craft) => {
+              if (
+                craftName.includes(cleanRecipeName) ||
+                cleanRecipeName.includes(craftName)
+              ) {
+                console.log("MATCH NOM", craftName, cleanRecipeName);
+                return true;
+              }
+              if (craftItemId && recipeItemId && craftItemId === recipeItemId) {
+                console.log("MATCH ITEM ID", craftItemId, recipeItemId);
+                return true;
+              }
+              if (
+                craftSpellId &&
+                recipeSpellId &&
+                craftSpellId === recipeSpellId
+              ) {
+                console.log("MATCH SPELL ID", craftSpellId, recipeSpellId);
+                return true;
+              }
+              return false;
+            });
             const craftName = craft.name.toLowerCase();
-            const craftItemId = getItemIdFromUrl(craft.url);
-            const craftSpellId = getSpellIdFromUrl(craft.spellUrl || craft.url);
-
             if (
               craftName.includes(cleanRecipeName) ||
               cleanRecipeName.includes(craftName)
             ) {
               return true;
             }
+            // 2) match par ITEM ID (depuis l'URL craft)
+            const craftItemId = getItemIdFromUrl(craft.url);
             if (craftItemId && recipeItemId && craftItemId === recipeItemId) {
               return true;
             }
+            // 3) match par SPELL ID (nouveau)
+            const craftSpellId = getSpellIdFromUrl(craft.url);
             if (
               craftSpellId &&
               recipeSpellId &&
@@ -527,17 +545,15 @@ const WoWCraftingTracker: React.FC = () => {
         });
 
         if (crafters.length > 0) {
-          const rare: RareRecipe = {
+          processedRecipes.push({
             id: row.ID,
             name: row.Name,
             type: row.Type,
             profession,
-            url: row.URL,
+            url: row.URL, // <- URL préférée (SPELL si dispo, sinon ITEM)
             source: row.Source,
             crafters,
-          };
-          if (row._spellURL) rare.spellUrl = row._spellURL;
-          processedRecipes.push(rare);
+          });
         }
       });
 
@@ -567,7 +583,7 @@ const WoWCraftingTracker: React.FC = () => {
     }
   };
 
-  const loadSharedCharacter = async (shareId: string) => {
+  const loadSharedCharacter = useCallback(async (shareId: string) => {
     setLoading(true);
     try {
       const response = await fetch(`/api/character/${shareId}`);
@@ -583,7 +599,7 @@ const WoWCraftingTracker: React.FC = () => {
     }
   };
 
-  const loadPublicCharacters = async () => {
+  const loadPublicCharacters = useCallback(async () => {
     try {
       const timestamp = Date.now();
       const response = await fetch(`/api/characters/public?t=${timestamp}`, {
@@ -592,11 +608,10 @@ const WoWCraftingTracker: React.FC = () => {
           "Cache-Control": "no-cache, no-store, must-revalidate",
           Pragma: "no-cache",
         },
-      });
+      }, []);
 
       if (response.ok) {
         const chars = await response.json();
-        // petit trick pour animer la mise à jour
         setPublicCharacters([]);
         setTimeout(() => {
           setPublicCharacters(chars);
@@ -618,7 +633,7 @@ const WoWCraftingTracker: React.FC = () => {
           characterName: character.name,
           characterServer: character.server,
         }),
-      });
+      }, []);
 
       setCharacters((chars) => chars.filter((c) => c.id !== character.id));
       if (currentCharacter?.id === character.id) {
@@ -634,7 +649,7 @@ const WoWCraftingTracker: React.FC = () => {
   const createCharacter = (data: any) => {
     const character: Character = {
       ...data,
-      id: Math.random().toString(36).slice(2, 11),
+      id: Math.random().toString(36).substr(2, 9),
       professionLevels: {},
       crafts: {},
     };
@@ -765,7 +780,7 @@ const WoWCraftingTracker: React.FC = () => {
 
     const shareId = new URLSearchParams(window.location.search).get("share");
     if (shareId) loadSharedCharacter(shareId);
-  }, []);
+  }, [loadPublicCharacters, loadSharedCharacter]);
 
   useEffect(() => {
     localStorage.setItem("wowCharacters", JSON.stringify(characters));
@@ -775,9 +790,8 @@ const WoWCraftingTracker: React.FC = () => {
     if (publicCharacters.length > 0) {
       loadRareRecipes();
     }
-  }, [publicCharacters]);
-
-  const toggleAllRareRecipes = () => {
+  }, [publicCharacters, loadRareRecipes]);
+const toggleAllRareRecipes = () => {
     const newState = !allRareRecipesExpanded;
     setAllRareRecipesExpanded(newState);
 
@@ -840,7 +854,7 @@ const WoWCraftingTracker: React.FC = () => {
       return acc;
     }, {} as { [profession: string]: RareRecipe[] });
 
-    const professionIcons: Record<string, string> = {
+    const professionIcons = {
       Enchantement: "✨",
       Joaillerie: "💎",
       Couture: "🧵",
@@ -1043,8 +1057,7 @@ const WoWCraftingTracker: React.FC = () => {
                               <ReagentsBlock
                                 recipeUrl={recipe.url}
                                 spellUrl={recipe.spellUrl}
-                                recipeName={recipe.name}
-                              />
+                               recipeName={recipe.name} />
                             </div>
                             <a
                               href={recipe.url}
@@ -1328,14 +1341,14 @@ const WoWCraftingTracker: React.FC = () => {
   );
 
   const CharacterView = () => {
-    if (!currentCharacter) return null;
-
-    const professionsArray = [
-      currentCharacter.profession1,
-      currentCharacter.profession2,
-    ].filter(Boolean);
+    // Hooks top-level, même si currentCharacter est null
+    const professionsArray = useMemo(() => {
+      if (!currentCharacter) return [] as string[];
+      return ([currentCharacter.profession1, currentCharacter.profession2].filter(Boolean) as string[]);
+    }, [currentCharacter]);
 
     const filteredProfessionData = useMemo(() => {
+      if (!currentCharacter) return [];
       return professionsArray.map((profession) => {
         const crafts = currentCharacter.crafts[profession] || [];
         const filteredCrafts = crafts.filter(
@@ -1360,9 +1373,11 @@ const WoWCraftingTracker: React.FC = () => {
           categories,
         };
       });
-    }, [professionsArray, currentCharacter.crafts, searchTerm]);
+    }, [currentCharacter, professionsArray, searchTerm]);
 
-    return (
+    if (!currentCharacter) return null;
+
+return (
       <div className="max-w-6xl mx-auto">
         <div className="bg-gray-800 rounded-2xl p-6 mb-6 border border-red-700 shadow-md hover:shadow-[0_0_0_2px_rgba(192,154,26,.12)] transition">
           <div className="flex justify-between items-start">
@@ -1411,7 +1426,7 @@ const WoWCraftingTracker: React.FC = () => {
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center disabled:opacity-50"
               >
                 <Share className="w-4 h-4 mr-2" />
-                {loading ? "Partage..." : "Partager"}
+                {loading ? "Partage..." : &quot;Partager&quot;}
               </button>
               <button
                 onClick={shareToDiscord}
@@ -1580,9 +1595,8 @@ const WoWCraftingTracker: React.FC = () => {
                               </div>
                               <ReagentsBlock
                                 recipeUrl={item.url}
-                                spellUrl={item.spellUrl}
-                                recipeName={item.name}
-                              />
+                                spellUrl={"spellUrl" in item ? (item as any).spellUrl : undefined}
+                               recipeName={item.name} />
                             </div>
                           ))}
                         </div>
@@ -1619,7 +1633,7 @@ const WoWCraftingTracker: React.FC = () => {
           <div className="space-y-4 text-gray-200">
             <div>
               <h3 className="text-lg font-semibold text-[#d8b55c] mb-2">
-                1. Installez l'addon :
+                1. Installez l&apos;addon :
               </h3>
               <a
                 href="https://www.curseforge.com/wow/addons/simple-trade-skill-exporter"
@@ -1847,7 +1861,7 @@ const WoWCraftingTracker: React.FC = () => {
             <p className="text-gray-400 mb-6">
               Soyez le premier à partager vos métiers avec la communauté !<br />
               Créez un personnage, ajoutez vos recettes et cliquez sur
-              "Partager".
+              &quot;Partager&quot;.
             </p>
             <div className="bg-blue-900 border border-blue-600 rounded-lg p-4 max-w-md mx-auto">
               <p className="text-[#d8b55c] text-sm">
@@ -1932,6 +1946,5 @@ const WoWCraftingTracker: React.FC = () => {
       />
     </div>
   );
-};
 
 export default WoWCraftingTracker;

@@ -1,10 +1,9 @@
 // app/api/character/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from 'redis';
+import { log, error as logError } from '../../../lib/logger';
 
 const redis = createClient({ url: process.env.REDIS_URL });
-const DEBUG = process.env.NODE_ENV !== 'production' && process.env.DEBUG_LOGS === '1';
-const log = (...args: any[]) => { if (DEBUG) console.log(...args); }
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,17 +27,17 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (error) {
-        console.error(`Erreur traitement ${key}:`, error);
+        logError(`Erreur traitement ${key}:`, error);
       }
     }
 
     // CORRECTION : Sauvegarder le personnage SANS expiration pour qu'il apparaisse dans la liste publique
     await redis.set(`character:${shareId}`, JSON.stringify(character));
-    console.log(`✅ Personnage sauvé SANS expiration: ${character.name} (${shareId})`);
+    log(`✅ Personnage sauvé SANS expiration: ${character.name} (${shareId})`);
     
     return NextResponse.json({ success: true, shareId });
   } catch (error) {
-    console.error('Erreur sauvegarde:', error);
+    logError('Erreur sauvegarde:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

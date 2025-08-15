@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 // app/admin/page.tsx
 "use client";
 

@@ -1,11 +1,7 @@
 // app/api/characters/public/route.ts
 import { NextResponse } from 'next/server';
 import { createClient } from 'redis';
-
-const DEBUG = process.env.NODE_ENV !== 'production' && process.env.DEBUG_LOGS === '1';
-const log = (...args: any[]) => { if (DEBUG) console.log(...args); };
-
-// ... puis remplacement de console.log(...) par log(...)
+import { log, warn, error as logError } from '../../../../lib/logger';
 
 const redis = createClient({ url: process.env.REDIS_URL });
 
@@ -16,7 +12,7 @@ export async function GET() {
     if (!redis.isReady) await redis.connect();
 
     const keys = await redis.keys('character:*');
-    console.log(`📊 ${keys.length} clés trouvées dans Redis:`, keys);
+    log(`📊 ${keys.length} clés trouvées dans Redis:`, keys);
     
     const charactersMap = new Map<string, any>();
     let expiredCount = 0;
@@ -28,30 +24,30 @@ export async function GET() {
         const data = await redis.get(key);
         const ttl = await redis.ttl(key);
         
-        console.log(`🔍 Traitement ${key}:`);
-        console.log(`  - TTL: ${ttl} (${ttl === -1 ? 'PERMANENT' : ttl > 0 ? 'expire dans ' + Math.round(ttl/3600) + 'h' : 'EXPIRÉ'})`);
+        log(`🔍 Traitement ${key}:`);
+        log(`  - TTL: ${ttl} (${ttl === -1 ? 'PERMANENT' : ttl > 0 ? 'expire dans ' + Math.round(ttl/3600) + 'h' : 'EXPIRÉ'})`);
         
         // Supprimer automatiquement les personnages expirés
         if (ttl === 0) {
-          console.log(`🗑️ Suppression personnage expiré: ${key}`);
+          log(`🗑️ Suppression personnage expiré: ${key}`);
           await redis.del(key);
           expiredCount++;
           continue;
         }
 
         if (!data) {
-          console.log(`⚠️ Pas de données pour ${key}`);
+          log(`⚠️ Pas de données pour ${key}`);
           await redis.del(key);
           expiredCount++;
           continue;
         }
         
         const character = JSON.parse(data);
-        console.log(`📝 Personnage: ${character.name} - ${character.server}`);
+        log(`📝 Personnage: ${character.name} - ${character.server}`);
         
         // Vérifier que le personnage a les données essentielles
         if (!character.name || !character.server) {
-          console.log(`❌ Personnage invalide (nom="${character.name}" serveur="${character.server}")`);
+          log(`❌ Personnage invalide (nom="${character.name}" serveur="${character.server}")`);
           continue;
         }
 
@@ -62,39 +58,39 @@ export async function GET() {
         if (!existing) {
           // Premier personnage avec ce nom/serveur
           charactersMap.set(identifier, { key, data: character, ttl });
-          console.log(`✅ Premier personnage enregistré: ${character.name}`);
+          log(`✅ Premier personnage enregistré: ${character.name}`);
         } else {
           // Doublon détecté - appliquer la logique de conservation
-          console.log(`🔄 Doublon détecté pour ${character.name}:`);
-          console.log(`  - Existant: ${existing.key} (TTL: ${existing.ttl})`);
-          console.log(`  - Nouveau: ${key} (TTL: ${ttl})`);
+          log(`🔄 Doublon détecté pour ${character.name}:`);
+          log(`  - Existant: ${existing.key} (TTL: ${existing.ttl})`);
+          log(`  - Nouveau: ${key} (TTL: ${ttl})`);
           
           let keepCurrent = false;
           
           if (existing.ttl === -1 && ttl > 0) {
             // Garder l'existant (permanent), supprimer celui-ci (temporaire)
-            console.log(`  - Garde existant (permanent), supprime nouveau (temporaire)`);
+            log(`  - Garde existant (permanent), supprime nouveau (temporaire)`);
             await redis.del(key);
             keepCurrent = false;
           } else if (existing.ttl > 0 && ttl === -1) {
             // Garder celui-ci (permanent), supprimer l'existant (temporaire)
-            console.log(`  - Garde nouveau (permanent), supprime existant (temporaire)`);
+            log(`  - Garde nouveau (permanent), supprime existant (temporaire)`);
             await redis.del(existing.key);
             keepCurrent = true;
           } else if (existing.ttl > 0 && ttl > 0) {
             // Les deux sont temporaires, garder celui qui expire le plus tard
             if (ttl > existing.ttl) {
-              console.log(`  - Garde nouveau (expire plus tard), supprime existant`);
+              log(`  - Garde nouveau (expire plus tard), supprime existant`);
               await redis.del(existing.key);
               keepCurrent = true;
             } else {
-              console.log(`  - Garde existant (expire plus tard), supprime nouveau`);
+              log(`  - Garde existant (expire plus tard), supprime nouveau`);
               await redis.del(key);
               keepCurrent = false;
             }
           } else if (existing.ttl === -1 && ttl === -1) {
             // Les deux sont permanents, garder le premier
-            console.log(`  - Les deux sont permanents, garde le premier`);
+            log(`  - Les deux sont permanents, garde le premier`);
             await redis.del(key);
             keepCurrent = false;
           }
@@ -107,7 +103,7 @@ export async function GET() {
         }
         
       } catch (error) {
-        console.error(`❌ Erreur traitement ${key}:`, error);
+        logError(`❌ Erreur traitement ${key}:`, error);
       }
     }
 
@@ -116,7 +112,7 @@ export async function GET() {
     
     charactersMap.forEach(({ key, data: character, ttl }, identifier) => {
       // CORRECTION : Ne plus filtrer sur TTL = -1, accepter tous les personnages valides
-      console.log(`✅ Personnage ajouté: ${character.name} (TTL: ${ttl})`);
+      log(`✅ Personnage ajouté: ${character.name} (TTL: ${ttl})`);
 
       // Calculer les statistiques des crafts
       const craftCounts: { [key: string]: number } = {};
@@ -151,16 +147,16 @@ export async function GET() {
     // Trier par nom
     publicCharacters.sort((a, b) => a.name.localeCompare(b.name));
 
-    console.log(`📊 Résultat final:`);
-    console.log(`  - ${publicCharacters.length} personnages affichés`);
-    console.log(`  - ${expiredCount} personnages expirés supprimés`);
-    console.log(`  - ${duplicateCount} doublons traités`);
-    console.log(`  - Liste finale:`, publicCharacters.map(p => `${p.name} (${p.shareId})`));
-    console.log('=== FIN API CHARACTERS PUBLIC ===');
+    log(`📊 Résultat final:`);
+    log(`  - ${publicCharacters.length} personnages affichés`);
+    log(`  - ${expiredCount} personnages expirés supprimés`);
+    log(`  - ${duplicateCount} doublons traités`);
+    log(`  - Liste finale:`, publicCharacters.map(p => `${p.name} (${p.shareId})`));
+    log('=== FIN API CHARACTERS PUBLIC ===');
 
     return NextResponse.json(publicCharacters);
   } catch (error) {
-    console.error('❌ Erreur globale personnages publics:', error);
+    logError('❌ Erreur globale personnages publics:', error);
     return NextResponse.json({ 
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Unknown error'
