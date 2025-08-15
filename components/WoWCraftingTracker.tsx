@@ -1970,13 +1970,23 @@ const WoWCraftingTracker: React.FC = () => {
                                 >
                                     WoW Crafting Tracker by Ostie
                                 </button>
-                                <div className="flex items-center">
-                                    {currentCharacter && view === "character" && (
-                                    <div className="text-red-300 mr-4">
-                                        {currentCharacter.name} - {currentCharacter.server}
+                                <div className="flex items-center gap-3">
+                                  {currentCharacter && view === "character" && (
+                                    <div className="text-red-300 mr-2">
+                                      {currentCharacter.name} - {currentCharacter.server}
                                     </div>
-                                    )}
+                                  )}
+                                  <button
+                                    onClick={() => setHelpOpen(true)}
+                                    className="inline-flex items-center gap-2 bg-gray-900 hover:bg-black text-white rounded px-3 py-2 border border-gray-600"
+                                    type="button"
+                                    aria-label="Ouvrir les instructions"
+                                  >
+                                    <HelpCircle className="w-4 h-4" />
+                                    Instructions
+                                  </button>
                                 </div>
+
                                 </div>
                             </nav>
 
@@ -1991,7 +2001,10 @@ const WoWCraftingTracker: React.FC = () => {
                                 <ImportView profession={view.replace("import-", "")} />
                                 )}
                             </main>
-
+                            <InstructionsDrawer
+                              open={helpOpen}
+                              onClose={() => setHelpOpen(false)}
+                            />
                             {/* Wowhead Tooltips */}
                             <Script id="wh-config" strategy="afterInteractive">
                                 {`
