@@ -835,11 +835,15 @@ const WoWCraftingTracker: React.FC = () => {
       );
     }
 
-    const recipesByProfession = filteredRareRecipes.reduce((acc, recipe) => {
-      if (!acc[recipe.profession]) acc[recipe.profession] = [];
-      acc[recipe.profession].push(recipe);
-      return acc;
-    }, {} as { [profession: string]: RareRecipe[] });
+    const recipesByProfession = filteredRareRecipes.reduce<Record<string, RareRecipe[]>>(
+      (acc, recipe) => {
+        const key = recipe.profession;
+        const bucket = acc[key] ?? (acc[key] = []);
+        bucket.push(recipe);
+        return acc;
+      },
+      {}
+    );
 
     const professionIcons: Record<string, string> = {
       Enchantement: "✨",
