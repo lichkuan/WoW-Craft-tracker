@@ -10,7 +10,7 @@ type ReagentNode = {
   name: string;
   url: string; // item url (FR)
   quantity: number;
-  icon?: string; // small icon url (optional)
+  icon?: string; // small icon url (optional, fetched via /api/item-meta)
   children?: ReagentNode[];
 };
 
@@ -45,7 +45,6 @@ const qualityCache = new Map<number, number | undefined>();
 async function fetchItemQuality(itemId: number): Promise<number | undefined> {
   if (qualityCache.has(itemId)) return qualityCache.get(itemId);
 
-  // Endpoint tooltip Wowhead — si CORS bloque, on retombe sur undefined.
   const url = `https://www.wowhead.com/tooltip/item/${itemId}?dataEnv=mop-classic&locale=fr_FR`;
   try {
     const r = await fetch(url, { cache: "force-cache" });
@@ -212,6 +211,25 @@ const ReagentsBlock: React.FC<Props> = ({
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = (await r.json()) as ReagentNode[];
+
+      // 🔁 Batch meta: complete names + icons for all first-level nodes
+      const ids = Array.from(new Set(data.map(n => n.id)));
+      if (ids.length) {
+        try {
+          const rr = await fetch(`/api/item-meta?ids=${ids.join(',')}`, { cache: "no-store" });
+          if (rr.ok) {
+            const map = (await rr.json()) as Record<string, { name?: string; iconUrl?: string }>;
+            for (const node of data) {
+              const m = map[String(node.id)];
+              if (m?.name) node.name = m.name;
+              if (m?.iconUrl) node.icon = m.iconUrl;
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       setTree(data);
     } catch (e: any) {
       setError(e?.message || "Erreur inconnue");
