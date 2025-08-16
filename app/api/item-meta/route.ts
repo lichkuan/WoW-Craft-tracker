@@ -1,6 +1,5 @@
 // app/api/item-meta/route.ts
-// Improved: merge tooltip + HTML to ensure icons are filled when tooltip lacks them.
-// GET /api/item-meta?ids=1,2,3 -> { "1": {name, icon, iconUrl}, ... }
+// TS-safe regex group access + merged tooltip/HTML for names & icons.
 
 export const dynamic = 'force-dynamic';
 
@@ -37,17 +36,17 @@ async function fetchText(input: string): Promise<string> {
 function parseNameFromItemHtml(html: string): string | null {
   // Prefer main <h1> on the page
   const m = html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-  if (m) return m[1].trim();
+  if (m?.[1]) return m[1].trim();
   // og:title as fallback
   const m2 = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i);
-  if (m2) return m2[1].trim();
+  if (m2?.[1]) return m2[1].trim();
   return null;
 }
 
 function parseIconFromItemHtml(html: string): string | null {
   // og:image like https://wow.zamimg.com/images/wow/icons/large/inv_ingot_ghostiron.jpg
   const m = html.match(/<meta\s+property="og:image"\s+content="[^"]*\/icons\/[^\/]+\/([a-z0-9_\-]+)\.(?:jpg|png)"/i);
-  return m ? m[1].trim() : null;
+  return m?.[1]?.trim() ?? null;
 }
 
 function iconUrlSmall(icon: string) {
