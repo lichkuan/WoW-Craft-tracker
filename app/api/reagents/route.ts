@@ -1,7 +1,7 @@
 // app/api/reagents/route.ts
 // Returns ONLY first-level reagents as an ARRAY of nodes [{ id, name, url, quantity }].
 // Names are hydrated via Wowhead tooltip JSON (fr_FR).
-// Keeps response contract expected by your ReagentsBlock.
+// TS-safe getLocalePrefix.
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +19,7 @@ function isItemUrl(url: URL) { return /\/item=/.test(url.pathname); }
 
 function getLocalePrefix(u: URL): string {
   const m = u.pathname.match(/^(\/mop-classic\/[a-z]{2})/i);
-  return m ? m[1] : '/mop-classic/fr';
+  return m?.[1] ?? '/mop-classic/fr';
 }
 
 async function fetchText(input: string, init?: RequestInit): Promise<string> {
@@ -75,7 +75,7 @@ function parseListviews(html: string): Array<{ id: string; data: any[] | null }>
     idx = end;
 
     const idm = obj.match(/id\s*:\s*['"]([^'"]+)['"]/);
-    const idVal = idm ? idm[1] : '';
+    const idVal = idm?.[1] ?? '';
 
     // data: [ ... ]
     let data: any[] | null = null;
