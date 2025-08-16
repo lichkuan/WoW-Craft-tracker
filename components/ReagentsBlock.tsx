@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Package } from "lucide-react";
 import Image from "next/image";
+import { ChevronDown, ChevronRight, Package } from "lucide-react";
 
 /** Structure renvoyée par /api/reagents (cf. route.ts) */
 type ReagentNode = {
@@ -10,7 +10,7 @@ type ReagentNode = {
   name: string;
   url: string; // item url (FR)
   quantity: number;
-  icon?: string; // small icon url (optional, filled client-side)
+  icon?: string; // small icon url (optional)
   children?: ReagentNode[];
 };
 
@@ -130,15 +130,17 @@ function ReagentRow({
               <ChevronRight className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
             )
           ) : node.icon ? (
-            {m.icon && m.iconUrl && (
-              <Image
-                src={m.iconUrl}
-                alt=""
-                width={16}
-                height={16}
-                className="rounded border border-gray-600 flex-shrink-0"
-              />
-            )}
+            <Image
+              src={node.icon}
+              alt="Icône du composant"
+              width={20}
+              height={20}
+              className="rounded bg-gray-900/40 ring-1 ring-gray-700 flex-shrink-0"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <Package className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+          )}
 
           {/* Lien Wowhead (ouvre nouvel onglet si clic directement) */}
           <a
@@ -210,23 +212,6 @@ const ReagentsBlock: React.FC<Props> = ({
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = (await r.json()) as ReagentNode[];
-
-      // Batch-fetch meta for ALL first-level nodes (names+icons), then merge into nodes
-      const ids = Array.from(new Set(data.map(n => n.id)));
-      if (ids.length) {
-        try {
-          const rr = await fetch(`/api/item-meta?ids=${ids.join(',')}`, { cache: "no-store" });
-          if (rr.ok) {
-            const map = (await rr.json()) as Record<string, { name?: string; iconUrl?: string }>;
-            for (const node of data) {
-              const m = map[String(node.id)];
-              if (m?.name) node.name = m.name;
-              if (m?.iconUrl) node.icon = m.iconUrl;
-            }
-          }
-        } catch {}
-      }
-
       setTree(data);
     } catch (e: any) {
       setError(e?.message || "Erreur inconnue");
