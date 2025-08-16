@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Package } from "lucide-react";
+import Image from "next/image";
 
 /** Structure renvoyée par /api/reagents (cf. route.ts) */
 type ReagentNode = {
@@ -129,16 +130,15 @@ function ReagentRow({
               <ChevronRight className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
             )
           ) : node.icon ? (
-            <img
-              src={node.icon}
-              alt="icône"
-              className="h-5 w-5 rounded bg-gray-900/40 ring-1 ring-gray-700 flex-shrink-0"
-              loading="lazy"
-              onClick={(e) => e.stopPropagation()}
-            />
-          ) : (
-            <Package className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-          )}
+            {m.icon && m.iconUrl && (
+              <Image
+                src={m.iconUrl}
+                alt=""
+                width={16}
+                height={16}
+                className="rounded border border-gray-600 flex-shrink-0"
+              />
+            )}
 
           {/* Lien Wowhead (ouvre nouvel onglet si clic directement) */}
           <a
