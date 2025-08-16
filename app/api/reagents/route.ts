@@ -1,232 +1,228 @@
-import { NextRequest, NextResponse } from "next/server";
+// app/api/reagents/route.ts
+// Returns ONLY first-level reagents as an ARRAY of nodes [{ id, name, url, quantity }].
+// Names are hydrated via Wowhead tooltip JSON (fr_FR).
+// Keeps response contract expected by your ReagentsBlock.
 
-/* ============================= Cache mémoire ============================= */
-type ApiReagent = { id: number; name: string; url: string; quantity: number };
-const MEMO = new Map<string, { at: number; data: ApiReagent[] }>();
-const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
+export const dynamic = 'force-dynamic';
 
-/* ================================= GET ================================== */
-export async function GET(req: NextRequest) {
-  const raw = req.nextUrl.searchParams.get("url") || "";
-  if (!raw) return NextResponse.json([], { status: 200 });
+type Node = {
+  id: number;
+  name: string;
+  url: string;
+  quantity: number;
+};
 
+type ReagentEntry = { id: number; qty: number };
+
+function isSpellUrl(url: URL) { return /\/spell=/.test(url.pathname); }
+function isItemUrl(url: URL) { return /\/item=/.test(url.pathname); }
+
+function getLocalePrefix(u: URL): string {
+  const m = u.pathname.match(/^(\/mop-classic\/[a-z]{2})/i);
+  return m ? m[1] : '/mop-classic/fr';
+}
+
+async function fetchText(input: string, init?: RequestInit): Promise<string> {
+  const res = await fetch(input, {
+    headers: {
+      'user-agent': 'Mozilla/5.0 (compatible; WoW-Craft-Tracker/1.0)',
+      'accept-language': 'fr,en;q=0.9',
+    },
+    redirect: 'follow',
+    // @ts-ignore
+    cache: 'no-store',
+    ...init,
+  });
+  if (!res.ok) throw new Error(`Fetch failed ${res.status} ${res.statusText}`);
+  return await res.text();
+}
+
+async function fetchJson(input: string): Promise<any> {
+  const res = await fetch(input, {
+    headers: {
+      'user-agent': 'Mozilla/5.0 (compatible; WoW-Craft-Tracker/1.0)',
+      'accept': 'application/json',
+    },
+    redirect: 'follow',
+    // @ts-ignore
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(`Fetch failed ${res.status} ${res.statusText}`);
+  return await res.json();
+}
+
+// --- Generic Listview parser ---
+function parseListviews(html: string): Array<{ id: string; data: any[] | null }> {
+  const out: Array<{ id: string; data: any[] | null }> = [];
+  const needle = 'new Listview({';
+  let idx = 0;
+  while (true) {
+    const pos = html.indexOf(needle, idx);
+    if (pos === -1) break;
+    // Find the object literal by balancing braces
+    let i = pos + needle.length - 1; // at '{'
+    let depth = 0, end = -1;
+    for (; i < html.length; i++) {
+      const ch = html[i];
+      if (ch === '{') depth++;
+      else if (ch === '}') {
+        depth--;
+        if (depth === 0) { end = i + 1; break; }
+      }
+    }
+    if (end === -1) break;
+    const obj = html.slice(pos + needle.length - 1, end);
+    idx = end;
+
+    const idm = obj.match(/id\s*:\s*['"]([^'"]+)['"]/);
+    const idVal = idm ? idm[1] : '';
+
+    // data: [ ... ]
+    let data: any[] | null = null;
+    const dpos = obj.indexOf('data');
+    if (dpos !== -1) {
+      const colon = obj.indexOf(':', dpos);
+      if (colon !== -1) {
+        let start = obj.indexOf('[', colon);
+        if (start !== -1) {
+          let j = start, ddepth = 0, dend = -1;
+          for (; j < obj.length; j++) {
+            const c = obj[j];
+            if (c === '[') ddepth++;
+            else if (c === ']') {
+              ddepth--;
+              if (ddepth === 0) { dend = j + 1; break; }
+            }
+          }
+          if (dend !== -1) {
+            try {
+              const slice = obj.slice(start, dend);
+              const arr = JSON.parse(slice);
+              if (Array.isArray(arr)) data = arr;
+            } catch {}
+          }
+        }
+      }
+    }
+
+    out.push({ id: idVal, data });
+  }
+  return out;
+}
+
+function collectRowsWithReagents(listviews: Array<{ id: string; data: any[] | null }>): any[] {
+  const rows: any[] = [];
+  for (const lv of listviews) {
+    if (!lv.data) continue;
+    for (const r of lv.data) {
+      if (r && typeof r === 'object' && 'reagents' in r) rows.push(r);
+    }
+  }
+  return rows;
+}
+
+function rowsToReagents(rows: any[]): ReagentEntry[] {
+  const out: ReagentEntry[] = [];
+  for (const r of rows) {
+    const reag = (r as any).reagents;
+    if (!reag) continue;
+    if (Array.isArray(reag)) {
+      for (const e of reag) {
+        if (Array.isArray(e) && e.length >= 2) {
+          const id = Number(e[0]); const qty = Number(e[1]) || 1;
+          if (!Number.isNaN(id)) out.push({ id, qty });
+        }
+      }
+    } else if (typeof reag === 'object') {
+      for (const [k, v] of Object.entries(reag)) {
+        const id = Number(k); const qty = Number(v) || 1;
+        if (!Number.isNaN(id)) out.push({ id, qty });
+      }
+    }
+  }
+  // dedupe by keeping max qty
+  const map = new Map<number, number>();
+  for (const e of out) {
+    map.set(e.id, Math.max(e.qty, map.get(e.id) ?? 0));
+  }
+  return Array.from(map.entries()).map(([id, qty]) => ({ id, qty }));
+}
+
+// Tooltip name fetch (fr_FR)
+async function getItemName(id: number): Promise<string | null> {
   try {
-    // cache mémoire (par instance) — évite les rafales pendant la même vie de lambda
-    const k = raw;
-    const hit = MEMO.get(k);
-    if (hit && Date.now() - hit.at < TTL_MS) {
-      return NextResponse.json(hit.data, {
-        status: 200,
-        headers: {
-          // cache CDN/edge (Vercel) + SWR
-          "Cache-Control": "public, s-maxage=604800, stale-while-revalidate=86400",
-        },
+    const url = `https://www.wowhead.com/tooltip/item/${id}?dataEnv=mop-classic&locale=fr_FR`;
+    const data = await fetchJson(url);
+    const name =
+      data?.name ?? data?.item?.name ?? data?.json?.name ?? data?.data?.name;
+    return typeof name === 'string' && name.trim() ? String(name) : null;
+  } catch {
+    return null;
+  }
+}
+
+function getItemUrl(localePrefix: string, id: number): string {
+  return `https://www.wowhead.com${localePrefix}/item=${id}`;
+}
+
+async function getReagentsForSpell(spellUrl: string): Promise<ReagentEntry[]> {
+  const html = await fetchText(spellUrl);
+  const lvs = parseListviews(html);
+  const preferred = lvs.filter(l => l.id === 'reagents');
+  let rows = collectRowsWithReagents(preferred.length ? preferred : lvs);
+  return rowsToReagents(rows);
+}
+
+async function getReagentsForItem(itemUrl: string): Promise<ReagentEntry[]> {
+  const html = await fetchText(itemUrl);
+  const lvs = parseListviews(html);
+  const created = lvs.filter(l => l.id === 'created-by' || l.id === 'created-by-spell');
+  let rows = collectRowsWithReagents(created.length ? created : []);
+  if (!rows.length) {
+    const teaches = lvs.filter(l => l.id === 'teaches-recipe');
+    rows = collectRowsWithReagents(teaches.length ? teaches : []);
+  }
+  if (!rows.length) rows = collectRowsWithReagents(lvs);
+  return rowsToReagents(rows);
+}
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const raw = searchParams.get('url');
+    if (!raw) return new Response(JSON.stringify([]), { status: 400 });
+
+    const inputUrl = new URL(raw);
+    const localePrefix = getLocalePrefix(inputUrl);
+
+    let fromCreatedBy = false;
+    let entries: ReagentEntry[] = [];
+
+    if (isSpellUrl(inputUrl)) {
+      entries = await getReagentsForSpell(inputUrl.toString());
+    } else if (isItemUrl(inputUrl)) {
+      entries = await getReagentsForItem(`${inputUrl.origin}${inputUrl.pathname}`);
+      fromCreatedBy = entries.length > 0;
+    } else {
+      return new Response(JSON.stringify([]), { headers: new Headers({ 'content-type': 'application/json; charset=utf-8', 'X-From-Created-By-Spell': '0' }) });
+    }
+
+    // Build first-level nodes with hydrated names
+    const nodes: Node[] = [];
+    for (const e of entries) {
+      const name = (await getItemName(e.id)) ?? `Item #${e.id}`;
+      nodes.push({
+        id: e.id,
+        name,
+        url: getItemUrl(localePrefix, e.id),
+        quantity: e.qty,
       });
     }
 
-    const spellUrl = await resolveToSpell(raw);
-
-    // ⚠️ on ACTIVE le cache Next.js sur l'appel HTML (7 jours)
-    const res = await fetch(spellUrl, {
-      redirect: "follow",
-      // @ts-ignore – `next.revalidate` est OK dans Next 14 sur route handlers
-      next: { revalidate: 60 * 60 * 24 * 7 },
-    });
-    const html = await res.text();
-
-    // 1) on tente l’onglet “Recettes” (#recipes)
-    let reagents = parseRecipesReagentsFromListview(html);
-    if (reagents.length) {
-      reagents = hydrateNamesFromHtml(html, reagents);
-    }
-    // 2) secours : section “Composants”
-    if (!reagents.length) {
-      reagents = fallbackParseFromComposants(html);
-    }
-
-    const payload: ApiReagent[] = reagents.map((r) => ({
-      id: r.id,
-      name: r.name ?? `Item #${r.id}`,
-      url: r.url ?? `https://www.wowhead.com/mop-classic/fr/item=${r.id}`,
-      quantity: r.qty ?? 1,
-    }));
-
-    MEMO.set(k, { at: Date.now(), data: payload });
-
-    return NextResponse.json(payload, {
-      status: 200,
-      headers: {
-        "Cache-Control": "public, s-maxage=604800, stale-while-revalidate=86400",
-      },
-    });
-  } catch {
-    return NextResponse.json([], { status: 200 });
+    const headers = new Headers({ 'content-type': 'application/json; charset=utf-8', 'X-From-Created-By-Spell': fromCreatedBy ? '1' : '0' });
+    return new Response(JSON.stringify(nodes), { headers });
+  } catch (e: any) {
+    const headers = new Headers({ 'content-type': 'application/json; charset=utf-8', 'X-From-Created-By-Spell': '0' });
+    return new Response(JSON.stringify([]), { status: 200, headers });
   }
-}
-
-/* =============================== Helpers ================================ */
-
-/** Force l’URL sur le domaine FR de MoP Classic + garde (item|spell)=id */
-function normFR(url: string) {
-  const m = url.match(/https:\/\/www\.wowhead\.com\/(?:mop-classic\/..\/)?(item|spell)=(\d+)/);
-  if (!m) return url;
-  return `https://www.wowhead.com/mop-classic/fr/${m[1]}=${m[2]}`;
-}
-
-/** Si on reçoit un item qui “enseigne une recette”, on résout vers la page du spell, sinon on garde l’URL */
-async function resolveToSpell(url: string): Promise<string> {
-  const base = normFR(url);
-  if (/\/spell=\d+/.test(base)) return base;
-  if (/\/item=\d+/.test(base)) {
-    const teach = base + "#teaches-recipe";
-    try {
-      const r = await fetch(teach, { redirect: "follow", cache: "no-store" });
-      if (/\/spell=\d+/.test(r.url)) return r.url;
-      const html = await r.text();
-      const m = html.match(/\/spell=(\d+)/);
-      if (m) return `https://www.wowhead.com/mop-classic/fr/spell=${m[1]}`;
-    } catch { /* ignore */ }
-  }
-  return base;
-}
-
-type Reag = { id: number; qty: number; name?: string; url?: string };
-
-/* ========= STRAT A : lire le JSON Listview de l’onglet “Recettes” (#recipes) ========= */
-/**
- * L’onglet Recettes est rendu via `new Listview({ id:'recipes', ... data:[ ... ] })`
- * (ou parfois via `g_listviews['recipes'] = { data:[ ... ] }`).
- * Les lignes contiennent les réactifs sous différentes formes :
- *  - e.reagents: [[itemId, qty], ...]  OU  [{id, qty|count}, ...]
- *  - e.reagent1, e.reagent1count, e.reagent2, e.reagent2count, ...
- */
-function parseRecipesReagentsFromListview(html: string): Reag[] {
-  const candidates: string[] = [];
-
-  // new Listview({ id:'recipes', ... data: [...] });
-  const reRecipes1 =
-    /new\s+Listview\(\{\s*[^}]*?\bid\s*:\s*['"]recipes['"][\s\S]*?\bdata\s*:\s*(\[[\s\S]*?\])\s*\}\);/gi;
-  let m: RegExpExecArray | null;
-  while ((m = reRecipes1.exec(html)) !== null) {
-    const g = m[1] as string | undefined;
-    if (g) candidates.push(g);
-  }
-
-  // g_listviews['recipes'] = { data:[ ... ] };
-  const reRecipes2 =
-    /g_listviews\[['"]recipes['"]]\s*=\s*\{[\s\S]*?"data"\s*:\s*(\[[\s\S]*?\])\s*\};/gi;
-  while ((m = reRecipes2.exec(html)) !== null) {
-    const g = m[1] as string | undefined;
-    if (g) candidates.push(g);
-  }
-
-  // If we didn't explicitly find "recipes", scan all listviews and keep those with reagents-like keys
-  if (!candidates.length) {
-    const reAny = /new\s+Listview\(\{[\s\S]*?\bdata\s*:\s*(\[[\s\S]*?\])\s*\}\);/gi;
-    while ((m = reAny.exec(html)) !== null) {
-      const g = m[1] as string | undefined;
-      if (g) candidates.push(g);
-    }
-    const reAny2 =
-      /g_listviews\[[^\]]+]\s*=\s*\{[\s\S]*?"data"\s*:\s*(\[[\s\S]*?\])\s*\};/gi;
-    while ((m = reAny2.exec(html)) !== null) {
-      const g = m[1] as string | undefined;
-      if (g) candidates.push(g);
-    }
-  }
-
-  const out: Reag[] = [];
-  for (const raw of candidates) {
-    try {
-      const arr = JSON.parse(raw) as any[];
-      if (!Array.isArray(arr) || !arr.length) continue;
-
-      for (const e of arr) {
-        // 1) e.reagents: [[itemId, qty], ...]  OR  [{id, qty|count}, ...]
-        if (Array.isArray(e?.reagents)) {
-          for (const r of e.reagents) {
-            if (Array.isArray(r)) {
-              const id = Number(r[0]) || 0;
-              const qty = Number(r[1] ?? 1) || 1;
-              if (id) out.push({ id, qty });
-            } else if (r && typeof r === "object") {
-              const id = Number(r.id ?? r.item ?? r.itemId ?? 0) || 0;
-              const qty = Number(r.qty ?? r.count ?? r.stack ?? r.quantity ?? 1) || 1;
-              if (id) out.push({ id, qty });
-            }
-          }
-        }
-
-        // 2) e.reagent1 / e.reagent1count ... up to 12
-        for (let i = 1; i <= 12; i++) {
-          const id = Number(e?.[`reagent${i}`] ?? 0) || 0;
-          if (!id) continue;
-          const qty =
-            Number(e?.[`reagent${i}count`] ?? e?.[`reagent${i}qty`] ?? 1) || 1;
-          out.push({ id, qty });
-        }
-      }
-    } catch {
-      // ignore bad blocks
-    }
-  }
-
-  // dedupe by id (keep the largest qty)
-  const map = new Map<number, Reag>();
-  for (const it of out) {
-    const had = map.get(it.id);
-    if (!had || it.qty > had.qty) map.set(it.id, it);
-  }
-  return Array.from(map.values());
-}
-
-
-/* ========= STRAT B : hydrater les noms depuis les liens présents dans le HTML ========= */
-function hydrateNamesFromHtml(html: string, reagents: Reag[]): Reag[] {
-  const byId = new Map<number, Reag>();
-  reagents.forEach((r) => byId.set(r.id, { ...r }));
-
-  const linkRE = /<a\s+href="[^"]*\/(?:mop-classic\/..\/)?(?:item|spell)=(\d+)[^"]*"\s*[^>]*>([^<]+)<\/a>/gi;
-  let m: RegExpExecArray | null;
-  while ((m = linkRE.exec(html))) {
-    const id = Number(m[1]);
-    const name = (m[2] ?? "").trim();
-    const row = byId.get(id);
-    if (row && !row.name) {
-      row.name = name;
-    }
-  }
-
-  return Array.from(byId.values()).map((r) => ({
-    ...r,
-    name: r.name ?? `Item #${r.id}`,
-    url: `https://www.wowhead.com/mop-classic/fr/item=${r.id}`,
-  }));
-}
-
-/* ========= STRAT C (secours) : parser la section “Composants” du haut ========= */
-function fallbackParseFromComposants(html: string): Reag[] {
-  const out: Reag[] = [];
-  const chunks = html.split(/Composants/i).slice(1);
-  for (const ch of chunks) {
-    const block = ch.split(/<h[12][^>]*>|<div class=".*?listview.*?">/i)[0] || ch;
-    const linkRE = /href=\"[^\"]*\/(?:mop-classic\/..\/)?(item|spell)=(\d+)[^\"]*\"[^>]*>([^<]+)<\/a>/g;
-    let m: RegExpExecArray | null;
-    while ((m = linkRE.exec(block))) {
-      const id = Number(m[2] ?? 0) || 0;
-      if (!id) continue;
-      const tail = block.slice(m.index, m.index + 200);
-      const par = tail.match(/\((\d{1,3})\)/);
-      const x = tail.match(/x\s*(\d{1,3})/i);
-      const qty = Number(par?.[1] ?? x?.[1] ?? 1) || 1;
-      out.push({ id, qty, name: (m[3] ?? "").trim(), url: `https://www.wowhead.com/mop-classic/fr/item=${id}` });
-    }
-  }
-  // dédoublonne
-  const map = new Map<number, Reag>();
-  for (const it of out) {
-    const had = map.get(it.id);
-    if (!had || (it.qty ?? 1) > (had.qty ?? 1)) map.set(it.id, it);
-  }
-  return Array.from(map.values());
 }

@@ -20,7 +20,7 @@ export async function resolveSpellFromUrlPreferSpell(url: string): Promise<strin
   if (/\/spell=\d+/.test(normalized)) return normalized;
   if (/\/item=\d+/.test(normalized)) {
     try {
-      const teach = normalized.replace(/(#.*)?$/, "#teaches-recipe");
+      const teach = normalized.replace(/(#.*)?$/, "#created-by-spell");
       let res = await fetch(teach, { redirect: "follow", cache: "no-store" });
       let finalUrl = res.url || "";
       let m = finalUrl.match(/\/spell=(\d+)/);

@@ -13,5 +13,5 @@ export async function resolveSpellFromItemUrl(url: string): Promise<number | nul
 }
 
 export function itemTeachesAnchor(url: string) {
-  return url.replace(/(#.*)?$/, "#teaches-recipe");
+  return url.replace(/(#.*)?$/, "#created-by-spell");
 }

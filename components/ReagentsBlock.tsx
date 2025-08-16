@@ -9,6 +9,7 @@ type ReagentNode = {
   name: string;
   url: string; // item url (FR)
   quantity: number;
+  icon?: string; // small icon url (optional, filled client-side)
   children?: ReagentNode[];
 };
 
@@ -64,10 +65,10 @@ async function fetchItemQuality(itemId: number): Promise<number | undefined> {
   }
 }
 
-/** Petit chip quantité, compact */
+/** Petit chip quantité, compact (tailles augmentées) */
 function Qty({ n }: { n: number }) {
   return (
-    <span className="ml-2 inline-flex items-center rounded bg-gray-900/60 border border-gray-700 px-1.5 py-0.5 text-[11px] leading-none text-gray-300">
+    <span className="ml-2 inline-flex items-center rounded bg-gray-900/60 border border-gray-700 px-2 py-0.5 text-[12px] md:text-sm leading-none font-semibold text-gray-200">
       ×{n}
     </span>
   );
@@ -127,6 +128,14 @@ function ReagentRow({
             ) : (
               <ChevronRight className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
             )
+          ) : node.icon ? (
+            <img
+              src={node.icon}
+              alt="icône"
+              className="h-5 w-5 rounded bg-gray-900/40 ring-1 ring-gray-700 flex-shrink-0"
+              loading="lazy"
+              onClick={(e) => e.stopPropagation()}
+            />
           ) : (
             <Package className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
           )}
@@ -138,6 +147,7 @@ function ReagentRow({
             rel="noopener noreferrer"
             className="truncate text-[13px] md:text-sm text-gray-100 hover:underline"
             onClick={(e) => e.stopPropagation()}
+            title={node.name}
           >
             {node.name}
           </a>
@@ -194,13 +204,29 @@ const ReagentsBlock: React.FC<Props> = ({
       const p = new URLSearchParams();
       p.set("url", urlToUse);
       p.set("maxDepth", String(maxDepth));
-      // Ajoute un timestamp pour éviter les caches agressifs côté navigateur
       p.set("t", String(Date.now()));
       const r = await fetch(`/api/reagents?${p.toString()}`, {
         cache: "no-store",
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = (await r.json()) as ReagentNode[];
+
+      // Batch-fetch meta for ALL first-level nodes (names+icons), then merge into nodes
+      const ids = Array.from(new Set(data.map(n => n.id)));
+      if (ids.length) {
+        try {
+          const rr = await fetch(`/api/item-meta?ids=${ids.join(',')}`, { cache: "no-store" });
+          if (rr.ok) {
+            const map = (await rr.json()) as Record<string, { name?: string; iconUrl?: string }>;
+            for (const node of data) {
+              const m = map[String(node.id)];
+              if (m?.name) node.name = m.name;
+              if (m?.iconUrl) node.icon = m.iconUrl;
+            }
+          }
+        } catch {}
+      }
+
       setTree(data);
     } catch (e: any) {
       setError(e?.message || "Erreur inconnue");
@@ -246,8 +272,8 @@ const ReagentsBlock: React.FC<Props> = ({
 
   return (
     <div className="mt-2 rounded-lg border border-gray-700 bg-gray-800/50 p-2">
-      <div className="mb-1 text-[13px] font-semibold text-yellow-300">
-        Composants
+      <div className="mb-1 flex items-center gap-2">
+        <div className="text-[13px] font-semibold text-yellow-300">Composants</div>
       </div>
 
       <div>
